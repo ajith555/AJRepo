@@ -12,15 +12,23 @@ $ChromeOptions.AddArguments("--disable-popup-blocking")
 $ChromeOptions.AddArguments("--start-maximized")
 $ChromeDriver = New-Object OpenQA.Selenium.Chrome.ChromeDriver($ChromeDriverPath, $ChromeOptions)
 
-# Navigate to the URL
-$ChromeDriver.Navigate().GoToUrl("http://example.com")
+# Navigate to the main URL
+$MainUrl = "http://example.com"
+$ChromeDriver.Navigate().GoToUrl($MainUrl)
 
-# Get the cookies
-$Cookies = $ChromeDriver.Manage().Cookies.AllCookies
+# Get the main URL cookies
+$MainUrlCookies = $ChromeDriver.Manage().Cookies.AllCookies
 
-# Output the cookies
-foreach ($Cookie in $Cookies) {
-    Write-Host "$($Cookie.Name) = $($Cookie.Value)"
+# Get all child URLs
+$ChildUrls = $ChromeDriver.FindElementsByTagName("a") | Where-Object { $_.GetAttribute("href") -match "^http(s)?://example.com/" }
+
+# Loop through each child URL and get the cookies
+foreach ($ChildUrl in $ChildUrls) {
+    $ChromeDriver.Navigate().GoToUrl($ChildUrl.GetAttribute("href"))
+    $ChildUrlCookies = $ChromeDriver.Manage().Cookies.AllCookies
+    foreach ($Cookie in $ChildUrlCookies) {
+        Write-Host "$($Cookie.Name) = $($Cookie.Value)"
+    }
 }
 
 # Quit the Chrome driver instance
