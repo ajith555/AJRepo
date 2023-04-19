@@ -12,24 +12,36 @@ $ChromeOptions.AddArguments("--disable-popup-blocking")
 $ChromeOptions.AddArguments("--start-maximized")
 $ChromeDriver = New-Object OpenQA.Selenium.Chrome.ChromeDriver($ChromeDriverPath, $ChromeOptions)
 
-# Navigate to the main URL
-$MainUrl = "http://example.com"
-$ChromeDriver.Navigate().GoToUrl($MainUrl)
+# First URL
+$Url1 = "http://example.com"
+$ChromeDriver.Navigate().GoToUrl($Url1)
 
-# Get the main URL cookies
-$MainUrlCookies = $ChromeDriver.Manage().Cookies.AllCookies
+# Wait for 10 seconds
+Start-Sleep -Seconds 10
 
-# Get all child URLs
-$ChildUrls = $ChromeDriver.FindElementsByTagName("a") | Where-Object { $_.GetAttribute("href") -match "^http(s)?://example.com/" }
+# Get the cookies for the first URL
+$Cookies1 = $ChromeDriver.Manage().Cookies.AllCookies
 
-# Loop through each child URL and get the cookies
-foreach ($ChildUrl in $ChildUrls) {
-    $ChromeDriver.Navigate().GoToUrl($ChildUrl.GetAttribute("href"))
-    $ChildUrlCookies = $ChromeDriver.Manage().Cookies.AllCookies
-    foreach ($Cookie in $ChildUrlCookies) {
-        Write-Host "$($Cookie.Name) = $($Cookie.Value)"
-    }
-}
+# Second URL
+$Url2 = "http://example.org"
+$ChromeDriver.Navigate().GoToUrl($Url2)
+
+# Wait for 10 seconds
+Start-Sleep -Seconds 10
+
+# Get the cookies for the second URL
+$Cookies2 = $ChromeDriver.Manage().Cookies.AllCookies
 
 # Quit the Chrome driver instance
 $ChromeDriver.Quit()
+
+# Output the cookies for each URL
+Write-Host "Cookies for $Url1:"
+foreach ($Cookie in $Cookies1) {
+    Write-Host "$($Cookie.Name) = $($Cookie.Value)"
+}
+
+Write-Host "Cookies for $Url2:"
+foreach ($Cookie in $Cookies2) {
+    Write-Host "$($Cookie.Name) = $($Cookie.Value)"
+}
