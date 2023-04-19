@@ -38,10 +38,12 @@ $ChromeDriver.Quit()
 # Output the cookies for each URL
 Write-Host "Cookies for $Url1:"
 foreach ($Cookie in $Cookies1) {
-    Write-Host "$($Cookie.Name) = $($Cookie.Value)"
+    $Value = $Cookie.Value -replace " ", "" -replace ";", ""
+    Write-Host "$($Cookie.Name)=$Value;"
 }
 
 Write-Host "Cookies for $Url2:"
 foreach ($Cookie in $Cookies2) {
-    Write-Host "$($Cookie.Name) = $($Cookie.Value)"
+    $Value = $Cookie.Value -replace " ", "" -replace ";", ""
+    Write-Host "$($Cookie.Name)=$Value;"
 }
