@@ -1,0 +1,28 @@
+$url = "https://www.example.com/api/data"
+
+# create a new web request object
+$request = [System.Net.WebRequest]::Create($url)
+
+# set the authentication method to Kerberos
+$request.UseDefaultCredentials = $true
+$request.Credentials = [System.Net.CredentialCache]::DefaultCredentials
+$request.Headers.Add("Authorization", "Negotiate")
+
+# set the request method to GET
+$request.Method = "GET"
+
+# make the request and get the response
+$response = $request.GetResponse()
+
+# read the response data
+$dataStream = $response.GetResponseStream()
+$reader = New-Object System.IO.StreamReader($dataStream)
+$responseData = $reader.ReadToEnd()
+
+# cleanup
+$reader.Close()
+$dataStream.Close()
+$response.Close()
+
+# display the response data
+$responseData
