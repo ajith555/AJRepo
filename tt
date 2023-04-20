@@ -1,49 +1,14 @@
-# Load the Selenium WebDriver module
-Import-Module Selenium.WebDriver
+# Define the URL of the HTML page
+$url = "https://example.com/page.html"
 
-# Set the Chrome driver path
-$ChromeDriverPath = "C:\path\to\chromedriver.exe"
+# Download the HTML content using Invoke-WebRequest
+$html = Invoke-WebRequest -Uri $url
 
-# Create a Chrome driver instance
-$ChromeOptions = New-Object OpenQA.Selenium.Chrome.ChromeOptions
-$ChromeOptions.AddArguments("--disable-extensions")
-$ChromeOptions.AddArguments("--disable-infobars")
-$ChromeOptions.AddArguments("--disable-popup-blocking")
-$ChromeOptions.AddArguments("--start-maximized")
-$ChromeDriver = New-Object OpenQA.Selenium.Chrome.ChromeDriver($ChromeDriverPath, $ChromeOptions)
+# Define the XPath query to select the data you want
+$xpath = "//div[@class='my-class']//h2"
 
-# First URL
-$Url1 = "http://example.com"
-$ChromeDriver.Navigate().GoToUrl($Url1)
+# Use Select-Xml to apply the XPath query to the HTML content
+$data = $html.Content | Select-Xml -XPath $xpath | Select-Object -ExpandProperty Node | Select-Object -ExpandProperty InnerText
 
-# Wait for 10 seconds
-Start-Sleep -Seconds 10
-
-# Get the cookies for the first URL
-$Cookies1 = $ChromeDriver.Manage().Cookies.AllCookies
-
-# Second URL
-$Url2 = "http://example.org"
-$ChromeDriver.Navigate().GoToUrl($Url2)
-
-# Wait for 10 seconds
-Start-Sleep -Seconds 10
-
-# Get the cookies for the second URL
-$Cookies2 = $ChromeDriver.Manage().Cookies.AllCookies
-
-# Quit the Chrome driver instance
-$ChromeDriver.Quit()
-
-# Output the cookies for each URL
-Write-Host "Cookies for $Url1:"
-foreach ($Cookie in $Cookies1) {
-    $Value = $Cookie.Value -replace " ", "" -replace ";", ""
-    Write-Host "$($Cookie.Name)=$Value;"
-}
-
-Write-Host "Cookies for $Url2:"
-foreach ($Cookie in $Cookies2) {
-    $Value = $Cookie.Value -replace " ", "" -replace ";", ""
-    Write-Host "$($Cookie.Name)=$Value;"
-}
+# Output the data
+$data
