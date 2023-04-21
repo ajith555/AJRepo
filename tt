@@ -35,8 +35,13 @@ foreach ($entry in $dataMappings.GetEnumerator()) {
     $worksheet.Range($cellRange).Value2 = $data[$dataIndex]
 }
 
-# Save the workbook, close it, and quit Excel
-$workbook.SaveAs("path\to\output.xlsx")
+# Save the workbook with a timestamp appended to the filename if the file already exists
+$outputPath = "path\to\output.xlsx"
+if (Test-Path $outputPath) {
+    $timestamp = Get-Date -Format "yyyyMMddTHHmmss"
+    $outputPath = "path\to\output_$timestamp.xlsx"
+}
+$workbook.SaveAs($outputPath)
 $workbook.Close($false)
 $excel.Quit()
 [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
