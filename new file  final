@@ -1,0 +1,84 @@
+<#
+.SYNOPSIS
+Send an email on behalf of a shared mailbox using the Outlook client without using the Outlook COM Interop assembly.
+
+.DESCRIPTION
+This function sends an email on behalf of a shared mailbox using the Outlook client without using the Outlook COM Interop assembly in PowerShell. It reads a CSV file containing recipient email addresses, and sends an email to each recipient on behalf of the specified shared mailbox. It uses late binding to interact with the Outlook COM Object, creates a new mail item for each recipient, sets the email properties such as recipient, subject, body, and SendOnBehalfOf property, and sends the email.
+
+.PARAMETER CsvFilePath
+File path of the CSV file containing recipient email addresses.
+
+.PARAMETER Subject
+Email subject.
+
+.PARAMETER Body
+Email body.
+
+.PARAMETER SharedMailbox
+Email address of the shared mailbox to send the email on behalf of.
+
+.EXAMPLE
+Send-EmailUsingOutlook -CsvFilePath "C:\path\to\recipients.csv" -Subject "Subject of the Email" -Body "Body of the Email" -SharedMailbox "shared_mailbox@example.com"
+Send an email on behalf of a shared mailbox using the Outlook client with email addresses from a CSV file, and a subject, body, and shared mailbox email address.
+
+.INPUTS
+None.
+
+.OUTPUTS
+None.
+
+.NOTES
+- This function requires Microsoft Outlook to be installed on the machine where the script is executed.
+- This function uses late binding to interact with the Outlook COM Object, which allows you to send an email without explicitly referencing the Outlook COM Interop assembly.
+- This function releases the Outlook COM Object using [System.Runtime.InteropServices.Marshal]::ReleaseComObject() method after sending the emails.
+
+#>
+function Send-EmailUsingOutlook {
+    Param(
+        [string]$CsvFilePath,
+        [string]$Subject,
+        [string]$Body,
+        [string]$SharedMailbox
+    )
+
+    # Validate CSV file path
+    if (-not (Test-Path -Path $CsvFilePath -PathType Leaf)) {
+        Write-Error "CSV file does not exist or invalid file path: $CsvFilePath"
+        return
+    }
+
+    # Load the Outlook COM Object using late binding
+    $outlook = New-Object -ComObject Outlook.Application
+
+    # Read the CSV file and get the email addresses
+    $recipients = Import-Csv -Path $CsvFilePath
+
+    # Iterate through each recipient and send email
+    $recipients | ForEach-Object {
+        # Check for missing or incomplete entries in CSV
+        if (-not $_.EmailAddress) {
+            Write-Error "Incomplete entry in CSV file. Email address is missing: $_"
+            continue
+        }
+
+        # Create a new mail item
+        $mail = $outlook.CreateItem(0)
+
+        # Set the email properties
+        $mail.Subject = $Subject
+        $mail.Body = $Body
+        $mail.To = $_.EmailAddress
+
+        # Set the SendOnBehalfOf property to the shared mailbox
+        $mail.SendOnBehalfOfName = $SharedMailbox
+
+        # Send the email
+        $mail.Send()
+
+        # Release the mail item object
+        [System.Runtime.InteropServices.Marshal]::ReleaseComObject($mail) | Out-Null
+    }
+
+    # Release the Outlook COM Object
+    [System.Runtime.InteropServices.Marshal]::ReleaseComObject($outlook) | Out-Null
+}
