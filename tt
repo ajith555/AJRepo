@@ -1,57 +1,52 @@
-# Import the COM object for Excel
-$excel = New-Object -ComObject Excel.Application
+# Load Selenium WebDriver
+Add-Type -Path "C:\path\to\Selenium.WebDriver.dll"
+Add-Type -Path "C:\path\to\Selenium.WebDriver.ChromeDriver.dll"
 
-# Set up the Chrome driver
-$chromeDriverPath = "path\to\chromedriver.exe"
+# Set up Chrome options
 $chromeOptions = New-Object OpenQA.Selenium.Chrome.ChromeOptions
-$chromeOptions.AddArguments("--headless") # Run Chrome headlessly to avoid opening a visible browser window
+$chromeOptions.AddArgument("--headless")
+
+# Set up Chrome driver
+$chromeDriverPath = "C:\path\to\chromedriver.exe"
 $driver = New-Object OpenQA.Selenium.Chrome.ChromeDriver($chromeDriverPath, $chromeOptions)
 
-# Navigate to the website
+# Navigate to website
 $driver.Navigate().GoToUrl("https://www.example.com")
 
-# Define the xpath links to fetch data and the corresponding cell ranges in Excel
-$dataMappings = @{
-    "//div[@class='class1']" = "A1:A1"
-    "//div[@class='class2']" = "A2:A2"
-    "//div[@class='class3']" = "A3:A3"
-}
+# Define XPath expressions
+$xpathExpressions = @(
+    "//div[@class='foo']/text()",
+    "//div[@class='bar']/text()",
+    "//div[@class='baz']/text()"
+)
 
-# Fetch the data and put it in an array
-$data = foreach ($entry in $dataMappings.GetEnumerator()) {
-    $element = $driver.FindElementByXPath($entry.Key)
-    $element.Text
-}
-
-# Get the current date and time as a string
-$timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
-
-# Set the output file path
-$outputPath = "path\to\output_$timestamp.xlsx"
-
-# Check if the output file already exists
+# Create new Excel workbook
+$outputPath = "C:\path\to\output.xlsx"
 if (Test-Path $outputPath) {
-    # Open the existing workbook
-    $workbook = $excel.Workbooks.Open($outputPath)
-    $worksheet = $workbook.Worksheets.Item(1)
-} else {
-    # Create a new workbook and worksheet
-    $workbook = $excel.Workbooks.Add()
-    $worksheet = $workbook.Worksheets.Item(1)
+    $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $outputPath = "C:\path\to\output-$timestamp.xlsx"
+}
+$excel = New-Object -ComObject Excel.Application
+$workbook = $excel.Workbooks.Add()
+$worksheet = $workbook.Worksheets.Item(1)
+
+# Loop through XPath expressions and insert data into Excel
+$row = 1
+foreach ($xpath in $xpathExpressions) {
+    try {
+        $data = $driver.FindElementByXPath($xpath).Text
+        $worksheet.Cells.Item($row, 1) = $data
+    } catch {
+        Write-Host "XPath not found: $xpath"
+    }
+    $row++
 }
 
-# Write the data to the worksheet
-foreach ($entry in $dataMappings.GetEnumerator()) {
-    $cellRange = $entry.Value
-    $dataIndex = [array]::IndexOf($dataMappings.Keys, $entry.Key)
-    $worksheet.Range($cellRange).Value2 = $data[$dataIndex]
-}
-
-# Save the workbook
+# Save and close Excel workbook
 $workbook.SaveAs($outputPath)
-$workbook.Close($false)
+$workbook.Close($true)
 $excel.Quit()
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
 
-# Close the driver
-$driver.Close()
+# Close the driver and all Chrome processes
+$driver.Quit()
+Stop-Process -Name chrome -Force
