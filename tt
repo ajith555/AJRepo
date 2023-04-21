@@ -1,14 +1,46 @@
-# Define the URL of the HTML page
-$url = "https://example.com/page.html"
+# Install Selenium and EPPlus if not already installed
+Install-Package Selenium.WebDriver -Force
+Install-Package EPPlus -Force
 
-# Download the HTML content using Invoke-WebRequest
-$html = Invoke-WebRequest -Uri $url
+# Import required namespaces
+Add-Type -Path "path\to\Selenium.WebDriver.dll"
+Add-Type -Path "path\to\WebDriver.Support.dll"
+Add-Type -Path "path\to\EPPlus.dll"
 
-# Define the XPath query to select the data you want
-$xpath = "//div[@class='my-class']//h2"
+# Set up the Chrome driver
+$chromeDriverPath = "path\to\chromedriver.exe"
+$chromeOptions = New-Object OpenQA.Selenium.Chrome.ChromeOptions
+$chromeOptions.AddArguments("--headless") # Run Chrome headlessly to avoid opening a visible browser window
+$driver = New-Object OpenQA.Selenium.Chrome.ChromeDriver($chromeDriverPath, $chromeOptions)
 
-# Use Select-Xml to apply the XPath query to the HTML content
-$data = $html.Content | Select-Xml -XPath $xpath | Select-Object -ExpandProperty Node | Select-Object -ExpandProperty InnerText
+# Navigate to the website
+$driver.Navigate().GoToUrl("https://www.example.com")
 
-# Output the data
-$data
+# Define the xpath links to fetch data
+$xpathLinks = @(
+    "//div[@class='class1']",
+    "//div[@class='class2']",
+    "//div[@class='class3']"
+)
+
+# Fetch the data and put it in a list
+$data = foreach ($xpath in $xpathLinks) {
+    $element = $driver.FindElementByXPath($xpath)
+    $element.Text
+}
+
+# Create a new Excel workbook and worksheet
+$excelPath = "path\to\output.xlsx"
+$excelPackage = New-Object OfficeOpenXml.ExcelPackage(New-Item -Path $excelPath -ItemType File)
+$worksheet = $excelPackage.Workbook.Worksheets.Add("Sheet1")
+
+# Write the data to the worksheet
+$rowIndex = 1
+foreach ($datum in $data) {
+    $worksheet.Cells.Item($rowIndex, 1).Value = $datum
+    $rowIndex++
+}
+
+# Save the workbook and close the driver
+$excelPackage.Save()
+$driver.Close()
