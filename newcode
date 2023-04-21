@@ -1,0 +1,37 @@
+# Create an Outlook COM Object
+$outlook = New-Object -ComObject Outlook.Application
+
+# Create a new email
+$mail = $outlook.CreateItem(0)
+
+# Set the email properties
+$mail.Subject = "Subject of the Email"
+$mail.BodyFormat = 2 # olFormatHTML
+
+# Load the SVG logo from a file
+$svgLogo = Get-Content -Path "C:\path\to\logo.svg" -Raw
+
+# Load the PNG image from a file
+$pngImage = [System.IO.File]::ReadAllBytes("C:\path\to\image.png")
+$base64PngImage = [System.Convert]::ToBase64String($pngImage)
+
+# Embed the SVG logo and PNG image in the HTML body
+$mail.HTMLBody = @"
+<html>
+<body>
+<p>Email body text</p>
+<img src='data:image/svg+xml;base64,$([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($svgLogo)))' alt='SVG Logo'>
+<br>
+<img src='data:image/png;base64,$base64PngImage' alt='PNG Image'>
+</body>
+</html>
+"@
+
+# Display the email
+$mail.Display()
+
+# Send the email
+# $mail.Send()  # Uncomment this line to send the email automatically
+
+# Release the Outlook COM Object
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($outlook) | Out-Null
