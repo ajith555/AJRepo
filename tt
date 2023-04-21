@@ -1,11 +1,5 @@
-# Install Selenium and EPPlus if not already installed
-Install-Package Selenium.WebDriver -Force
-Install-Package EPPlus -Force
-
-# Import required namespaces
-Add-Type -Path "path\to\Selenium.WebDriver.dll"
-Add-Type -Path "path\to\WebDriver.Support.dll"
-Add-Type -Path "path\to\EPPlus.dll"
+# Import the COM object for Excel
+$excel = New-Object -ComObject Excel.Application
 
 # Set up the Chrome driver
 $chromeDriverPath = "path\to\chromedriver.exe"
@@ -23,24 +17,29 @@ $xpathLinks = @(
     "//div[@class='class3']"
 )
 
-# Fetch the data and put it in a list
+# Fetch the data and put it in an array
 $data = foreach ($xpath in $xpathLinks) {
     $element = $driver.FindElementByXPath($xpath)
     $element.Text
 }
 
 # Create a new Excel workbook and worksheet
-$excelPath = "path\to\output.xlsx"
-$excelPackage = New-Object OfficeOpenXml.ExcelPackage(New-Item -Path $excelPath -ItemType File)
-$worksheet = $excelPackage.Workbook.Worksheets.Add("Sheet1")
+$excel.Visible = $false
+$workbook = $excel.Workbooks.Add()
+$worksheet = $workbook.Worksheets.Item(1)
 
 # Write the data to the worksheet
 $rowIndex = 1
 foreach ($datum in $data) {
-    $worksheet.Cells.Item($rowIndex, 1).Value = $datum
+    $worksheet.Cells.Item($rowIndex, 1).Value2 = $datum
     $rowIndex++
 }
 
-# Save the workbook and close the driver
-$excelPackage.Save()
+# Save the workbook, close it, and quit Excel
+$workbook.SaveAs("path\to\output.xlsx")
+$workbook.Close($false)
+$excel.Quit()
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
+
+# Close the driver
 $driver.Close()
