@@ -18,8 +18,8 @@ $dataMappings = @{
 }
 
 # Fetch the data and put it in an array
-$data = foreach ($xpath in $dataMappings.Keys) {
-    $element = $driver.FindElementByXPath($xpath)
+$data = foreach ($entry in $dataMappings.GetEnumerator()) {
+    $element = $driver.FindElementByXPath($entry.Key)
     $element.Text
 }
 
@@ -29,9 +29,9 @@ $workbook = $excel.Workbooks.Add()
 $worksheet = $workbook.Worksheets.Item(1)
 
 # Write the data to the worksheet
-foreach ($xpath in $dataMappings.Keys) {
-    $cellRange = $dataMappings[$xpath]
-    $dataIndex = [array]::IndexOf($dataMappings.Keys.ToArray(), $xpath)
+foreach ($entry in $dataMappings.GetEnumerator()) {
+    $cellRange = $entry.Value
+    $dataIndex = [array]::IndexOf($dataMappings.Keys, $entry.Key)
     $worksheet.Range($cellRange).Value2 = $data[$dataIndex]
 }
 
