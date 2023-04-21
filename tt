@@ -23,10 +23,22 @@ $data = foreach ($entry in $dataMappings.GetEnumerator()) {
     $element.Text
 }
 
-# Create a new Excel workbook and worksheet
-$excel.Visible = $false
-$workbook = $excel.Workbooks.Add()
-$worksheet = $workbook.Worksheets.Item(1)
+# Get the current date and time as a string
+$timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+
+# Set the output file path
+$outputPath = "path\to\output_$timestamp.xlsx"
+
+# Check if the output file already exists
+if (Test-Path $outputPath) {
+    # Open the existing workbook
+    $workbook = $excel.Workbooks.Open($outputPath)
+    $worksheet = $workbook.Worksheets.Item(1)
+} else {
+    # Create a new workbook and worksheet
+    $workbook = $excel.Workbooks.Add()
+    $worksheet = $workbook.Worksheets.Item(1)
+}
 
 # Write the data to the worksheet
 foreach ($entry in $dataMappings.GetEnumerator()) {
@@ -35,12 +47,7 @@ foreach ($entry in $dataMappings.GetEnumerator()) {
     $worksheet.Range($cellRange).Value2 = $data[$dataIndex]
 }
 
-# Save the workbook with a timestamp appended to the filename if the file already exists
-$outputPath = "path\to\output.xlsx"
-if (Test-Path $outputPath) {
-    $timestamp = Get-Date -Format "yyyyMMddTHHmmss"
-    $outputPath = "path\to\output_$timestamp.xlsx"
-}
+# Save the workbook
 $workbook.SaveAs($outputPath)
 $workbook.Close($false)
 $excel.Quit()
