@@ -1,0 +1,31 @@
+# Set subscription key and endpoint for the Speech API
+$subscriptionKey = "<your_subscription_key>"
+$endpoint = "https://<your_region>.api.cognitive.microsoft.com/sts/v1.0/issuetoken"
+
+# Authenticate and get an access token
+$headers = @{
+    "Ocp-Apim-Subscription-Key" = $subscriptionKey
+    "Content-Type" = "application/x-www-form-urlencoded"
+}
+$body = "grant_type=client_credentials&client_id=$($subscriptionKey)&client_secret=$($subscriptionKey)&scope=https://speech.platform.bing.com"
+$response = Invoke-WebRequest -Method POST -Uri $endpoint -Headers $headers -Body $body
+$accessToken = ($response.Content | ConvertFrom-Json).access_token
+
+# Set audio file and recognition parameters
+$audioFile = "<path_to_audio_file>"
+$url = "https://<your_region>.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=en-US&format=detailed"
+$headers = @{
+    "Authorization" = "Bearer $accessToken"
+    "Content-Type" = "audio/wav; codec=audio/pcm; samplerate=16000"
+}
+$body = Get-Content -Path $audioFile -Encoding Byte
+$params = @{
+    "initialSilenceTimeoutMs" = 5000
+}
+
+# Send request to Speech API to recognize speech from audio file
+$response = Invoke-RestMethod -Method POST -Uri $url -Headers $headers -Body $body -BodyAsFile -UseBasicParsing -WebSession $response -ContentType "application/json" -Body ($params | ConvertTo-Json)
+$result = $response.NBest.Display
+
+# Print recognized text
+Write-Output $result
