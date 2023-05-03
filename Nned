@@ -1,0 +1,1 @@
+ffprobe -i input_file -show_entries stream=codec_name -v quiet -of csv=p=0
