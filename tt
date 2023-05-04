@@ -1,36 +1,13 @@
-# Retrieve the HTML code of the web page
-$url = "https://www.example.com"
-$html = Invoke-WebRequest -Uri $url
+# Install the ImportExcel module
+Install-Module -Name ImportExcel
 
-# Extract the table data from the HTML
-$table = $html.ParsedHtml.getElementsByTagName("table") | Select-Object -First 1
-if ($table -ne $null) {
-    $rows = $table.getElementsByTagName("tr") | Select-Object -Skip 1
-    if ($rows.Count -gt 0) {
-        $data = foreach ($row in $rows) {
-            $cells = $row.getElementsByTagName("td")
-            if ($cells.Count -gt 0) {
-                [pscustomobject]@{
-                    Column1 = if ($cells[0]) {$cells[0].innerText} else {""}
-                    Column2 = if ($cells[1]) {$cells[1].innerText} else {""}
-                    Column3 = if ($cells[2]) {$cells[2].innerText} else {""}
-                }
-            }
-        }
+# Set the URL of the web page
+$url = "https://example.com/table.html"
 
-        # Save the data in an Excel-compatible CSV file
-        if ($data) {
-            $data | Export-Csv -Path "C:\path\to\file.csv" -NoTypeInformation
-            Write-Host "Table data saved to file successfully."
-        }
-        else {
-            Write-Host "No data found in the table."
-        }
-    }
-    else {
-        Write-Host "No rows found in the table."
-    }
-}
-else {
-    Write-Host "No table found in the HTML."
-}
+# Use Invoke-WebRequest to retrieve the HTML of the web page
+$response = Invoke-WebRequest -Uri $url
+
+# Use Import-HTML to extract the table data and save it to an Excel sheet
+$table = $response.ParsedHtml.getElementsByTagName("table") | Select-Object -First 1
+$data = $table | ConvertTo-Html -Fragment | Out-String | Import-Html -WorksheetName "Table Data" -HeaderRow 1
+$data | Export-Excel -Path "C:\data.xlsx"
