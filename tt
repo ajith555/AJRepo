@@ -18,13 +18,22 @@ if ($table -ne $null) {
             }
         }
 
-        # Save the data in an Excel-compatible CSV file
-        $data | Export-Csv -Path "C:\path\to\file.csv" -NoTypeInformation
+        # Save the data in an Excel file
+        $excel = New-Object -ComObject Excel.Application
+        $workbook = $excel.Workbooks.Add()
+        $worksheet = $workbook.Worksheets.Add()
+
+        $row = 1
+        foreach ($item in $data) {
+            $worksheet.Cells.Item($row, 1) = $item.Column1
+            $worksheet.Cells.Item($row, 2) = $item.Column2
+            $worksheet.Cells.Item($row, 3) = $item.Column3
+            $row++
+        }
+
+        $workbook.SaveAs("C:\path\to\file.xlsx")
+        $workbook.Close()
+        $excel.Quit()
     }
     else {
-        Write-Host "No rows found in the table."
-    }
-}
-else {
-    Write-Host "No table found in the HTML."
-}
+       
