@@ -1,52 +1,18 @@
-# Load Selenium WebDriver
-Add-Type -Path "C:\path\to\Selenium.WebDriver.dll"
-Add-Type -Path "C:\path\to\Selenium.WebDriver.ChromeDriver.dll"
+# Retrieve the HTML code of the web page
+$url = "https://www.example.com"
+$html = Invoke-WebRequest -Uri $url
 
-# Set up Chrome options
-$chromeOptions = New-Object OpenQA.Selenium.Chrome.ChromeOptions
-$chromeOptions.AddArgument("--headless")
-
-# Set up Chrome driver
-$chromeDriverPath = "C:\path\to\chromedriver.exe"
-$driver = New-Object OpenQA.Selenium.Chrome.ChromeDriver($chromeDriverPath, $chromeOptions)
-
-# Navigate to website
-$driver.Navigate().GoToUrl("https://www.example.com")
-
-# Define XPath expressions
-$xpathExpressions = @(
-    "//div[@class='foo']/text()",
-    "//div[@class='bar']/text()",
-    "//div[@class='baz']/text()"
-)
-
-# Create new Excel workbook
-$outputPath = "C:\path\to\output.xlsx"
-if (Test-Path $outputPath) {
-    $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
-    $outputPath = "C:\path\to\output-$timestamp.xlsx"
-}
-$excel = New-Object -ComObject Excel.Application
-$workbook = $excel.Workbooks.Add()
-$worksheet = $workbook.Worksheets.Item(1)
-
-# Loop through XPath expressions and insert data into Excel
-$row = 1
-foreach ($xpath in $xpathExpressions) {
-    try {
-        $data = $driver.FindElementByXPath($xpath).Text
-        $worksheet.Cells.Item($row, 1) = $data
-    } catch {
-        Write-Host "XPath not found: $xpath"
+# Extract the table data from the HTML
+$table = $html.ParsedHtml.getElementsByTagName("table") | Select-Object -First 1
+$rows = $table.getElementsByTagName("tr") | Select-Object -Skip 1
+$data = foreach ($row in $rows) {
+    $cells = $row.getElementsByTagName("td") | Select-Object -ExpandProperty innerText
+    [pscustomobject]@{
+        Column1 = $cells[0]
+        Column2 = $cells[1]
+        Column3 = $cells[2]
     }
-    $row++
 }
 
-# Save and close Excel workbook
-$workbook.SaveAs($outputPath)
-$workbook.Close($true)
-$excel.Quit()
-
-# Close the driver and all Chrome processes
-$driver.Quit()
-Stop-Process -Name chrome -Force
+# Save the data in an Excel-compatible CSV file
+$data | Export-Csv -Path "C:\path\to\file.csv" -NoTypeInformation
