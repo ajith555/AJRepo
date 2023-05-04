@@ -4,15 +4,27 @@ $html = Invoke-WebRequest -Uri $url
 
 # Extract the table data from the HTML
 $table = $html.ParsedHtml.getElementsByTagName("table") | Select-Object -First 1
-$rows = $table.getElementsByTagName("tr") | Select-Object -Skip 1
-$data = foreach ($row in $rows) {
-    $cells = $row.getElementsByTagName("td") | Select-Object -ExpandProperty innerText
-    [pscustomobject]@{
-        Column1 = $cells[0]
-        Column2 = $cells[1]
-        Column3 = $cells[2]
+if ($table -ne $null) {
+    $rows = $table.getElementsByTagName("tr") | Select-Object -Skip 1
+    if ($rows.Count -gt 0) {
+        $data = foreach ($row in $rows) {
+            $cells = $row.getElementsByTagName("td")
+            if ($cells.Count -gt 0) {
+                [pscustomobject]@{
+                    Column1 = $cells[0].innerText
+                    Column2 = $cells[1].innerText
+                    Column3 = $cells[2].innerText
+                }
+            }
+        }
+
+        # Save the data in an Excel-compatible CSV file
+        $data | Export-Csv -Path "C:\path\to\file.csv" -NoTypeInformation
+    }
+    else {
+        Write-Host "No rows found in the table."
     }
 }
-
-# Save the data in an Excel-compatible CSV file
-$data | Export-Csv -Path "C:\path\to\file.csv" -NoTypeInformation
+else {
+    Write-Host "No table found in the HTML."
+}
