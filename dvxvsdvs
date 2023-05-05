@@ -1,0 +1,29 @@
+# Set the endpoint URL for your Azure OpenAI resource
+$endpoint_url = "<your_endpoint_url>"
+
+# Set the API key for your Azure OpenAI resource
+$api_key = "<your_api_key>"
+
+# Set the query that you want to send to the Azure OpenAI resource
+$query = "Hello, world!"
+
+# Set the model ID for the Azure OpenAI resource
+$model_id = "<your_model_id>"
+
+# Create a JSON object that contains the query and model ID
+$json_body = @{
+    "model" = $model_id
+    "prompt" = $query
+} | ConvertTo-Json
+
+# Create an HTTP headers object that includes the API key
+$headers = @{
+    "Authorization" = "Bearer $api_key"
+    "Content-Type" = "application/json"
+}
+
+# Send the query to the Azure OpenAI resource using the Invoke-RestMethod cmdlet
+$response = Invoke-RestMethod -Uri $endpoint_url -Method Post -Headers $headers -Body $json_body
+
+# Print the response
+$response
