@@ -1,0 +1,20 @@
+To make Alteryx ignore the creation of a new field if it already exists, you can use the "Select" tool in combination with the "Run Command" tool. Here's a step-by-step guide:
+
+Drag and drop a "Select" tool onto your Alteryx canvas.
+Connect the input data source (sheet) to the Select tool.
+Double-click on the Select tool to open its configuration window.
+In the configuration window, you'll see a list of fields from your input data source.
+Locate the field you want to create (if it doesn't exist) and check the box next to it.
+Click on the "OK" button to close the configuration window.
+Now, the Select tool will only keep the selected field(s) from the input data source. If the field already exists, it will pass through unchanged. If the field doesn't exist, it will be included in the output of the Select tool.
+
+Drag and drop a "Run Command" tool onto your Alteryx canvas.
+Connect the output of the Select tool to the Run Command tool.
+Double-click on the Run Command tool to open its configuration window.
+In the configuration window, click on the "Command" tab.
+In the "Command Arguments" section, enter the following command: --disable "ToolName"
+Replace "ToolName" with the name of the Formula tool you used to create the new field. You can find the name of the Formula tool in the Workflow tab by selecting the Formula tool and checking its name in the "Tool Name" field.
+Click on the "OK" button to close the configuration window.
+By using the Run Command tool with the "--disable" argument, Alteryx will skip the execution of the specified tool if the field already exists. This way, the Formula tool to create the new field will be bypassed when the field is already present.
+
+Now, when you run the Alteryx workflow, it will only create the new field if it doesn't already exist. If the field is already present, it will be passed through without modification.
