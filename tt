@@ -1,7 +1,47 @@
-Innovation and Technological Advancement: GWMA Automation is committed to staying at the forefront of technological advancements. We continuously research, evaluate, and adopt cutting-edge tools and technologies to ensure our clients benefit from the latest automation solutions. By embracing innovation, we strive to provide our clients with the most efficient and effective automation strategies, enabling them to stay ahead of the competition.
+# Import the required modules
+Import-Module ImportExcel
 
-Client-Centric Approach: Our vision emphasizes the utmost importance of client satisfaction. We place our clients' needs and goals at the center of our operations, tailoring our automation solutions to meet their unique requirements. By fostering strong partnerships and open communication, we ensure a deep understanding of our clients' challenges and objectives. Our client-centric approach drives us to go above and beyond in delivering personalized and impactful automation solutions that save time and enhance productivity.
+# Define the API endpoint and headers
+$apiUrl = "https://example.com/api/endpoint"
+$headers = @{
+    "apikey" = "your_api_key"
+}
 
-Empowering Efficiency and Growth: At GWMA Automation, we envision empowering organizations to achieve unparalleled efficiency and sustainable growth. We believe that by automating repetitive and time-consuming tasks, businesses can unlock their true potential and focus on strategic initiatives. Our vision encompasses providing automation solutions that enable businesses to scale, optimize processes, and free up resources. By empowering efficiency and growth, we aim to drive lasting success for our clients in an increasingly competitive market.
+# Send a GET request to the API and retrieve the JSON response
+$response = Invoke-RestMethod -Uri $apiUrl -Headers $headers
 
-These subtopics align with the broader vision of GWMA Automation and highlight the key areas of focus that contribute to our overall mission and goals.
+# Convert the JSON response to a PowerShell object
+$data = $response | ConvertFrom-Json
+
+# Create a new Excel workbook
+$workbook = New-ExcelWorkbook
+
+# Select the first worksheet
+$worksheet = $workbook | Get-ExcelWorksheet -WorksheetName "Sheet1"
+
+# Define the column names based on your JSON structure
+$columnNames = "Field1", "Field2", "Field3" # Modify this according to your JSON structure
+
+# Add the column names to the worksheet
+$worksheet | Add-ExcelRange -StartRow 1 -StartColumn 1 -Value $columnNames -Bold
+
+# Populate the worksheet with data
+$row = 2
+foreach ($item in $data) {
+    $field1Value = $item.Field1 # Modify the property names according to your JSON structure
+    $field2Value = $item.Field2
+    $field3Value = $item.Field3
+
+    $rowData = $field1Value, $field2Value, $field3Value # Modify this line according to your JSON structure
+
+    $worksheet | Add-ExcelRange -StartRow $row -StartColumn 1 -Value $rowData
+
+    $row++
+}
+
+# Save the workbook to a file
+$excelFilePath = "C:\Path\to\output.xlsx" # Specify the desired output file path
+$workbook | Export-Excel -Path $excelFilePath -AutoSize
+
+# Close the workbook
+$workbook | Close-ExcelWorkbook
