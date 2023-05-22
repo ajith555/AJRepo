@@ -5,13 +5,36 @@ $headers = @{
 }
 
 # Send a GET request to the API and retrieve the JSON response
-$response = Invoke-RestMethod -Uri $apiUrl -Headers $headers
+$response = Invoke-RestMethod -Uri $apiUrl -Headers $headers -ErrorAction Stop
 
-# Convert the JSON response to a PowerShell object
-$data = $response | ConvertFrom-Json
+# Convert the JSON response to a string
+$jsonString = $response | ConvertTo-Json -Depth 100
 
-# Convert the data to CSV format
-$csvData = $data | ConvertTo-Csv -NoTypeInformation
+# Convert the JSON string to a PowerShell object
+$data = $jsonString | ConvertFrom-Json -ErrorAction Stop
+
+# Create an empty array to hold the extracted data
+$extractedData = @()
+
+# Extract the desired fields from the JSON data
+foreach ($item in $data) {
+    $field1Value = $item.Field1  # Modify the property names according to your JSON structure
+    $field2Value = $item.Field2
+    $field3Value = $item.Field3
+
+    # Create a new object with the extracted field values
+    $extractedItem = [PSCustomObject]@{
+        Field1 = $field1Value
+        Field2 = $field2Value
+        Field3 = $field3Value
+    }
+
+    # Add the extracted item to the array
+    $extractedData += $extractedItem
+}
+
+# Convert the extracted data to CSV format
+$csvData = $extractedData | ConvertTo-Csv -NoTypeInformation
 
 # Specify the desired output file path
 $csvFilePath = "C:\Path\to\output.csv"
