@@ -1,11 +1,11 @@
 # Define the API endpoint and headers
-$apiUrl = "https://example.com/api/endpoint"
+$apiUrl = "https://api.eu.cloud.talend.com/v2/projects/{project_id}/jobs/{job_id}"
 $headers = @{
     "Content-Type" = "application/json"
-    "apikey" = "your_api_key"
+    "Authorization" = "Bearer your_token"
 }
 
-# Define the data to be sent in the request
+# Define the data to be sent in the request body
 $data = @{
     "fieldToChange" = "new value"
 }
