@@ -1,14 +1,23 @@
 # Define the API endpoint URL
 $apiUrl = "https://example.com/api/endpoint"
 
+# Define the API key
+$apiKey = "YourAPIKeyHere"
+
 # Create the JSON payload for the POST request
 $jsonPayload = @{
     "field1" = "new value"
     "field2" = "updated value"
 } | ConvertTo-Json
 
+# Create the headers with the API key
+$headers = @{
+    "Content-Type" = "application/json"
+    "Authorization" = "Bearer $apiKey"
+}
+
 # Perform the POST request
-$response = Invoke-RestMethod -Uri $apiUrl -Method Post -Body $jsonPayload -ContentType "application/json"
+$response = Invoke-RestMethod -Uri $apiUrl -Method Post -Body $jsonPayload -Headers $headers
 
 # Display the response
 $response
