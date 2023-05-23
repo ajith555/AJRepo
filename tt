@@ -1,20 +1,13 @@
-# Define the API endpoint and headers
-$apiUrl = "https://api.eu.cloud.talend.com/v2/projects/{project_id}/jobs/{job_id}"
-$headers = @{
-    "Content-Type" = "application/json"
-    "Authorization" = "Bearer your_token"
-}
+As an Amazon Associate, you can generate affiliate links that track purchases made by users who click on those links. However, to ensure that users' purchases are linked to your affiliate account, they generally need to make their purchases through the links you provide.
 
-# Define the data to be sent in the request body
-$data = @{
-    "fieldToChange" = "new value"
-}
+If you want people to use their own app for purchasing products while still benefiting from your affiliate affiliation, you have a few options:
 
-# Convert the data to JSON format
-$jsonData = $data | ConvertTo-Json
+Custom Promo Codes: Amazon allows you to create custom promo codes that are tied to your affiliate account. You can share these codes with your audience, and when they make a purchase using the code, you'll receive the affiliate commission. However, this method typically requires the users to enter the code during the checkout process.
 
-# Send the POST request
-$response = Invoke-RestMethod -Uri $apiUrl -Method Post -Headers $headers -Body $jsonData
+Deep Linking: You can use deep linking techniques to direct users from your website or app to specific product pages on Amazon. This ensures that your affiliate ID is included in the link, and if the user makes a purchase during that session, you'll receive the commission.
 
-# Display the response
-$response
+In-App Browsers: If you have your own app, you can integrate an in-app browser that opens Amazon product pages directly within your app. By appending your affiliate ID to the product URLs, any purchases made through the in-app browser will be attributed to your affiliate account.
+
+Browser Extensions: You can create a browser extension that automatically appends your affiliate ID to any Amazon links a user clicks on while browsing. This way, even if the user is using their own browser or app, your affiliate ID will be included in the URL, and you'll receive the commission if a purchase is made.
+
+It's important to review Amazon's Affiliate Program Policies and ensure that you comply with their guidelines to avoid any potential issues or violations. Additionally, you may want to consult with an affiliate marketing expert or Amazon's support team for specific guidance related to your affiliate account.
