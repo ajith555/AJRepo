@@ -34,3 +34,51 @@ Update the "Review Date" column with the calculated review date.
 Save and publish the workflow.
 
 Now, the "Last Affirmed Date" and "Review Date" columns will only be updated when users select "Affirm" from the "Affirmation Status" column.
+
+
+
+
+-------------
+
+
+
+
+Open your SharePoint Online site and navigate to the list or library where you have the columns set up.
+
+Go to the list or library settings.
+
+Click on "Validation settings" or "Column default value settings" (depending on your version of SharePoint).
+
+Under "Validation settings," select the column "Affirmation Status" and enter the formula:
+
+arduino
+Copy code
+=[Affirmation Status]="Affirm"
+This formula ensures that the validation is only successful when the "Affirmation Status" column is set to "Affirm."
+
+Save the validation settings.
+
+Go back to the list or library settings.
+
+Click on "Information management policy settings."
+
+Check the box next to "Enable labels or document expiration" (or similar option).
+
+Click on "Retention" (or similar option).
+
+Check the box next to "Add a retention stage."
+
+Configure the retention stage with the following settings:
+
+Action: Update list item
+Add a condition: If "Affirmation Status" is equal to "Affirm"
+Update "Last Affirmed Date" with the current date
+Add another retention stage (if available) or use a recurring event.
+
+Configure the retention stage or event to occur 3 months after the "Last Affirmed Date."
+
+Update "Review Date" with the calculated review date.
+
+Save the retention settings.
+
+Now, whenever a user selects "Affirm" in the "Affirmation Status" column, the "Last Affirmed Date" will be automatically updated. The "Review Date" will be calculated 3 months from the "Last Affirmed Date" using SharePoint rules and retention settings.
