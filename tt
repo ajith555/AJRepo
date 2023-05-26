@@ -62,6 +62,15 @@ Go back to the list or library settings.
 
 Click on "Information management policy settings."
 
+
+
+
+--------------
+
+
+=IF([Last Affirmed Date]="", "", DATE(YEAR([Last Affirmed Date])+0, MONTH([Last Affirmed Date])+3, DAY([Last Affirmed Date])))
+
+
 Check the box next to "Enable labels or document expiration" (or similar option).
 
 Click on "Retention" (or similar option).
