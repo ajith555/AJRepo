@@ -1,23 +1,36 @@
-# Define the API endpoint URL
-$apiUrl = "https://example.com/api/endpoint"
+To ensure that the updating of the "Last Affirmed Date" and "Review Date" columns only occurs when users select "Affirm" from a different column, you can modify the steps as follows:
 
-# Define the API key
-$apiKey = "YourAPIKeyHere"
+Open your SharePoint Online site and navigate to the list or library where you have the columns set up.
 
-# Create the JSON payload for the POST request
-$jsonPayload = @{
-    "field1" = "new value"
-    "field2" = "updated value"
-} | ConvertTo-Json
+Create a new choice column called "Affirmation Status" (or any suitable name) and specify the available choices, including "Affirm."
 
-# Create the headers with the API key
-$headers = @{
-    "Content-Type" = "application/json"
-    "Authorization" = "Bearer $apiKey"
-}
+Create a new calculated column called "Last Affirmed Date Calculated" with the following formula:
 
-# Perform the POST request
-$response = Invoke-RestMethod -Uri $apiUrl -Method Post -Body $jsonPayload -Headers $headers
+less
+Copy code
+=IF([Affirmation Status]="Affirm",TODAY(),"")
+This formula checks if the "Affirmation Status" column is set to "Affirm." If it is, it updates the column with the current date using the TODAY() function.
 
-# Display the response
-$response
+Create another calculated column called "Review Date Calculated" with the following formula:
+sql
+Copy code
+=IF(ISBLANK([Last Affirmed Date Calculated]),"",DATE(YEAR([Last Affirmed Date Calculated]),MONTH([Last Affirmed Date Calculated])+3,DAY([Last Affirmed Date Calculated])))
+This formula is the same as before, calculating the review date by adding 3 months to the "Last Affirmed Date Calculated."
+
+Save the calculated columns.
+
+Create a SharePoint workflow using SharePoint Designer or Power Automate.
+
+Set the trigger for the workflow to be triggered when an item is modified in the list or library.
+
+Add a condition to the workflow to check if the "Affirmation Status" column is set to "Affirm."
+
+If the condition is met, update the "Last Affirmed Date" column with the current date.
+
+Add another action to calculate the review date by adding 3 months to the "Last Affirmed Date."
+
+Update the "Review Date" column with the calculated review date.
+
+Save and publish the workflow.
+
+Now, the "Last Affirmed Date" and "Review Date" columns will only be updated when users select "Affirm" from the "Affirmation Status" column.
