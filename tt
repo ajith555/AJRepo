@@ -1,101 +1,40 @@
-To ensure that the updating of the "Last Affirmed Date" and "Review Date" columns only occurs when users select "Affirm" from a different column, you can modify the steps as follows:
+# Set the user's account
+$userAccount = "<User Account>"
 
-Open your SharePoint Online site and navigate to the list or library where you have the columns set up.
+# Connect to Active Directory
+Import-Module ActiveDirectory
 
-Create a new choice column called "Affirmation Status" (or any suitable name) and specify the available choices, including "Affirm."
+# Retrieve the user object from Active Directory
+$user = Get-ADUser -Filter {samAccountName -eq $userAccount} -Properties samAccountName, userPrincipalName, memberOf
 
-Create a new calculated column called "Last Affirmed Date Calculated" with the following formula:
+if ($user) {
+    # Get the user's samAccountName and userPrincipalName
+    $samAccountName = $user.samAccountName
+    $userPrincipalName = $user.userPrincipalName
 
-less
-Copy code
-=IF([Affirmation Status]="Affirm",TODAY(),"")
-This formula checks if the "Affirmation Status" column is set to "Affirm." If it is, it updates the column with the current date using the TODAY() function.
+    # Initialize an array to store the application names
+    $applications = @()
 
-Create another calculated column called "Review Date Calculated" with the following formula:
-sql
-Copy code
-=IF(ISBLANK([Last Affirmed Date Calculated]),"",DATE(YEAR([Last Affirmed Date Calculated]),MONTH([Last Affirmed Date Calculated])+3,DAY([Last Affirmed Date Calculated])))
-This formula is the same as before, calculating the review date by adding 3 months to the "Last Affirmed Date Calculated."
+    # Iterate through the user's groups
+    foreach ($group in $user.memberOf) {
+        # Extract the group name from the distinguishedName
+        $groupName = ($group -split ",")[0] -replace "CN="
 
-Save the calculated columns.
+        # Check if the group name corresponds to an application
+        if ($groupName -like "CN=*ApplicationName*") {
+            # Extract the application name from the group name
+            $applicationName = $groupName -replace "CN="
 
-Create a SharePoint workflow using SharePoint Designer or Power Automate.
+            # Add the application name to the array
+            $applications += $applicationName
+        }
+    }
 
-Set the trigger for the workflow to be triggered when an item is modified in the list or library.
-
-Add a condition to the workflow to check if the "Affirmation Status" column is set to "Affirm."
-
-If the condition is met, update the "Last Affirmed Date" column with the current date.
-
-Add another action to calculate the review date by adding 3 months to the "Last Affirmed Date."
-
-Update the "Review Date" column with the calculated review date.
-
-Save and publish the workflow.
-
-Now, the "Last Affirmed Date" and "Review Date" columns will only be updated when users select "Affirm" from the "Affirmation Status" column.
-
-
-
-
--------------
-
-
-
-
-Open your SharePoint Online site and navigate to the list or library where you have the columns set up.
-
-Go to the list or library settings.
-
-Click on "Validation settings" or "Column default value settings" (depending on your version of SharePoint).
-
-Under "Validation settings," select the column "Affirmation Status" and enter the formula:
-
-arduino
-Copy code
-=[Affirmation Status]="Affirm"
-This formula ensures that the validation is only successful when the "Affirmation Status" column is set to "Affirm."
-
-Save the validation settings.
-
-Go back to the list or library settings.
-
-Click on "Information management policy settings."
-
-
-
-
---------------
-
-
-=IF([Last Affirmed Date]="", "", DATE(YEAR([Last Affirmed Date])+0, MONTH([Last Affirmed Date])+3, DAY([Last Affirmed Date])))
-
-
-Check the box next to "Enable labels or document expiration" (or similar option).
-
-Click on "Retention" (or similar option).
-
-Check the box next to "Add a retention stage."
-
-Configure the retention stage with the following settings:
-
-Action: Update list item
-Add a condition: If "Affirmation Status" is equal to "Affirm"
-Update "Last Affirmed Date" with the current date
-Add another retention stage (if available) or use a recurring event.
-
-Configure the retention stage or event to occur 3 months after the "Last Affirmed Date."
-
-Update "Review Date" with the calculated review date.
-
-Save the retention settings.
-
-Now, whenever a user selects "Affirm" in the "Affirmation Status" column, the "Last Affirmed Date" will be automatically updated. The "Review Date" will be calculated 3 months from the "Last Affirmed Date" using SharePoint rules and retention settings.
-
-
-
-----
-
-
-
-=IF([Last Affirmed Date]="", "", DATE(YEAR([Last Affirmed Date])+0, MONTH([Last Affirmed Date])+3, DAY([Last Affirmed Date])))
+    # Output the user account, userPrincipalName, and application names
+    Write-Host "User Account: $samAccountName"
+    Write-Host "User Principal Name: $userPrincipalName"
+    Write-Host "Applications:"
+    $applications
+} else {
+    Write-Host "User not found."
+}
