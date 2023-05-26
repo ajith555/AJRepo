@@ -91,3 +91,11 @@ Update "Review Date" with the calculated review date.
 Save the retention settings.
 
 Now, whenever a user selects "Affirm" in the "Affirmation Status" column, the "Last Affirmed Date" will be automatically updated. The "Review Date" will be calculated 3 months from the "Last Affirmed Date" using SharePoint rules and retention settings.
+
+
+
+----
+
+
+
+=IF([Last Affirmed Date]="", "", DATE(YEAR([Last Affirmed Date])+0, MONTH([Last Affirmed Date])+3, DAY([Last Affirmed Date])))
