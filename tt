@@ -1,1 +1,3 @@
 Trim(Left([YourField], FindString(" ", [YourField])-1))
+
+LEFT([YourField], FINDSTRING([YourField], " ", 1) - 1)
