@@ -1,7 +1,1 @@
-Subject: Aparna Shetty's Potential Fit for PMO Role
-
-Dear Hiring Manager,
-
-Please find attached the resume of Aparna Shetty, a candidate who may be well-suited for the PMO role at your organization. Aparna has effectively managed client communications, streamlined orders, and overseen shipments, showcasing her proficiency in documentation, sample approval, and API exports. Her strong relationship-building skills and experience handling commissions further highlight her suitability for the position.
-
-Should you require any additional information or wish to schedule an interview, please feel free to contact me. Thank you for considering Aparna's candidacy.
+Trim(Left([YourField], FindString(" ", [YourField])-1))
