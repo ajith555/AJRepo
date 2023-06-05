@@ -1,22 +1,58 @@
-To automatically fetch Amazon affiliate offer products and post them in your WhatsApp community or announcement group, you would need to use a combination of web scraping, data processing, and automation tools. Here's a high-level overview of the process:
+Install-Module -Name ImportExcel
 
-Web Scraping:
 
-Use a web scraping tool or library like BeautifulSoup or Scrapy to scrape product information from the Amazon website.
-You can scrape the product name, price, image, description, and affiliate link.
-Data Processing:
+# Install required module if not already installed
+Install-Module -Name ImportExcel
 
-Once you have the scraped data, process and format it as per your requirements.
-Filter out the products based on specific criteria such as discounts, ratings, or categories.
-Automation:
+# Set API endpoint URL
+$apiUrl = 'your_api_url'
 
-Set up an automation tool like Python's Selenium or a headless browser like Puppeteer to automate the process of posting the products to your WhatsApp group.
-Use the automation tool to navigate to your WhatsApp web interface, log in, and access the group chat.
-Posting to WhatsApp:
+# Set API key and Cookie
+$apiKey = 'your_api_key'
+$cookie = 'your_cookie'
 
-Iterate through the processed product data.
-Use the automation tool to enter the product details, including the image, description, and affiliate link, into the WhatsApp group's chat input field.
-Send the message to the group.
-It's important to note that web scraping should be done in compliance with the website's terms of service and legal requirements. Also, make sure to follow WhatsApp's guidelines and terms of service regarding automated posting to groups.
+# Set headers
+$headers = @{
+    'x-api-key' = $apiKey
+    'Cookie' = $cookie
+}
 
-Please keep in mind that implementing the above process requires programming skills and knowledge of web scraping and automation tools. It's recommended to consult with a developer or technical expert if you're not familiar with these technologies.
+# Invoke API request and receive HTML response
+$response = Invoke-RestMethod -Uri $apiUrl -Headers $headers
+
+# Convert HTML response to a string
+$htmlData = $response.ToString()
+
+# Create an Excel workbook
+$workbook = New-Object -TypeName OfficeOpenXml.ExcelPackage
+
+# Create a worksheet within the workbook
+$worksheet = $workbook.Workbook.Worksheets.Add('TableData')
+
+# Parse HTML response using regular expressions
+$tableData = [regex]::Matches($htmlData, '<td>(.*?)</td>').Groups[1].Value
+
+# Split table data into rows
+$rows = $tableData -split '</tr>'
+
+# Remove empty rows
+$rows = $rows | Where-Object { $_ -ne '' }
+
+# Iterate through rows and split into cells
+$rowIndex = 1
+foreach ($row in $rows) {
+    $cells = $row -split '</td>'
+    $cellIndex = 1
+    foreach ($cell in $cells) {
+        $cellData = ($cell -replace '<.*?>', '').Trim()
+        $worksheet.Cells.Item($rowIndex, $cellIndex).Value = $cellData
+        $cellIndex++
+    }
+    $rowIndex++
+}
+
+# Save the Excel workbook
+$workbook.SaveAs('TableData.xlsx')
+
+# Close the workbook
+$workbook.Dispose()
