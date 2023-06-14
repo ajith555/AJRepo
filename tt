@@ -1,1 +1,1 @@
-ToString(Round([Value] * 100, 0)) + " %"
+ToString(ToInt([Value] * 100)) + " %"
