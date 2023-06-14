@@ -1,1 +1,1 @@
-Replace(ToString(ToString([Value], '#'), '[^0-9]+', '') * 100, '#', '') + ' %'
+Replace(ToString(ToInt([Value] * 100), '###'), '#', '') + ' %'
