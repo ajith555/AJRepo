@@ -1,1 +1,1 @@
-Replace([Value], ".+", "") * 100 + " %"
+ToString(Trunc([Value]) * 100) + " %"
