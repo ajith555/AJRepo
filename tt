@@ -1,20 +1,115 @@
+To accomplish the tasks you described, you'll need to install a few libraries in Python. Here's a step-by-step guide to help you achieve your goal:
+
+Step 1: Install the required libraries
+Before you start writing the code, you need to install the necessary libraries. Open your terminal or command prompt and run the following commands:
+
+```
+pip install selenium
+pip install openpyxl
+pip install Pillow
+pip install pandas
+```
+
+Step 2: Import the required modules
+In your Python file, import the required modules as follows:
+
+```python
 from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from openpyxl import load_workbook
+from PIL import Image
+import pandas as pd
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
+```
 
-# Specify the path to the downloaded ChromeDriver executable
-chrome_driver_path = '/path/to/chromedriver'
+Step 3: Set up Selenium WebDriver
+Download the appropriate version of the ChromeDriver executable and provide its path in the code below. This code sets up the Selenium WebDriver:
 
-# Configure Chrome options
-chrome_options = webdriver.ChromeOptions()
-chrome_options.add_argument('--no-sandbox')
+```python
+chrome_driver_path = 'path/to/chromedriver.exe'
+chrome_options = Options()
+chrome_options.add_argument("--headless")  # Run Chrome in headless mode (no GUI)
+driver = webdriver.Chrome(service=Service(chrome_driver_path), options=chrome_options)
+```
 
-# Create a ChromeDriver service
-service = Service(chrome_driver_path)
+Step 4: Navigate to the website and download the Excel file
+Use Selenium WebDriver to open the website, locate the download button, and click it to download the Excel file:
 
-# Create a Chrome web driver instance
-driver = webdriver.Chrome(service=service, options=chrome_options)
+```python
+website_url = 'https://example.com'  # Replace with the actual website URL
+driver.get(website_url)
 
-# Now you can use the driver to interact with the browser
-driver.get('https://www.example.com')
+# Locate and click the download button
+download_button = driver.find_element(By.XPATH, '//button[@id="download-button"]')
+download_button.click()
+```
 
-# Rest of your Selenium code...
+Step 5: Load and filter the Excel file
+Once the download is complete, load the Excel file using the `openpyxl` library, filter the "Training Completed" column for "Yes," and capture a screenshot:
+
+```python
+excel_file_path = 'path/to/downloaded/excel_file.xlsx'  # Replace with the actual file path
+workbook = load_workbook(excel_file_path)
+sheet = workbook.active
+
+# Filter the "Training Completed" column for "Yes"
+filtered_data = pd.DataFrame(sheet.values)
+filtered_data.columns = filtered_data.iloc[0]
+filtered_data = filtered_data[1:]  # Exclude header row
+filtered_data = filtered_data[filtered_data['Training Completed'] == 'Yes']
+
+# Take a screenshot of the complete Excel sheet
+screenshot_path = 'path/to/save/screenshot.png'  # Replace with the desired screenshot path
+driver.save_screenshot(screenshot_path)
+```
+
+Step 6: Extract values and send the email
+Extract the values from the "HRi GPN" column, create an email with the extracted values in the TO list, and attach the screenshot:
+
+```python
+to_list = filtered_data['HRi GPN'].tolist()
+
+# Compose the email
+email_subject = 'Reminder: Complete Your Mandatory Training'
+email_body = 'Hi guys, I see you haven\'t completed your mandatory training. Please complete it.'
+email_sender = 'your_email@example.com'  # Replace with the sender's email address
+email_password = 'your_email_password'  # Replace with the sender's email password
+smtp_server = 'smtp.example.com'  # Replace with the SMTP server details
+
+msg = MIMEMultipart()
+msg['From'] = email_sender
+msg['To'] = ', '.join(to_list)
+msg['Subject'] = email_subject
+
+msg.attach(M
+
+IMEText(email_body, 'plain'))
+
+# Attach the screenshot to the email
+with open(screenshot_path, 'rb') as img_file:
+    img = MIMEImage(img_file.read())
+    img.add_header('Content-Disposition', 'attachment', filename='screenshot.png')
+    msg.attach(img)
+
+# Set up the SMTP server and send the email
+server = smtplib.SMTP(smtp_server)
+server.starttls()
+server.login(email_sender, email_password)
+server.send_message(msg)
+server.quit()
+```
+
+Step 7: Display the email for manual sending
+To display the composed email, you can print it out:
+
+```python
+print(msg)
+```
+
+You can run the above code in PyCharm or any Python IDE to execute the desired actions. Make sure to replace the placeholder values (e.g., file paths, URLs, email addresses, etc.) with the actual values specific to your use case.
