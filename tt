@@ -1,6 +1,16 @@
-while not os.path.exists(xls_file_path):
-    time.sleep(1) 
+# Specify the directory path
+directory_path = "path/to/directory"
 
+# Get a list of all files in the directory
+files = os.listdir(directory_path)
+
+# Iterate over the files and delete those that start with "xyz"
+for file in files:
+    if file.startswith("xyz"):
+        file_path = os.path.join(directory_path, file)
+        os.remove(file_path)
+
+print("Deletion completed successfully.")
 
 
 
