@@ -1,6 +1,6 @@
-wait = WebDriverWait(driver, 10)
-element = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "your_class_name")))
-
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 
 To accomplish the tasks you described, you'll need to install a few libraries in Python. Here's a step-by-step guide to help you achieve your goal:
