@@ -1,8 +1,5 @@
-image_element = driver.find_element_by_xpath("//img[@src='image_url']")
-
-# Click on the image
-image_element.click()
-
+wait = WebDriverWait(driver, 10)
+element = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "your_class_name")))
 
 
 
