@@ -1,16 +1,23 @@
-# Specify the directory path
-directory_path = "path/to/directory"
+import pandas as pd
+from openpyxl import load_workbook
+import pyautogui
 
-# Get a list of all files in the directory
-files = os.listdir(directory_path)
+# Specify the path to the Excel file in the downloads folder
+downloads_folder = "path/to/your/downloads"
+excel_file_name = "file.xlsx"
+excel_file_path = f"{downloads_folder}/{excel_file_name}"
 
-# Iterate over the files and delete those that start with "xyz"
-for file in files:
-    if file.startswith("xyz"):
-        file_path = os.path.join(directory_path, file)
-        os.remove(file_path)
+# Read the Excel file using pandas, considering the third row as headers
+dataframe = pd.read_excel(excel_file_path, header=2)
 
-print("Deletion completed successfully.")
+# Filter the dataframe based on "Training Completion" column value
+filtered_dataframe = dataframe[dataframe["Training Completion"] == "Yes"]
+
+# Take a screenshot of the filtered dataframe
+screenshot_path = f"{downloads_folder}/screenshot.png"
+pyautogui.screenshot(screenshot_path)
+
+print("Screenshot taken successfully.")
 
 
 
