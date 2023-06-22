@@ -1,5 +1,31 @@
-submit_button = modal.find_element(By.CLASS_NAME, "uwr-modal-submit")
+from selenium import webdriver
+
+# Instantiate the webdriver
+driver = webdriver.Chrome()
+
+# Navigate to the webpage with the modal
+driver.get("https://example.com")
+
+# Click on the element to open the modal
+element = driver.find_element_by_xpath("//button[@class='your-class']")
+element.click()
+
+# Switch to the modal
+modal = driver.find_element_by_css_selector(".modal-class")
+
+# Find and interact with elements inside the modal using sub-classes
+submit_button = modal.find_element_by_css_selector(".uwr-modal-submit")
 submit_button.click()
+
+# Close the modal
+close_button = modal.find_element_by_css_selector(".uwr-modal-close")
+close_button.click()
+
+# Close the browser
+driver.quit()
+
+
+
 
 
 To accomplish the tasks you described, you'll need to install a few libraries in Python. Here's a step-by-step guide to help you achieve your goal:
