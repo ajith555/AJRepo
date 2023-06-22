@@ -1,23 +1,5 @@
-import pandas as pd
-import os
-
-# Specify the path to the XLS file
-xls_file_path = "path/to/your/downloads/file.xls"
-
-# Read the XLS file using pandas
-dataframe = pd.read_excel(xls_file_path)
-
-# Extract the file name and extension
-file_name, file_extension = os.path.splitext(xls_file_path)
-
-# Generate the output XLSX file path
-xlsx_file_path = f"{file_name}.xlsx"
-
-# Convert and save the dataframe as XLSX
-dataframe.to_excel(xlsx_file_path, index=False)
-
-print("Conversion completed successfully.")
-
+while not os.path.exists(xls_file_path):
+    time.sleep(1) 
 
 
 
