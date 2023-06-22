@@ -1,28 +1,22 @@
-from selenium import webdriver
+import pandas as pd
+import os
 
-# Instantiate the webdriver
-driver = webdriver.Chrome()
+# Specify the path to the XLS file
+xls_file_path = "path/to/your/downloads/file.xls"
 
-# Navigate to the webpage with the modal
-driver.get("https://example.com")
+# Read the XLS file using pandas
+dataframe = pd.read_excel(xls_file_path)
 
-# Click on the element to open the modal
-element = driver.find_element_by_xpath("//button[@class='your-class']")
-element.click()
+# Extract the file name and extension
+file_name, file_extension = os.path.splitext(xls_file_path)
 
-# Switch to the modal
-modal = driver.find_element_by_css_selector(".modal-class")
+# Generate the output XLSX file path
+xlsx_file_path = f"{file_name}.xlsx"
 
-# Find and interact with elements inside the modal using sub-classes
-submit_button = modal.find_element_by_css_selector(".uwr-modal-submit")
-submit_button.click()
+# Convert and save the dataframe as XLSX
+dataframe.to_excel(xlsx_file_path, index=False)
 
-# Close the modal
-close_button = modal.find_element_by_css_selector(".uwr-modal-close")
-close_button.click()
-
-# Close the browser
-driver.quit()
+print("Conversion completed successfully.")
 
 
 
