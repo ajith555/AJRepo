@@ -1,23 +1,28 @@
-import pandas as pd
-from openpyxl import load_workbook
 import pyautogui
 
-# Specify the path to the Excel file in the downloads folder
-downloads_folder = "path/to/your/downloads"
-excel_file_name = "file.xlsx"
-excel_file_path = f"{downloads_folder}/{excel_file_name}"
+def take_screenshot(x, y, width, height):
+    # Get the coordinates of the window
+    window_coordinates = pyautogui.getWindowsWithTitle("Window Title")[0].left, pyautogui.getWindowsWithTitle("Window Title")[0].top
+    
+    # Calculate the coordinates of the specified area within the window
+    area_coordinates = (window_coordinates[0] + x, window_coordinates[1] + y, width, height)
+    
+    # Take the screenshot
+    screenshot = pyautogui.screenshot(region=area_coordinates)
+    
+    # Save the screenshot to a file
+    screenshot.save("screenshot.png")
 
-# Read the Excel file using pandas, considering the third row as headers
-dataframe = pd.read_excel(excel_file_path, header=2)
+# Specify the coordinates and size of the area you want to capture
+x = 100  # x-coordinate of the top-left corner of the area
+y = 100  # y-coordinate of the top-left corner of the area
+width = 500  # width of the area
+height = 300  # height of the area
 
-# Filter the dataframe based on "Training Completion" column value
-filtered_dataframe = dataframe[dataframe["Training Completion"] == "Yes"]
+# Call the function to take the screenshot
+take_screenshot(x, y, width, height)
 
-# Take a screenshot of the filtered dataframe
-screenshot_path = f"{downloads_folder}/screenshot.png"
-pyautogui.screenshot(screenshot_path)
 
-print("Screenshot taken successfully.")
 
 
 
