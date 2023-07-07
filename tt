@@ -1,18 +1,64 @@
 import os
 import zipfile
+import requests
+from urllib.parse import quote
 
-file_path = 'path/to/file.zip'
+# Set the parameters
+subject = 'abc'
 save_location = 'path/to/save/location/'
 
-# Check if the file is zipped
-if file_path.endswith('.zip'):
-    # Create the save location path if it doesn't exist
-    os.makedirs(save_location, exist_ok=True)
+# Authenticate and get access token
+client_id = 'YOUR_CLIENT_ID'
+client_secret = 'YOUR_CLIENT_SECRET'
+tenant_id = 'YOUR_TENANT_ID'
+token_url = f'https://login.microsoftonline.com/{tenant_id}/oauth2/token'
+scope = 'https://graph.microsoft.com/.default'
+grant_type = 'client_credentials'
+data = {
+    'client_id': client_id,
+    'client_secret': client_secret,
+    'grant_type': grant_type,
+    'scope': scope
+}
+response = requests.post(token_url, data=data)
+access_token = response.json()['access_token']
 
-    # Extract the contents of the zip file
-    with zipfile.ZipFile(file_path, 'r') as zip_ref:
-        zip_ref.extractall(save_location)
+# Search for email with the specified subject
+search_url = 'https://graph.microsoft.com/v1.0/me/messages?$search='
+query = f'subject:{quote(subject)}'
+headers = {
+    'Authorization': f'Bearer {access_token}',
+    'Accept': 'application/json'
+}
+response = requests.get(search_url + query, headers=headers)
+email_data = response.json()
 
-    print('File unzipped successfully.')
+# Check if email with subject "abc" is found
+if 'value' in email_data and len(email_data['value']) > 0:
+    email = email_data['value'][0]
+
+    # Check if there are attachments
+    if 'attachments' in email:
+        attachments = email['attachments']
+        for attachment in attachments:
+            attachment_name = attachment['name']
+            attachment_url = attachment['@odata.mediaEditLink']
+
+            # Download the attachment
+            response = requests.get(attachment_url, headers=headers)
+            attachment_path = os.path.join(save_location, attachment_name)
+            with open(attachment_path, 'wb') as file:
+                file.write(response.content)
+
+            # Check if the file is zipped and unzip it
+            if attachment_path.endswith('.zip'):
+                unzip_location = save_location
+                with zipfile.ZipFile(attachment_path, 'r') as zip_ref:
+                    zip_ref.extractall(unzip_location)
+
+            print(f'Attachment "{attachment_name}" saved and unzipped (if applicable).')
+
+    else:
+        print('No attachments found in the email.')
 else:
-    print('File is not in zip format.')
+    print(f'No email with subject "{subject}" found.')
