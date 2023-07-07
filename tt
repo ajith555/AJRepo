@@ -1,26 +1,31 @@
 import os
 import zipfile
-from pymsgbox import MessageBox
+from msg_extractor import MsgExtractor
+from pymsgauth import authenticate_outlook
 
-# Set the folder location containing email files
-folder_location = 'path/to/emails/'
+# Set the folder location containing shared Outlook files
+folder_location = 'path/to/shared/folder/'
 
 # Set the save location for attachments
 save_location = 'path/to/save/location/'
 
-# Iterate over the files in the folder
-for filename in os.listdir(folder_location):
-    file_path = os.path.join(folder_location, filename)
+# Authenticate and access the shared Outlook folder
+folder = authenticate_outlook(folder_location)
 
-    # Check if the file is an .msg file and the subject matches 'abcd'
-    if filename.endswith('.msg') and filename.split('.')[0] == 'abcd':
-        # Extract attachments from the .msg file
-        attachments = MessageBox(file_path).attachments
+# Iterate over the Outlook files in the folder
+for outlook_file in folder:
+    file_path = os.path.join(folder_location, outlook_file)
+
+    # Check if the file is an Outlook file and the subject matches 'abcd'
+    if outlook_file.endswith('.msg') and folder[outlook_file].subject == 'abcd':
+        # Extract attachments from the Outlook file
+        msg = MsgExtractor(file_path)
+        attachments = msg.get_attachment_data()
 
         # Process each attachment
         for attachment in attachments:
-            attachment_name = attachment.filename
-            attachment_data = attachment.data
+            attachment_name = attachment['filename']
+            attachment_data = attachment['data']
 
             # Save the attachment to a file
             attachment_path = os.path.join(save_location, attachment_name)
