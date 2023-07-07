@@ -1,38 +1,40 @@
 import os
 import zipfile
 
-# Set the file location containing emails
-file_location = 'path/to/emails.txt'
+# Access the input data from the Email tool
+input_data = Alteryx.read("#1")
 
-# Set the save location for attachments
-save_location = 'path/to/save/location/'
-
-# Read the emails from the file location
-with open(file_location, 'r') as file:
-    emails = file.read().splitlines()
-
-# Process each email
-for email in emails:
-    # Assuming each line contains email subject and attachment information separated by a delimiter
-    subject, attachment_name, attachment_path = email.split('|')
+# Iterate over each email record
+for row in input_data:
+    subject = row['Subject']
+    attachments = row['Attachments']
 
     # Check if the subject matches 'abcd'
     if subject == 'abcd':
-        # Check if the attachment is a zip file and unzip it
-        if attachment_path.endswith('.zip'):
-            unzip_location = os.path.join(save_location, attachment_name.split('.')[0])
-            os.makedirs(unzip_location, exist_ok=True)  # Create the unzip location path if it doesn't exist
-            with zipfile.ZipFile(attachment_path, 'r') as zip_ref:
-                zip_ref.extractall(unzip_location)
+        # Iterate over each attachment
+        for attachment in attachments:
+            attachment_name = attachment['Name']
+            attachment_data = attachment['Data']
 
-            print(f"Unzipped attachment: {attachment_name}")
-        else:
-            print(f"Attachment is not a zip file: {attachment_name}")
+            # Save the attachment to a temporary file
+            temp_path = os.path.join(os.environ['TEMP'], attachment_name)
+            with open(temp_path, 'wb') as file:
+                file.write(attachment_data)
 
-        # Move the attachment to the final save location
-        os.makedirs(save_location, exist_ok=True)  # Create the save location path if it doesn't exist
-        final_path = os.path.join(save_location, attachment_name)
-        os.rename(attachment_path, final_path)
+            # Check if the attachment is a zip file and unzip it
+            if temp_path.endswith('.zip'):
+                unzip_location = 'path/to/save/location/'  # Specify the desired location
+                os.makedirs(unzip_location, exist_ok=True)  # Create the save location path if it doesn't exist
+                with zipfile.ZipFile(temp_path, 'r') as zip_ref:
+                    zip_ref.extractall(unzip_location)
 
-        print(f"Saved attachment: {attachment_name}")
+            # Move the attachment to the final save location
+            save_location = 'path/to/save/location/'  # Specify the desired location
+            os.makedirs(save_location, exist_ok=True)  # Create the save location path if it doesn't exist
+            final_path = os.path.join(save_location, attachment_name)
+            os.rename(temp_path, final_path)
 
+            print(f"Saved attachment: {attachment_name}")
+
+# Output the processed data
+Alteryx.write(input_data, "#2")
