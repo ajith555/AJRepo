@@ -1,12 +1,41 @@
-import glob
+import os
+import zipfile
+from msg_extractor import MsgExtractor
 
 # Set the folder location containing the Outlook email files
 folder_location = 'path/to/email/folder/'
+
+# Set the save location for the attachments
+save_location = 'path/to/save/location/'
 
 # Search for Outlook email files with the extension '.msg' in the folder
 email_files = glob.glob(os.path.join(folder_location, '*.msg'))
 
 # Iterate over the email files
 for email_file in email_files:
-    # Process each email file as needed
-    print(f"Found email file: {email_file}")
+    # Process each email file
+    msg = MsgExtractor(email_file)
+    attachments = msg.get_attachment_data()
+
+    # Process each attachment
+    for attachment in attachments:
+        attachment_name = attachment['filename']
+        attachment_data = attachment['data']
+
+        # Save the attachment to a file
+        attachment_path = os.path.join(save_location, attachment_name)
+        with open(attachment_path, 'wb') as file:
+            file.write(attachment_data)
+
+        print(f"Downloaded attachment: {attachment_name}")
+
+        # Check if the attachment is a zip file and unzip it
+        if attachment_path.endswith('.zip'):
+            unzip_location = os.path.join(save_location, os.path.splitext(attachment_name)[0])
+            os.makedirs(unzip_location, exist_ok=True)
+            with zipfile.ZipFile(attachment_path, 'r') as zip_ref:
+                zip_ref.extractall(unzip_location)
+
+            print(f"Unzipped attachment: {attachment_name}")
+
+    print(f"Processed email file: {email_file}")
