@@ -1,42 +1,34 @@
 import os
 import zipfile
-from extract_msg import extract_msg
+from win32com.client import Dispatch
 
 # Function to extract attachments from email
-def extract_attachments(msg_file, output_dir):
-    msg = extract_msg.Message(msg_file)
-    for attachment in msg.attachments:
-        attachment.save(customPath=output_dir)
+def extract_attachments(msg, output_dir):
+    attachments = msg.Attachments
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
-# Function to unzip a file
-def unzip_file(file_path, output_dir):
-    with zipfile.ZipFile(file_path, 'r') as zip_ref:
-        zip_ref.extractall(output_dir)
+    for attachment in attachments:
+        attachment_path = os.path.join(output_dir, attachment.FileName)
+        attachment.SaveAsFile(attachment_path)
 
-# Email details
-email_folder = "path_to_email_folder"  # Replace with the actual folder path
-subject = "abc"
+        # Check if it's a zip file and unzip if necessary
+        if attachment_path.endswith(".zip"):
+            unzip_dir = "path_to_unzip_folder"  # Replace with the desired unzip folder path
+            if not os.path.exists(unzip_dir):
+                os.makedirs(unzip_dir)
+            
+            with zipfile.ZipFile(attachment_path, 'r') as zip_ref:
+                zip_ref.extractall(unzip_dir)
 
-# Iterate through the emails in the folder
-for email_file in os.listdir(email_folder):
-    email_path = os.path.join(email_folder, email_file)
+# Outlook file details
+outlook_file = "path_to_outlook_file"  # Replace with the actual path to the Outlook file
+attachment_dir = "path_to_attachments_folder"  # Replace with the desired attachments folder path
 
-    # Check if the file is an email file
-    if email_file.endswith(".msg"):
-        # Check if the email subject matches
-        if extract_msg.make_msgid(email_path).subject == subject:
-            # Download and process attachments
-            attachments_dir = "path_to_attachments_folder"  # Replace with the desired attachments folder path
-            if not os.path.exists(attachments_dir):
-                os.makedirs(attachments_dir)
+# Open Outlook and access the file
+outlook = Dispatch("Outlook.Application")
+namespace = outlook.GetNamespace("MAPI")
+msg = namespace.OpenSharedItem(outlook_file)
 
-            extract_attachments(email_path, attachments_dir)
-
-            # Check if it's a zip file and unzip if necessary
-            for attachment_file in os.listdir(attachments_dir):
-                attachment_path = os.path.join(attachments_dir, attachment_file)
-                if attachment_path.endswith(".zip"):
-                    unzip_dir = "path_to_unzip_folder"  # Replace with the desired unzip folder path
-                    if not os.path.exists(unzip_dir):
-                        os.makedirs(unzip_dir)
-                    unzip_file(attachment_path, unzip_dir)
+# Extract attachments
+extract_attachments(msg, attachment_dir)
