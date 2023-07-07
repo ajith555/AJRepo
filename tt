@@ -1,10 +1,10 @@
 import os
 import zipfile
-from msgreader import MSGReader
+from msgpy import MsgReader
 
 # Function to extract attachments from email
 def extract_attachments(attachment, output_dir):
-    file_path = os.path.join(output_dir, attachment.longFilename or attachment.shortFilename)
+    file_path = os.path.join(output_dir, attachment.filename)
     with open(file_path, "wb") as f:
         f.write(attachment.data)
     return file_path
@@ -25,7 +25,7 @@ for email_file in os.listdir(email_folder):
     # Check if the file is an email file
     if email_file.endswith(".msg"):
         # Read the email
-        msg = MSGReader(email_path)
+        msg = MsgReader(email_path)
 
         # Check if the email subject matches
         if msg.subject == subject:
