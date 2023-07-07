@@ -1,5 +1,6 @@
 import os
 import zipfile
+from msg2pdf import msg2pdf
 
 # Set the folder location containing email files
 folder_location = 'path/to/emails/'
@@ -11,34 +12,42 @@ save_location = 'path/to/save/location/'
 for filename in os.listdir(folder_location):
     file_path = os.path.join(folder_location, filename)
 
-    # Check if the file is a text file and the subject matches 'abcd'
-    if filename.endswith('.txt') and filename.split('.')[0] == 'abcd':
-        # Read the email information from the file
-        with open(file_path, 'r') as file:
-            lines = file.readlines()
+    # Check if the file is an .msg file and the subject matches 'abcd'
+    if filename.endswith('.msg') and filename.split('.')[0] == 'abcd':
+        # Convert .msg file to .pdf
+        pdf_file = file_path + '.pdf'
+        msg2pdf(file_path, pdf_file)
 
-        # Process each line
-        for line in lines:
-            attachment_path = line.strip()
+        # Extract attachments from the converted .pdf file
+        with open(pdf_file, 'rb') as pdf:
+            pdf_content = pdf.read()
+            attachment_dir = os.path.join(save_location, filename.split('.')[0])
+            os.makedirs(attachment_dir, exist_ok=True)
+            attachments = msg2pdf.get_attachments(pdf_content)
 
-            # Check if the attachment exists and is a file
-            if os.path.isfile(attachment_path):
+            # Process each attachment
+            for attachment in attachments:
+                attachment_name = attachment['filename']
+                attachment_data = attachment['data']
+
+                # Save the attachment to a file
+                attachment_path = os.path.join(attachment_dir, attachment_name)
+                with open(attachment_path, 'wb') as file:
+                    file.write(attachment_data)
+
                 # Check if the attachment is a zip file and unzip it
                 if attachment_path.endswith('.zip'):
-                    unzip_location = os.path.join(save_location, os.path.splitext(os.path.basename(attachment_path))[0])
-                    os.makedirs(unzip_location, exist_ok=True)  # Create the unzip location path if it doesn't exist
+                    unzip_location = os.path.join(attachment_dir, os.path.splitext(attachment_name)[0])
+                    os.makedirs(unzip_location, exist_ok=True)
                     with zipfile.ZipFile(attachment_path, 'r') as zip_ref:
                         zip_ref.extractall(unzip_location)
 
-                    print(f"Unzipped attachment: {attachment_path}")
+                    print(f"Unzipped attachment: {attachment_name}")
                 else:
-                    print(f"Attachment is not a zip file: {attachment_path}")
+                    print(f"Attachment is not a zip file: {attachment_name}")
 
-                # Move the attachment to the final save location
-                os.makedirs(save_location, exist_ok=True)  # Create the save location path if it doesn't exist
-                final_path = os.path.join(save_location, os.path.basename(attachment_path))
-                os.rename(attachment_path, final_path)
+                print(f"Saved attachment: {attachment_name}")
 
-                print(f"Saved attachment: {final_path}")
-                break  # Exit the loop after processing one attachment
+        # Remove the temporary .pdf file
+        os.remove(pdf_file)
         break  # Exit the loop after processing one email
