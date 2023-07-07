@@ -4,10 +4,10 @@ from win32com.client import Dispatch
 
 # Function to extract attachments from email
 def extract_attachments(msg, output_dir):
-    attachments = msg.Attachments
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
+    attachments = msg.Attachments
     for attachment in attachments:
         attachment_path = os.path.join(output_dir, attachment.FileName)
         attachment.SaveAsFile(attachment_path)
@@ -17,7 +17,7 @@ def extract_attachments(msg, output_dir):
             unzip_dir = "path_to_unzip_folder"  # Replace with the desired unzip folder path
             if not os.path.exists(unzip_dir):
                 os.makedirs(unzip_dir)
-            
+
             with zipfile.ZipFile(attachment_path, 'r') as zip_ref:
                 zip_ref.extractall(unzip_dir)
 
