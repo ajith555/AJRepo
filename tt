@@ -1,4 +1,5 @@
 import os
+import zipfile
 from win32com.client import Dispatch
 
 # Function to extract attachments from email
@@ -10,6 +11,15 @@ def extract_attachments(msg, output_dir):
     for attachment in attachments:
         attachment_path = os.path.join(output_dir, attachment.FileName)
         attachment.SaveAsFile(attachment_path)
+
+        # Check if it's a zip file and unzip if necessary
+        if attachment_path.endswith(".zip"):
+            unzip_dir = "path_to_unzip_folder"  # Replace with the desired unzip folder path
+            if not os.path.exists(unzip_dir):
+                os.makedirs(unzip_dir)
+
+            with zipfile.ZipFile(attachment_path, 'r') as zip_ref:
+                zip_ref.extractall(unzip_dir)
 
 # Outlook file details
 folder_path = "path_to_folder"  # Replace with the actual folder path containing the .msg files
