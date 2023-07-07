@@ -11,38 +11,34 @@ save_location = 'path/to/save/location/'
 for filename in os.listdir(folder_location):
     file_path = os.path.join(folder_location, filename)
 
-    # Read the email information from the file
-    with open(file_path, 'rb') as file:
-        lines = file.read().decode('latin-1').splitlines()
+    # Check if the file is a text file and the subject matches 'abcd'
+    if filename.endswith('.txt') and filename.split('.')[0] == 'abcd':
+        # Read the email information from the file
+        with open(file_path, 'r') as file:
+            lines = file.readlines()
 
-    # Process each line
-    for line in lines:
-        email_info = line.split('|')
+        # Process each line
+        for line in lines:
+            attachment_path = line.strip()
 
-        # Check if the email information contains the expected number of elements
-        if len(email_info) != 3:
-            print(f"Skipping invalid line: {line}")
-            continue
+            # Check if the attachment exists and is a file
+            if os.path.isfile(attachment_path):
+                # Check if the attachment is a zip file and unzip it
+                if attachment_path.endswith('.zip'):
+                    unzip_location = os.path.join(save_location, os.path.splitext(os.path.basename(attachment_path))[0])
+                    os.makedirs(unzip_location, exist_ok=True)  # Create the unzip location path if it doesn't exist
+                    with zipfile.ZipFile(attachment_path, 'r') as zip_ref:
+                        zip_ref.extractall(unzip_location)
 
-        subject, attachment_name, attachment_path = email_info
+                    print(f"Unzipped attachment: {attachment_path}")
+                else:
+                    print(f"Attachment is not a zip file: {attachment_path}")
 
-        # Check if the subject matches 'abcd'
-        if subject == 'abcd':
-            # Check if the attachment is a zip file and unzip it
-            if attachment_path.endswith('.zip'):
-                unzip_location = os.path.join(save_location, attachment_name.split('.')[0])
-                os.makedirs(unzip_location, exist_ok=True)  # Create the unzip location path if it doesn't exist
-                with zipfile.ZipFile(attachment_path, 'r') as zip_ref:
-                    zip_ref.extractall(unzip_location)
+                # Move the attachment to the final save location
+                os.makedirs(save_location, exist_ok=True)  # Create the save location path if it doesn't exist
+                final_path = os.path.join(save_location, os.path.basename(attachment_path))
+                os.rename(attachment_path, final_path)
 
-                print(f"Unzipped attachment: {attachment_name}")
-            else:
-                print(f"Attachment is not a zip file: {attachment_name}")
-
-            # Move the attachment to the final save location
-            os.makedirs(save_location, exist_ok=True)  # Create the save location path if it doesn't exist
-            final_path = os.path.join(save_location, attachment_name)
-            os.rename(attachment_path, final_path)
-
-            print(f"Saved attachment: {attachment_name}")
-            break  # Exit the loop after processing one email
+                print(f"Saved attachment: {final_path}")
+                break  # Exit the loop after processing one attachment
+        break  # Exit the loop after processing one email
