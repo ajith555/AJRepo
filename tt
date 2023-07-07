@@ -10,14 +10,14 @@ save_location = 'path/to/save/location/'
 # Iterate over the files in the folder
 for filename in os.listdir(folder_location):
     file_path = os.path.join(folder_location, filename)
-    
+
     # Read the email information from the file
     with open(file_path, 'r') as file:
         email_info = file.read().split('|')
-        
+
     # Assuming each line in the file contains email subject and attachment information separated by a delimiter
     subject, attachment_name, attachment_path = email_info
-    
+
     # Check if the subject matches 'abcd'
     if subject == 'abcd':
         # Check if the attachment is a zip file and unzip it
@@ -37,3 +37,4 @@ for filename in os.listdir(folder_location):
         os.rename(attachment_path, final_path)
 
         print(f"Saved attachment: {attachment_name}")
+        break  # Exit the loop after processing one email
