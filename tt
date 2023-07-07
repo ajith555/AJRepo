@@ -1,41 +1,46 @@
 import os
 import zipfile
-from msg_extractor import MsgExtractor
+from msgreader import MSGReader
 
-# Set the folder location containing the Outlook email files
-folder_location = 'path/to/email/folder/'
+# Function to extract attachments from email
+def extract_attachments(attachment, output_dir):
+    file_path = os.path.join(output_dir, attachment.longFilename or attachment.shortFilename)
+    with open(file_path, "wb") as f:
+        f.write(attachment.data)
+    return file_path
 
-# Set the save location for the attachments
-save_location = 'path/to/save/location/'
+# Function to unzip a file
+def unzip_file(file_path, output_dir):
+    with zipfile.ZipFile(file_path, 'r') as zip_ref:
+        zip_ref.extractall(output_dir)
 
-# Search for Outlook email files with the extension '.msg' in the folder
-email_files = glob.glob(os.path.join(folder_location, '*.msg'))
+# Email details
+email_folder = "path_to_email_folder"  # Replace with the actual folder path
+subject = "abc"
 
-# Iterate over the email files
-for email_file in email_files:
-    # Process each email file
-    msg = MsgExtractor(email_file)
-    attachments = msg.get_attachment_data()
+# Iterate through the emails in the folder
+for email_file in os.listdir(email_folder):
+    email_path = os.path.join(email_folder, email_file)
 
-    # Process each attachment
-    for attachment in attachments:
-        attachment_name = attachment['filename']
-        attachment_data = attachment['data']
+    # Check if the file is an email file
+    if email_file.endswith(".msg"):
+        # Read the email
+        msg = MSGReader(email_path)
 
-        # Save the attachment to a file
-        attachment_path = os.path.join(save_location, attachment_name)
-        with open(attachment_path, 'wb') as file:
-            file.write(attachment_data)
+        # Check if the email subject matches
+        if msg.subject == subject:
+            # Download and process attachments
+            attachments_dir = "path_to_attachments_folder"  # Replace with the desired attachments folder path
+            if not os.path.exists(attachments_dir):
+                os.makedirs(attachments_dir)
 
-        print(f"Downloaded attachment: {attachment_name}")
+            for attachment in msg.attachments:
+                attachment_path = extract_attachments(attachment, attachments_dir)
 
-        # Check if the attachment is a zip file and unzip it
-        if attachment_path.endswith('.zip'):
-            unzip_location = os.path.join(save_location, os.path.splitext(attachment_name)[0])
-            os.makedirs(unzip_location, exist_ok=True)
-            with zipfile.ZipFile(attachment_path, 'r') as zip_ref:
-                zip_ref.extractall(unzip_location)
+                # Check if it's a zip file and unzip if necessary
+                if attachment_path and attachment_path.endswith(".zip"):
+                    unzip_dir = "path_to_unzip_folder"  # Replace with the desired unzip folder path
+                    if not os.path.exists(unzip_dir):
+                        os.makedirs(unzip_dir)
 
-            print(f"Unzipped attachment: {attachment_name}")
-
-    print(f"Processed email file: {email_file}")
+                    unzip_file(attachment_path, unzip_dir)
