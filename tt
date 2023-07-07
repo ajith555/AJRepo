@@ -1,6 +1,6 @@
 import os
 import zipfile
-from extract_msg import extract_msg
+from pymsgbox import MessageBox
 
 # Set the folder location containing email files
 folder_location = 'path/to/emails/'
@@ -15,11 +15,11 @@ for filename in os.listdir(folder_location):
     # Check if the file is an .msg file and the subject matches 'abcd'
     if filename.endswith('.msg') and filename.split('.')[0] == 'abcd':
         # Extract attachments from the .msg file
-        msg = extract_msg.Message(file_path)
+        attachments = MessageBox(file_path).attachments
 
         # Process each attachment
-        for attachment in msg.attachments:
-            attachment_name = attachment.longFilename
+        for attachment in attachments:
+            attachment_name = attachment.filename
             attachment_data = attachment.data
 
             # Save the attachment to a file
