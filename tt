@@ -1,6 +1,6 @@
 import os
 import zipfile
-from extract_msg import Message
+from extract_msg import extract_msg
 
 # Set the folder location containing email files
 folder_location = 'path/to/emails/'
@@ -15,11 +15,10 @@ for filename in os.listdir(folder_location):
     # Check if the file is an .msg file and the subject matches 'abcd'
     if filename.endswith('.msg') and filename.split('.')[0] == 'abcd':
         # Extract attachments from the .msg file
-        msg = Message(file_path)
-        attachments = msg.attachments
+        msg = extract_msg.Message(file_path)
 
         # Process each attachment
-        for attachment in attachments:
+        for attachment in msg.attachments:
             attachment_name = attachment.longFilename
             attachment_data = attachment.data
 
