@@ -1,8 +1,7 @@
 import win32com.client
 import os
-import zipfile
 
-def read_emails_from_outlook(folder_path, subject):
+def download_emails_from_outlook(folder_path, output_folder):
     outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
     inbox = outlook.GetDefaultFolder(6)  # 6 corresponds to the Inbox folder
     target_folder = inbox.Folders.Item(folder_path)
@@ -10,51 +9,18 @@ def read_emails_from_outlook(folder_path, subject):
     items = target_folder.Items
     items.Sort("[ReceivedTime]", True)  # Sort items by ReceivedTime in descending order
 
-    emails = []
     for item in items:
-        if item.Subject == subject:
-            email = {
-                'To': item.To,
-                'From': item.SenderEmailAddress,
-                'Subject': item.Subject,
-                'Attachments': item.Attachments
-            }
-            emails.append(email)
-
-    return emails
-
-def download_attachments(email, output_folder):
-    attachments = email['Attachments']
-    if attachments.Count > 0:
-        for attachment in attachments:
-            attachment_path = os.path.join(output_folder, attachment.FileName)
-            attachment.SaveAsFile(attachment_path)
-
-def unzip_attachments(attachment_folder, output_folder):
-    for file_name in os.listdir(attachment_folder):
-        file_path = os.path.join(attachment_folder, file_name)
-        if file_name.endswith('.zip'):
-            with zipfile.ZipFile(file_path, 'r') as zip_ref:
-                zip_ref.extractall(output_folder)
-
-def create_folder_path(folder_path):
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
+        attachments = item.Attachments
+        if attachments.Count > 0:
+            for attachment in attachments:
+                attachment_path = os.path.join(output_folder, attachment.FileName)
+                attachment.SaveAsFile(attachment_path)
 
 def main():
-    folder_path = 'Your Folder Path'
-    subject = 'Your Subject'
-    attachment_folder = 'Path to save attachments'
-    unzip_folder = 'Path to save unzipped files'
+    folder_path = 'Your Folder Path'  # Replace with the actual folder path in Outlook
+    output_folder = r'\\shared\drive\folder'  # Replace with the shared drive folder path
 
-    emails = read_emails_from_outlook(folder_path, subject)
-
-    for email in emails:
-        download_attachments(email, attachment_folder)
-        unzip_attachments(attachment_folder, unzip_folder)
-
-    create_folder_path(attachment_folder)
-    create_folder_path(unzip_folder)
+    download_emails_from_outlook(folder_path, output_folder)
 
 if __name__ == '__main__':
     main()
