@@ -1,40 +1,44 @@
-import os
-import zipfile
-from win32com.client import Dispatch
+Option Explicit
 
-# Function to extract attachments from email
-def extract_attachments(msg, output_dir):
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+Dim objOutlook, objNamespace, objFolder, objItems, objAttachment, objFSO
+Dim strFolderPath, strOutputFolder, strAttachmentPath
 
-    attachments = msg.Attachments
-    for attachment in attachments:
-        attachment_path = os.path.join(output_dir, attachment.FileName)
-        attachment.SaveAsFile(attachment_path)
+' Outlook Folder Path
+strFolderPath = "Your Folder Path" ' Replace with the actual folder path in Outlook
 
-        # Check if it's a zip file and unzip if necessary
-        if attachment_path.endswith(".zip"):
-            unzip_dir = "path_to_unzip_folder"  # Replace with the desired unzip folder path
-            if not os.path.exists(unzip_dir):
-                os.makedirs(unzip_dir)
+' Output Folder Path
+strOutputFolder = "Path to save attachments" ' Replace with the desired output folder path
 
-            with zipfile.ZipFile(attachment_path, 'r') as zip_ref:
-                zip_ref.extractall(unzip_dir)
+' Create Outlook Application Object
+Set objOutlook = CreateObject("Outlook.Application")
+Set objNamespace = objOutlook.GetNamespace("MAPI")
 
-# Outlook file details
-folder_path = "path_to_folder"  # Replace with the actual folder path containing the .msg files
-attachment_dir = "path_to_attachments_folder"  # Replace with the desired attachments folder path
+' Get the Outlook Folder
+Set objFolder = objNamespace.GetDefaultFolder(6).Folders(strFolderPath) ' 6 corresponds to the Inbox folder
 
-# Iterate through the files in the folder
-for file_name in os.listdir(folder_path):
-    file_path = os.path.join(folder_path, file_name)
+' Loop through the Items in the Folder
+For Each objItems In objFolder.Items
+    If objItems.Attachments.Count > 0 Then
+        ' Loop through Attachments in the Email
+        For Each objAttachment In objItems.Attachments
+            ' Save Attachment to Output Folder
+            strAttachmentPath = strOutputFolder & "\" & objAttachment.FileName
+            objAttachment.SaveAsFile strAttachmentPath
+        Next
+    End If
+Next
 
-    # Check if the file is an .msg file
-    if file_name.endswith(".msg"):
-        # Open the .msg file and access the email
-        outlook = Dispatch("Outlook.Application")
-        namespace = outlook.GetNamespace("MAPI")
-        msg = namespace.OpenSharedItem(file_path)
+' Release Objects
+Set objAttachment = Nothing
+Set objItems = Nothing
+Set objFolder = Nothing
+Set objNamespace = Nothing
+Set objOutlook = Nothing
 
-        # Extract attachments
-        extract_attachments(msg, attachment_dir)
+' Show Completion Message
+MsgBox "Email attachments downloaded successfully!", vbInformation
+
+' Open the Output Folder
+Set objFSO = CreateObject("Scripting.FileSystemObject")
+objFSO.OpenFolder strOutputFolder
+Set objFSO = Nothing
