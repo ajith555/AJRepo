@@ -1,44 +1,43 @@
-Option Explicit
+# Add the Outlook COM object
+Add-Type -AssemblyName "Microsoft.Office.Interop.Outlook"
 
-Dim objOutlook, objNamespace, objFolder, objItems, objAttachment, objFSO
-Dim strFolderPath, strOutputFolder, strAttachmentPath
+# Outlook Folder Path
+$folderPath = "Your Folder Path"  # Replace with the actual folder path in Outlook
 
-' Outlook Folder Path
-strFolderPath = "Your Folder Path" ' Replace with the actual folder path in Outlook
+# Output Folder Path
+$outputFolder = "Path to save attachments"  # Replace with the desired output folder path
 
-' Output Folder Path
-strOutputFolder = "Path to save attachments" ' Replace with the desired output folder path
+# Create an instance of Outlook
+$outlook = New-Object -ComObject Outlook.Application
+$namespace = $outlook.GetNamespace("MAPI")
 
-' Create Outlook Application Object
-Set objOutlook = CreateObject("Outlook.Application")
-Set objNamespace = objOutlook.GetNamespace("MAPI")
+# Get the Outlook Folder
+$folder = $namespace.GetDefaultFolder([Microsoft.Office.Interop.Outlook.OlDefaultFolders]::olFolderInbox).Folders.Item($folderPath)
 
-' Get the Outlook Folder
-Set objFolder = objNamespace.GetDefaultFolder(6).Folders(strFolderPath) ' 6 corresponds to the Inbox folder
+# Loop through the Items in the Folder
+foreach ($item in $folder.Items)
+{
+    if ($item.Attachments.Count -gt 0)
+    {
+        # Loop through Attachments in the Email
+        foreach ($attachment in $item.Attachments)
+        {
+            # Save Attachment to Output Folder
+            $attachmentPath = Join-Path -Path $outputFolder -ChildPath $attachment.FileName
+            $attachment.SaveAsFile($attachmentPath)
+        }
+    }
+}
 
-' Loop through the Items in the Folder
-For Each objItems In objFolder.Items
-    If objItems.Attachments.Count > 0 Then
-        ' Loop through Attachments in the Email
-        For Each objAttachment In objItems.Attachments
-            ' Save Attachment to Output Folder
-            strAttachmentPath = strOutputFolder & "\" & objAttachment.FileName
-            objAttachment.SaveAsFile strAttachmentPath
-        Next
-    End If
-Next
+# Release COM objects
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($attachment) | Out-Null
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($item) | Out-Null
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($folder) | Out-Null
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($namespace) | Out-Null
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($outlook) | Out-Null
 
-' Release Objects
-Set objAttachment = Nothing
-Set objItems = Nothing
-Set objFolder = Nothing
-Set objNamespace = Nothing
-Set objOutlook = Nothing
+# Show completion message
+Write-Host "Email attachments downloaded successfully!"
 
-' Show Completion Message
-MsgBox "Email attachments downloaded successfully!", vbInformation
-
-' Open the Output Folder
-Set objFSO = CreateObject("Scripting.FileSystemObject")
-objFSO.OpenFolder strOutputFolder
-Set objFSO = Nothing
+# Open the output folder
+Invoke-Item -Path $outputFolder
