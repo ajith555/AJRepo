@@ -1,43 +1,60 @@
-# Add the Outlook COM object
-Add-Type -AssemblyName "Microsoft.Office.Interop.Outlook"
+import win32com.client
+import os
+import zipfile
 
-# Outlook Folder Path
-$folderPath = "Your Folder Path"  # Replace with the actual folder path in Outlook
+def read_emails_from_outlook(folder_path, subject):
+    outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
+    inbox = outlook.GetDefaultFolder(6)  # 6 corresponds to the Inbox folder
+    target_folder = inbox.Folders.Item(folder_path)
 
-# Output Folder Path
-$outputFolder = "Path to save attachments"  # Replace with the desired output folder path
+    items = target_folder.Items
+    items.Sort("[ReceivedTime]", True)  # Sort items by ReceivedTime in descending order
 
-# Create an instance of Outlook
-$outlook = New-Object -ComObject Outlook.Application
-$namespace = $outlook.GetNamespace("MAPI")
+    emails = []
+    for item in items:
+        if item.Subject == subject:
+            email = {
+                'To': item.To,
+                'From': item.SenderEmailAddress,
+                'Subject': item.Subject,
+                'Attachments': item.Attachments
+            }
+            emails.append(email)
 
-# Get the Outlook Folder
-$folder = $namespace.GetDefaultFolder([Microsoft.Office.Interop.Outlook.OlDefaultFolders]::olFolderInbox).Folders.Item($folderPath)
+    return emails
 
-# Loop through the Items in the Folder
-foreach ($item in $folder.Items)
-{
-    if ($item.Attachments.Count -gt 0)
-    {
-        # Loop through Attachments in the Email
-        foreach ($attachment in $item.Attachments)
-        {
-            # Save Attachment to Output Folder
-            $attachmentPath = Join-Path -Path $outputFolder -ChildPath $attachment.FileName
-            $attachment.SaveAsFile($attachmentPath)
-        }
-    }
-}
+def download_attachments(email, output_folder):
+    attachments = email['Attachments']
+    if attachments.Count > 0:
+        for attachment in attachments:
+            attachment_path = os.path.join(output_folder, attachment.FileName)
+            attachment.SaveAsFile(attachment_path)
 
-# Release COM objects
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($attachment) | Out-Null
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($item) | Out-Null
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($folder) | Out-Null
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($namespace) | Out-Null
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($outlook) | Out-Null
+def unzip_attachments(attachment_folder, output_folder):
+    for file_name in os.listdir(attachment_folder):
+        file_path = os.path.join(attachment_folder, file_name)
+        if file_name.endswith('.zip'):
+            with zipfile.ZipFile(file_path, 'r') as zip_ref:
+                zip_ref.extractall(output_folder)
 
-# Show completion message
-Write-Host "Email attachments downloaded successfully!"
+def create_folder_path(folder_path):
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
 
-# Open the output folder
-Invoke-Item -Path $outputFolder
+def main():
+    folder_path = 'Your Folder Path'
+    subject = 'Your Subject'
+    attachment_folder = 'Path to save attachments'
+    unzip_folder = 'Path to save unzipped files'
+
+    emails = read_emails_from_outlook(folder_path, subject)
+
+    for email in emails:
+        download_attachments(email, attachment_folder)
+        unzip_attachments(attachment_folder, unzip_folder)
+
+    create_folder_path(attachment_folder)
+    create_folder_path(unzip_folder)
+
+if __name__ == '__main__':
+    main()
