@@ -1,4 +1,5 @@
-import pyodc
+import os
+import win32com.client
 
 # Set up the Outlook 365 credentials
 credentials = {
@@ -14,25 +15,27 @@ subject = "abc"
 save_path = "Your_Desired_Save_Path"
 
 # Connect to Outlook 365
-outlook = pyodc.Outlook()
-outlook.authenticate(**credentials)
+outlook = win32com.client.Dispatch("Outlook.Application")
+namespace = outlook.GetNamespace("MAPI")
+namespace.Logon(*credentials.values(), True, False)
 
 # Get the specified folder
-folder = outlook.get_folder_by_name(folder_name)
+folder = namespace.Folders.Item(1).Folders[folder_name]
 
 # Retrieve emails with the specified subject
-emails = folder.get_items(subject=subject, order_by="-ReceivedTime", top=1)
+emails = folder.Items.Restrict("[Subject]='{}'".format(subject))
+emails.Sort("[ReceivedTime]", True)
 
-if len(emails) > 0:
+if emails.Count > 0:
     # Get the latest email
-    email = emails[0]
+    email = emails.GetFirst()
 
     # Save the email as an .msg file
-    email.save_as_file(save_path)
+    email.SaveAs(os.path.join(save_path, "latest_email.msg"))
 
     print("Latest email saved successfully.")
 else:
     print("No email found with the specified subject.")
 
 # Disconnect from Outlook 365
-outlook.disconnect()
+namespace.Logoff()
