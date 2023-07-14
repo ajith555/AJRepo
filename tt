@@ -1,26 +1,33 @@
-import win32com.client
 import os
+import zipfile
+import win32com.client
 
-def download_emails_from_outlook(folder_path, output_folder):
-    outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
-    inbox = outlook.GetDefaultFolder(6)  # 6 corresponds to the Inbox folder
-    target_folder = inbox.Folders.Item(folder_path)
+def unzip_attachments(mail_item, save_path):
+    attachments = mail_item.Attachments
+    for attachment in attachments:
+        if attachment.FileName.endswith('.zip'):
+            zip_path = os.path.join(save_path, attachment.FileName)
+            attachment.SaveAsFile(zip_path)
 
-    items = target_folder.Items
-    items.Sort("[ReceivedTime]", True)  # Sort items by ReceivedTime in descending order
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(save_path)
 
-    for item in items:
-        attachments = item.Attachments
-        if attachments.Count > 0:
-            for attachment in attachments:
-                attachment_path = os.path.join(output_folder, attachment.FileName)
-                attachment.SaveAsFile(attachment_path)
+            os.remove(zip_path)
 
 def main():
-    folder_path = 'Your Folder Path'  # Replace with the actual folder path in Outlook
-    output_folder = r'\\shared\drive\folder'  # Replace with the shared drive folder path
+    outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
+    inbox = outlook.GetDefaultFolder(6)  # 6 corresponds to the Inbox folder
 
-    download_emails_from_outlook(folder_path, output_folder)
+    # Set the subject of the emails you want to retrieve
+    subject = "Your desired subject"
+
+    # Set the path to save the attachments
+    save_path = "Your desired save path"
+
+    # Loop through the inbox items
+    for item in inbox.Items:
+        if item.Subject == subject:
+            unzip_attachments(item, save_path)
 
 if __name__ == '__main__':
     main()
