@@ -1,33 +1,38 @@
-import os
-import zipfile
-import win32com.client
+import pyodc
 
-def unzip_attachments(mail_item, save_path):
-    attachments = mail_item.Attachments
-    for attachment in attachments:
-        if attachment.FileName.endswith('.zip'):
-            zip_path = os.path.join(save_path, attachment.FileName)
-            attachment.SaveAsFile(zip_path)
+# Set up the Outlook 365 credentials
+credentials = {
+    "username": "Your_Email_Address",
+    "password": "Your_Password"
+}
 
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall(save_path)
+# Set the folder name and subject of the emails you want to retrieve
+folder_name = "Folder_Name"
+subject = "abc"
 
-            os.remove(zip_path)
+# Set the path to save the email
+save_path = "Your_Desired_Save_Path"
 
-def main():
-    outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
-    inbox = outlook.GetDefaultFolder(6)  # 6 corresponds to the Inbox folder
+# Connect to Outlook 365
+outlook = pyodc.Outlook()
+outlook.authenticate(**credentials)
 
-    # Set the subject of the emails you want to retrieve
-    subject = "Your desired subject"
+# Get the specified folder
+folder = outlook.get_folder_by_name(folder_name)
 
-    # Set the path to save the attachments
-    save_path = "Your desired save path"
+# Retrieve emails with the specified subject
+emails = folder.get_items(subject=subject, order_by="-ReceivedTime", top=1)
 
-    # Loop through the inbox items
-    for item in inbox.Items:
-        if item.Subject == subject:
-            unzip_attachments(item, save_path)
+if len(emails) > 0:
+    # Get the latest email
+    email = emails[0]
 
-if __name__ == '__main__':
-    main()
+    # Save the email as an .msg file
+    email.save_as_file(save_path)
+
+    print("Latest email saved successfully.")
+else:
+    print("No email found with the specified subject.")
+
+# Disconnect from Outlook 365
+outlook.disconnect()
