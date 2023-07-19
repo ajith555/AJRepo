@@ -1,6 +1,7 @@
 import win32com.client
 import os
 import datetime
+import zipfile
 
 outlook = win32com.client.Dispatch('outlook.application').GetNamespace("MAPI")
 inbox = outlook.GetDefaultFolder('6').Folders('ABCTest')
@@ -32,6 +33,10 @@ if latest_msg:
     if not os.path.exists(path):
         os.makedirs(path)
 
+    unzip_path = 'P:/Ajith/Unzip/'
+    if not os.path.exists(unzip_path):
+        os.makedirs(unzip_path)
+
     for atch in latest_msg.Attachments:
         # Save attachments with unique file names
         attachment_path = os.path.join(path, atch.FileName)
@@ -44,6 +49,12 @@ if latest_msg:
 
         atch.SaveAsFile(attachment_path)
 
-    print("Attachments saved successfully.")
+        # Check if the attachment is a zip file
+        if attachment_path.lower().endswith('.zip'):
+            # Unzip the file to the specified path
+            with zipfile.ZipFile(attachment_path, 'r') as zip_ref:
+                zip_ref.extractall(unzip_path)
+
+    print("Attachments saved and unzipped successfully.")
 else:
     print("No emails with subject containing 'FFTS' found in the folder.")
