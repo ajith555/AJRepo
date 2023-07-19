@@ -53,7 +53,15 @@ if latest_msg:
         if attachment_path.lower().endswith('.zip'):
             # Unzip the file to the specified path
             with zipfile.ZipFile(attachment_path, 'r') as zip_ref:
-                zip_ref.extractall(unzip_path)
+                for file_name in zip_ref.namelist():
+                    unzipped_file_path = os.path.join(unzip_path, file_name)
+                    if os.path.exists(unzipped_file_path):
+                        # If the file already exists, add date and time as an extension to the file name
+                        unique_name = os.path.splitext(file_name)
+                        now = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                        new_unzipped_file_name = f"{unique_name[0]}_{now}{unique_name[1]}"
+                        unzipped_file_path = os.path.join(unzip_path, new_unzipped_file_name)
+                    zip_ref.extract(file_name, unzip_path)
 
     print("Attachments saved and unzipped successfully.")
 else:
