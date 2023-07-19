@@ -58,7 +58,7 @@ if latest_msg:
             with zipfile.ZipFile(attachment_path, 'r') as zip_ref:
                 for file_name in zip_ref.namelist():
                     unzipped_file_path = os.path.join(unzip_path, file_name)
-                    if os.path.exists(unzipped_file_path):
+                    while os.path.exists(unzipped_file_path):
                         unzipped_file_path = handle_duplicate_name(unzipped_file_path)
                     zip_ref.extract(file_name, unzip_path)
 
