@@ -41,16 +41,20 @@ if latest_msg:
     if not os.path.exists(unzip_path_with_date):
         os.makedirs(unzip_path_with_date)
 
+    # Remove existing files from the folders before saving new ones
+    for filename in os.listdir(path_with_date):
+        file_path = os.path.join(path_with_date, filename)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+
+    for filename in os.listdir(unzip_path_with_date):
+        file_path = os.path.join(unzip_path_with_date, filename)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+
     for atch in latest_msg.Attachments:
         # Save attachments with unique file names
         attachment_path = os.path.join(path_with_date, atch.FileName)
-        if os.path.exists(attachment_path):
-            # If the file already exists, add date and time as an extension to the file name
-            unique_name = os.path.splitext(atch.FileName)
-            now = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            new_attachment_name = f"{unique_name[0]}_{now}{unique_name[1]}"
-            attachment_path = os.path.join(path_with_date, new_attachment_name)
-
         atch.SaveAsFile(attachment_path)
 
         # Check if the attachment is a zip file
