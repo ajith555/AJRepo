@@ -1,5 +1,6 @@
 import win32com.client
 import os
+import datetime
 
 outlook = win32com.client.Dispatch('outlook.application').GetNamespace("MAPI")
 inbox = outlook.GetDefaultFolder('6').Folders('ABCTest')
@@ -32,8 +33,15 @@ if latest_msg:
         os.makedirs(path)
 
     for atch in latest_msg.Attachments:
-        # Save attachments with full path to overwrite files if they exist
+        # Save attachments with unique file names
         attachment_path = os.path.join(path, atch.FileName)
+        if os.path.exists(attachment_path):
+            # If the file already exists, add date and time as an extension to the file name
+            unique_name = os.path.splitext(atch.FileName)
+            now = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            new_attachment_name = f"{unique_name[0]}_{now}{unique_name[1]}"
+            attachment_path = os.path.join(path, new_attachment_name)
+
         atch.SaveAsFile(attachment_path)
 
     print("Attachments saved successfully.")
