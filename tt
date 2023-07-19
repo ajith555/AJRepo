@@ -1,41 +1,41 @@
-import os
 import win32com.client
+import os
 
-# Set up the Outlook 365 credentials
-credentials = {
-    "username": "Your_Email_Address",
-    "password": "Your_Password"
-}
+outlook = win32com.client.Dispatch('outlook.application').GetNamespace("MAPI")
+inbox = outlook.GetDefaultFolder('6').Folders('ABCTest')
+messages = inbox.Items
 
-# Set the folder name and subject of the emails you want to retrieve
-folder_name = "Folder_Name"
-subject = "abc"
+messages.Sort("[ReceivedTime]", True)
 
-# Set the path to save the email
-save_path = "Your_Desired_Save_Path"
+# Fetch only the latest email with subject containing 'FFTS'
+latest_msg = None
+for msg in messages:
+    if 'FFTS' in str(msg.Subject):
+        latest_msg = msg
+        break
 
-# Connect to Outlook 365
-outlook = win32com.client.Dispatch("Outlook.Application")
-namespace = outlook.GetNamespace("MAPI")
-namespace.Logon(*credentials.values(), True, False)
+# Check if there is a latest email with 'FFTS' in the subject
+if latest_msg:
+    # Fetch To, CC, Subject, and From information from the latest email
+    latest_subject = latest_msg.Subject
+    latest_to = latest_msg.To
+    latest_cc = latest_msg.CC
+    latest_sender = latest_msg.SenderName
 
-# Get the specified folder
-folder = namespace.Folders.Item(1).Folders[folder_name]
+    print("Latest Subject:", latest_subject)
+    print("To:", latest_to)
+    print("CC:", latest_cc)
+    print("From:", latest_sender)
 
-# Retrieve emails with the specified subject
-emails = folder.Items.Restrict("[Subject]='{}'".format(subject))
-emails.Sort("[ReceivedTime]", True)
+    path = 'P:/Documents/PycharmProjects/pythonLearning/TestingFolder/'
+    if not os.path.exists(path):
+        os.makedirs(path)
 
-if emails.Count > 0:
-    # Get the latest email
-    email = emails.GetFirst()
+    for atch in latest_msg.Attachments:
+        # Save attachments with full path to overwrite files if they exist
+        attachment_path = os.path.join(path, atch.FileName)
+        atch.SaveAsFile(attachment_path)
 
-    # Save the email as an .msg file
-    email.SaveAs(os.path.join(save_path, "latest_email.msg"))
-
-    print("Latest email saved successfully.")
+    print("Attachments saved successfully.")
 else:
-    print("No email found with the specified subject.")
-
-# Disconnect from Outlook 365
-namespace.Logoff()
+    print("No emails with subject containing 'FFTS' found in the folder.")
