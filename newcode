@@ -53,15 +53,20 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
         If objCurrentFolder.Items(i).Class = olMail Then
             Set objMail = objCurrentFolder.Items(i)
             
-            ' Check if the email has been replied to by checking the response status
-            If objMail.ReceivedTime >= Now - 7 And objMail.ReceivedTime <= Now And objMail.ReplyTime = #1/1/4501# Then
-                nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                With objExcelWorksheet
-                    .Cells(nLastRow, 1) = objMail.Subject
-                    .Cells(nLastRow, 2) = objMail.ReceivedTime
-                    .Cells(nLastRow, 3) = objMail.SenderName
-                    .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
-                End With
+            ' Check if the email has been replied to by checking the Categories property
+            ' Assume a category "Replied" is applied when the email has been replied to
+            If Not objMail.Categories Like "*Replied*" Then
+                ' Calculate the number of days since the email was received
+                nDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
+                If nDateDiff < 7 Then
+                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                    With objExcelWorksheet
+                        .Cells(nLastRow, 1) = objMail.Subject
+                        .Cells(nLastRow, 2) = objMail.ReceivedTime
+                        .Cells(nLastRow, 3) = objMail.SenderName
+                        .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
+                    End With
+                End If
             End If
         End If
     Next
