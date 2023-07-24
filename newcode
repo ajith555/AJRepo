@@ -7,7 +7,13 @@ Sub ExportEmailsNotReplied()
     Dim sharedMailboxEmail As String
     sharedMailboxEmail = "sh-operations@ubb.com" ' Replace this with the shared mailbox email address
     
-    Set objExcelApplication = CreateObject("Excel.Application")
+    On Error Resume Next
+    Set objExcelApplication = GetObject(, "Excel.Application")
+    If objExcelApplication Is Nothing Then
+        Set objExcelApplication = CreateObject("Excel.Application")
+    End If
+    On Error GoTo 0
+    
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
     
@@ -62,7 +68,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
     Dim objMail As Outlook.MailItem
     Dim nDateDiff As Integer
     Dim nLastRow As Integer
-    Dim objSubfolder As Outlook.Folder ' Explicitly declare objSubfolder here
+    Dim objSubfolder As Outlook.Folder
     
     For Each objMail In objCurrentFolder.Items
         If objMail.Class = olMail Then
