@@ -1,3 +1,5 @@
+Option Explicit
+
 Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
@@ -64,34 +66,44 @@ Function GetSharedMailboxInbox(ByVal sharedMailboxEmail As String) As Outlook.Fo
     On Error GoTo 0
 End Function
 
-Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
+Sub ProcessFolders(ByVal objRootFolder As Outlook.Folder)
+    Dim objFolderStack As New Collection
+    Dim objSubfolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
     Dim nDateDiff As Integer
     Dim nLastRow As Integer
-    Dim objSubfolder As Outlook.Folder
+
+    objFolderStack.Add objRootFolder ' Add the root folder to the stack
     
-    For Each objMail In objCurrentFolder.Items
-        If objMail.Class = olMail Then
-            ' Check if the email has been replied to
-            If objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003") Is Nothing Then
-                ' Email has not been replied to
-                nDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
-                If nDateDiff < 7 Then
-                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                    With objExcelWorksheet
-                        .Cells(nLastRow, 1) = objMail.Subject
-                        .Cells(nLastRow, 2) = objMail.ReceivedTime
-                        .Cells(nLastRow, 3) = objMail.SenderName
-                        .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100)
-                    End With
+    Do While objFolderStack.Count > 0
+        Set objSubfolder = objFolderStack(1) ' Get the first folder from the stack
+        objFolderStack.Remove 1 ' Remove the first folder from the stack
+        
+        ' Process the items in the current folder
+        For Each objMail In objSubfolder.Items
+            If objMail.Class = olMail Then
+                ' Check if the email has been replied to
+                If objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003") Is Nothing Then
+                    ' Email has not been replied to
+                    nDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
+                    If nDateDiff < 7 Then
+                        nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 1) = objMail.Subject
+                            .Cells(nLastRow, 2) = objMail.ReceivedTime
+                            .Cells(nLastRow, 3) = objMail.SenderName
+                            .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100)
+                        End With
+                    End If
                 End If
             End If
-        End If
-    Next
-    
-    If objCurrentFolder.Folders.Count > 0 Then
-        For Each objSubfolder In objCurrentFolder.Folders
-            Call ProcessFolders(objSubfolder)
         Next
-    End If
+
+        ' Add subfolders to the stack for further processing
+        If objSubfolder.Folders.Count > 0 Then
+            For Each objMailFolder In objSubfolder.Folders
+                objFolderStack.Add objMailFolder
+            Next
+        End If
+    Loop
 End Sub
