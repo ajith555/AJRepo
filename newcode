@@ -1,21 +1,15 @@
-Option Explicit
-
 Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 
 Sub ExportEmailsNotReplied()
+    Dim objNamespace As Outlook.Namespace
     Dim objInbox As Outlook.Folder
-    Dim sharedMailboxEmail As String
-    sharedMailboxEmail = "sh-operations@ubb.com" ' Replace this with the shared mailbox email address
     
-    On Error Resume Next
-    Set objExcelApplication = GetObject(, "Excel.Application")
-    If objExcelApplication Is Nothing Then
-        Set objExcelApplication = CreateObject("Excel.Application")
-    End If
-    On Error GoTo 0
+    ' Replace "sh-operations@ubb.com" with the shared Outlook account's email address
+    Const sharedAccountEmail As String = "sh-operations@ubb.com"
     
+    Set objExcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
     
@@ -33,72 +27,54 @@ Sub ExportEmailsNotReplied()
     objExcelApplication.Visible = True
     objExcelWorkbook.Activate
     
-    Set objInbox = GetSharedMailboxInbox(sharedMailboxEmail)
-    If objInbox Is Nothing Then
-        MsgBox "Failed to access the shared mailbox. Make sure you have the necessary permissions and the mailbox is added to your Outlook as a new account.", vbExclamation
-        Exit Sub
-    End If
+    Set objNamespace = Outlook.GetNamespace("MAPI")
+    ' Log in to the shared Outlook account
+    objNamespace.Logon sharedAccountEmail
+    Set objInbox = objNamespace.GetDefaultFolder(olFolderInbox)
     
-    ProcessFolders objInbox ' Removed "Call" statement as it is not needed in VBA
+    Call ProcessFolders(objInbox)
     
     With objExcelWorksheet
-        .Columns("A:C").AutoFit
-        .Rows.RowHeight = 15
+        .Columns("A:D").AutoFit
         .Columns("D").ColumnWidth = 100
         .Columns("D").WrapText = False
+        .Rows.RowHeight = 15
     End With
     
     MsgBox "Complete!", vbExclamation
 End Sub
 
-Function GetSharedMailboxInbox(ByVal sharedMailboxEmail As String) As Outlook.Folder
-    Dim objNamespace As Outlook.Namespace
-    Dim objRecipient As Outlook.Recipient
-    
-    On Error Resume Next
-    Set objNamespace = Application.GetNamespace("MAPI")
-    Set objRecipient = objNamespace.CreateRecipient(sharedMailboxEmail)
-    
-    If objRecipient.Resolve Then
-        Set GetSharedMailboxInbox = objNamespace.GetSharedDefaultFolder(objRecipient, olFolderInbox)
-    End If
-    
-    On Error GoTo 0
-End Function
-
-Sub ProcessFolders(ByVal objRootFolder As Outlook.Folder)
-    Dim objFolderStack As New Collection
-    Dim objSubfolder As Outlook.Folder
-    Dim objMail As Object ' Use "Object" data type to handle both MailItem and Folder objects
+Sub ProcessFolders(objCurrentFolder As Outlook.Folder)
+    Dim objMail As Outlook.MailItem
+    Dim strReplied As String
     Dim nDateDiff As Integer
-    Dim nLastRow As Integer
-
-    objFolderStack.Add objRootFolder ' Add the root folder to the stack
+    Dim nLastRow As Long
     
-    Do While objFolderStack.Count > 0
-        Set objSubfolder = objFolderStack(1) ' Get the first folder from the stack
-        objFolderStack.Remove 1 ' Remove the first folder from the stack
-        
-        ' Process the items in the current folder
-        For Each objMail In objSubfolder.Items
-            If TypeOf objMail Is Outlook.MailItem Then ' Check if it's a MailItem
-                ' Check if the email has been replied to
-                If objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003") Is Nothing Then
-                    ' Email has not been replied to
-                    nDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
-                    If nDateDiff < 7 Then
-                        nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                        With objExcelWorksheet
-                            .Cells(nLastRow, 1) = objMail.Subject
-                            .Cells(nLastRow, 2) = objMail.ReceivedTime
-                            .Cells(nLastRow, 3) = objMail.SenderName
-                            .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100)
-                        End With
-                    End If
+    For i = objCurrentFolder.Items.Count To 1 Step -1
+        If objCurrentFolder.Items(i).Class = olMail Then
+            Set objMail = objCurrentFolder.Items(i)
+            
+            ' Check if the email has been replied to
+            strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/ex10810003")
+            If Not (strReplied = "102" Or strReplied = "103") Then
+                ' Calculate the number of days since the email was received
+                nDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
+                If nDateDiff < 7 Then
+                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                    With objExcelWorksheet
+                        .Cells(nLastRow, 1) = objMail.Subject
+                        .Cells(nLastRow, 2) = objMail.ReceivedTime
+                        .Cells(nLastRow, 3) = objMail.SenderName
+                        .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
+                    End With
                 End If
-            ElseIf TypeOf objMail Is Outlook.Folder Then ' Check if it's a Folder
-                objFolderStack.Add objMail ' Add subfolders to the stack for further processing
             End If
+        End If
+    Next
+    
+    If objCurrentFolder.Folders.Count > 0 Then
+        For Each objSubfolder In objCurrentFolder.Folders
+            Call ProcessFolders(objSubfolder)
         Next
-    Loop
+    End If
 End Sub
