@@ -39,7 +39,7 @@ Sub ExportEmailsNotReplied()
         Exit Sub
     End If
     
-    Call ProcessFolders(objInbox)
+    ProcessFolders objInbox ' Removed "Call" statement as it is not needed in VBA
     
     With objExcelWorksheet
         .Columns("A:C").AutoFit
@@ -69,7 +69,7 @@ End Function
 Sub ProcessFolders(ByVal objRootFolder As Outlook.Folder)
     Dim objFolderStack As New Collection
     Dim objSubfolder As Outlook.Folder
-    Dim objMail As Outlook.MailItem
+    Dim objMail As Object ' Use "Object" data type to handle both MailItem and Folder objects
     Dim nDateDiff As Integer
     Dim nLastRow As Integer
 
@@ -81,7 +81,7 @@ Sub ProcessFolders(ByVal objRootFolder As Outlook.Folder)
         
         ' Process the items in the current folder
         For Each objMail In objSubfolder.Items
-            If objMail.Class = olMail Then
+            If TypeOf objMail Is Outlook.MailItem Then ' Check if it's a MailItem
                 ' Check if the email has been replied to
                 If objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003") Is Nothing Then
                     ' Email has not been replied to
@@ -96,14 +96,9 @@ Sub ProcessFolders(ByVal objRootFolder As Outlook.Folder)
                         End With
                     End If
                 End If
+            ElseIf TypeOf objMail Is Outlook.Folder Then ' Check if it's a Folder
+                objFolderStack.Add objMail ' Add subfolders to the stack for further processing
             End If
         Next
-
-        ' Add subfolders to the stack for further processing
-        If objSubfolder.Folders.Count > 0 Then
-            For Each objSubfolder In objSubfolder.Folders
-                objFolderStack.Add objSubfolder
-            Next
-        End If
     Loop
 End Sub
