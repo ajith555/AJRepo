@@ -88,3 +88,4 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
         Next
     End If
 End Sub
+
