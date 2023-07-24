@@ -2,6 +2,8 @@ Dim objexcelApplication As Excel.Application
 Dim objexcelworkbook As Excel.Workbook
 Dim objexcelworksheet As Excel.Worksheet
 
+Const MY_CUSTOM_PROPERTY_URL As String = "http://schemas.mycompany.com/mapi/proptag/MyCustomProperty"
+
 Sub ExportEmailsNotReplied()
     Dim objinbox As Outlook.Folder
     Set objexcelApplication = CreateObject("Excel.Application")
@@ -44,9 +46,36 @@ Sub ProcessFolders(ByVal objcurrentFolder As Outlook.Folder)
     For i = objcurrentFolder.Items.Count To 1 Step -1
         If objcurrentFolder.Items(i).Class = olMail Then
             Set objMail = objcurrentFolder.Items(i)
-            ' Check if the email is an original message (not a response or forward)
-            If objMail.ResponseState = olOriginal Then
-                nDateDiff = DateDiff("d", objMail.SentOn, Now)
+            ' Set the custom property "MyCustomProperty" to "True" when the email is replied to.
+            If objMail.ResponseState = olReplied Then
+                objMail.PropertyAccessor.SetProperty MY_CUSTOM_PROPERTY_URL, True
+                objMail.Save ' Save the changes to the custom property
+            End If
+        End If
+    Next
+
+    If objcurrentFolder.Folders.Count > 0 Then
+        Dim objsubfolder As Outlook.Folder ' Declare the variable "objsubfolder" here
+        For Each objsubfolder In objcurrentFolder.Folders
+            Call ProcessFolders(objsubfolder)
+        Next
+    End If
+End Sub
+
+Sub ExportEmailsNotReplied()
+    '... (existing code)
+
+    Set objinbox = Application.Session.GetDefaultFolder(olFolderInbox)
+    Call ProcessFolders(objinbox)
+
+    ' Retrieve emails that do not have the "MyCustomProperty" custom property or have the value "False".
+    For Each objMail In objinbox.Items
+        If objMail.Class = olMail Then
+            ' Check if the "MyCustomProperty" custom property exists and its value is "False" (not replied).
+            Dim repliedStatus As Boolean
+            repliedStatus = objMail.PropertyAccessor.GetProperty(MY_CUSTOM_PROPERTY_URL)
+            If Not repliedStatus Then
+                nDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                 If nDateDiff < 7 Then
                     nLastrow = objexcelworksheet.Range("A" & objexcelworksheet.Rows.Count).End(xlUp).Row + 1
                     With objexcelworksheet
@@ -58,12 +87,7 @@ Sub ProcessFolders(ByVal objcurrentFolder As Outlook.Folder)
                 End If
             End If
         End If
-    Next
-    
-    If objcurrentFolder.Folders.Count > 0 Then
-        Dim objsubfolder As Outlook.Folder ' Declare the variable "objsubfolder" here
-        For Each objsubfolder In objcurrentFolder.Folders
-            Call ProcessFolders(objsubfolder)
-        Next
-    End If
+    Next objMail
+
+    '... (existing code)
 End Sub
