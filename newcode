@@ -26,11 +26,13 @@ Sub ExportEmailsNotReplied()
     
     ' Access the shared mailbox inbox as a separate account
     Dim objNamespace As Outlook.Namespace
+    Dim objSession As Outlook.NameSpace
     Dim objSharedMailbox As Outlook.Folder
     
     Set objNamespace = Application.GetNamespace("MAPI")
     ' Replace "shared.mailbox@example.com" with the email address of the shared mailbox.
-    Set objSharedMailbox = objNamespace.GetSharedDefaultFolder(objNamespace.GetNamespace("MAPI").Accounts.Item("shared.mailbox@example.com"), olFolderInbox)
+    Set objSession = objNamespace.Session.Accounts.Item("shared.mailbox@example.com").DeliveryStore.GetStore
+    Set objSharedMailbox = objSession.GetDefaultFolder(olFolderInbox)
     
     Call ProcessFolders(objSharedMailbox)
     
@@ -54,7 +56,7 @@ Sub ProcessFolders(ByVal objcurrentFolder As Outlook.Folder)
         If objcurrentFolder.Items(i).Class = olMail Then
             Set objMail = objcurrentFolder.Items(i)
             ' Set the custom property "MyCustomProperty" to "True" when the email is replied to.
-            If objMail.LastModificationTime > objMail.ReceivedTime Then
+            If objMail.IsMarkedAsTask Then
                 SetCustomProperty objMail, MY_CUSTOM_PROPERTY_NAME, True
             End If
         End If
