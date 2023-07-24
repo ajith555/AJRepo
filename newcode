@@ -1,15 +1,18 @@
 Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
+Dim objABCTestFolder As Outlook.Folder ' Added
 
 Sub ExportEmailsNotReplied()
     Dim objNamespace As Outlook.Namespace
     Dim objSession As Outlook.NameSpace
     Dim objSharedInbox As Outlook.Folder
-    Dim specificSubfolder As Outlook.Folder
+    Dim objDestFolder As Outlook.Folder ' Added
     
     ' Replace "sh-operations@ubb.com" with the shared Outlook account's email address
     Const sharedAccountEmail As String = "sh-operations@ubb.com"
+    ' Replace "ABCTest Folder" with the name of the destination folder
+    Const destFolderName As String = "ABCTest Folder"
     
     Set objExcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
@@ -36,17 +39,18 @@ Sub ExportEmailsNotReplied()
     ' Get the shared inbox folder of the shared mailbox
     Set objSharedInbox = objNamespace.Folders(sharedAccountEmail).Folders("Inbox")
     
-    ' Get the specific subfolder "MySubfolder" under the shared inbox folder
-    On Error Resume Next ' Ignore error if the subfolder doesn't exist
-    Set specificSubfolder = objSharedInbox.Folders("MySubfolder")
+    ' Get the destination folder "ABCTest Folder" under the shared inbox
+    On Error Resume Next ' Ignore error if the folder doesn't exist
+    Set objDestFolder = objSharedInbox.Folders(destFolderName)
     On Error GoTo 0 ' Reset error handling
     
-    ' Check if the specific subfolder exists under the shared inbox
-    If Not specificSubfolder Is Nothing Then
-        Call ProcessFolders(specificSubfolder)
-    Else
-        MsgBox "The specific subfolder 'MySubfolder' was not found under the shared inbox.", vbExclamation
+    ' Check if the destination folder exists, if not, create it
+    If objDestFolder Is Nothing Then
+        Set objDestFolder = objSharedInbox.Folders.Add(destFolderName)
     End If
+    
+    ' Process emails and copy to destination folder
+    Call ProcessFolders(objSharedInbox, objDestFolder)
     
     With objExcelWorksheet
         .Columns("A:D").AutoFit
@@ -58,7 +62,7 @@ Sub ExportEmailsNotReplied()
     MsgBox "Complete!", vbExclamation
 End Sub
 
-Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
+Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestFolder As Outlook.Folder) ' Modified
     Dim objMail As Outlook.MailItem
     Dim nDateDiff As Integer
     Dim nLastRow As Long
@@ -79,6 +83,9 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
                         .Cells(nLastRow, 3) = objMail.SenderName
                         .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
                     End With
+                    
+                    ' Copy the email to the destination folder "ABCTest Folder"
+                    objMail.Copy objDestFolder
                 End If
             End If
         End If
@@ -86,9 +93,9 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
     
     If objCurrentFolder.Folders.Count > 0 Then
         For Each objSubfolder In objCurrentFolder.Folders
-            ' Skip processing subfolders other than the specific subfolder ("MySubfolder")
-            If objSubfolder.Name = "MySubfolder" Then
-                Call ProcessFolders(objSubfolder)
+            ' Skip processing subfolders other than the inbox
+            If objSubfolder.Name = "Inbox" Then
+                Call ProcessFolders(objSubfolder, objDestFolder)
             End If
         Next
     End If
