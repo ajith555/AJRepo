@@ -49,7 +49,7 @@ Sub ExportEmailsNotReplied()
         Set objDestFolder = objSharedInbox.Folders.Add(destFolderName)
     End If
     
-    ' Process emails and copy to destination folder
+    ' Process emails and move to destination folder
     Call ProcessFolders(objSharedInbox, objDestFolder)
     
     With objExcelWorksheet
@@ -84,8 +84,8 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestFolder
                         .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
                     End With
                     
-                    ' Copy the email to the destination folder "ABCTest Folder"
-                    objMail.Copy objDestFolder
+                    ' Move the email to the destination folder "ABCTest Folder"
+                    objMail.Move objDestFolder
                 End If
             End If
         End If
