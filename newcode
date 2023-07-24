@@ -37,7 +37,6 @@ End Sub
 
 Sub ProcessFolders(ByVal objcurrentFolder As Outlook.Folder)
     Dim objMail As Outlook.MailItem
-    Dim strreplied As String
     Dim nDateDiff As Integer
     Dim nLastrow As Integer
     Dim i As Long ' Declare the variable "i" here
@@ -45,8 +44,8 @@ Sub ProcessFolders(ByVal objcurrentFolder As Outlook.Folder)
     For i = objcurrentFolder.Items.Count To 1 Step -1
         If objcurrentFolder.Items(i).Class = olMail Then
             Set objMail = objcurrentFolder.Items(i)
-            strreplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/ex10810003")
-            If Not (strreplied = "102" Or strreplied = "103") Then ' Corrected the brackets and quotes
+            ' Check if the email is an original message (not a response or forward)
+            If objMail.ResponseState = olOriginal Then
                 nDateDiff = DateDiff("d", objMail.SentOn, Now)
                 If nDateDiff < 7 Then
                     nLastrow = objexcelworksheet.Range("A" & objexcelworksheet.Rows.Count).End(xlUp).Row + 1
@@ -54,7 +53,7 @@ Sub ProcessFolders(ByVal objcurrentFolder As Outlook.Folder)
                         .Cells(nLastrow, 1) = objMail.Subject
                         .Cells(nLastrow, 2) = objMail.ReceivedTime
                         .Cells(nLastrow, 3) = objMail.SenderName
-                        .Cells(nLastrow, 4) = Left(Trim(objMail.Body), 100) ' Removed the "&" sign
+                        .Cells(nLastrow, 4) = Left(Trim(objMail.Body), 100)
                     End With
                 End If
             End If
