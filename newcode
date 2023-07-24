@@ -56,7 +56,7 @@ Sub ProcessFolders(ByVal objcurrentFolder As Outlook.Folder)
         If objcurrentFolder.Items(i).Class = olMail Then
             Set objMail = objcurrentFolder.Items(i)
             ' Set the custom property "MyCustomProperty" to "True" when the email is replied to.
-            If objMail.IsMarkedAsTask Then
+            If objMail.LastModificationTime > objMail.ReceivedTime Then
                 SetCustomProperty objMail, MY_CUSTOM_PROPERTY_NAME, True
             End If
         End If
