@@ -2,17 +2,25 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 
+' Declare variables to hold references to Excel application, workbook, and worksheet
+
 Sub ExportEmailsNotReplied()
     Dim objNamespace As Outlook.Namespace
     Dim objSession As Outlook.NameSpace
     Dim objSharedInbox As Outlook.Folder
     
+    ' Declare variables for Outlook namespace, session, and the shared inbox folder
+    
     ' Replace "sh-operations@ubb.com" with the shared Outlook account's email address
     Const sharedAccountEmail As String = "sh-operations@ubb.com"
+    
+    ' Define the email address of the shared mailbox using a constant
     
     Set objExcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
+    
+    ' Create a new Excel application, workbook, and worksheet
     
     With objExcelWorksheet
         .Cells(1, 1) = "Subject"
@@ -25,18 +33,28 @@ Sub ExportEmailsNotReplied()
         .Cells(1, 4).Font.Bold = True
     End With
     
+    ' Set the headers in the Excel worksheet for the email information
+
     objExcelApplication.Visible = True
     objExcelWorkbook.Activate
+    
+    ' Make the Excel application visible and activate the workbook
     
     Set objNamespace = Outlook.GetNamespace("MAPI")
     ' Log in to the shared Outlook account using a session
     Set objSession = objNamespace.Session
     objSession.Logon
     
+    ' Set up the Outlook namespace and log in to the shared Outlook account
+    
     ' Get the shared inbox folder of the shared mailbox
     Set objSharedInbox = objNamespace.Folders(sharedAccountEmail).Folders("Inbox")
     
+    ' Access the shared mailbox's inbox folder
+    
     Call ProcessFolders(objSharedInbox)
+    
+    ' Call the "ProcessFolders" subroutine to start processing emails from the shared inbox
     
     With objExcelWorksheet
         .Columns("A:D").AutoFit
@@ -45,17 +63,25 @@ Sub ExportEmailsNotReplied()
         .Rows.RowHeight = 15
     End With
     
+    ' Format the Excel columns and rows for better visibility of the data
+    
     MsgBox "Complete!", vbExclamation
 End Sub
+
+' The main subroutine that starts the process of exporting emails
 
 Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
     Dim objMail As Outlook.MailItem
     Dim nDateDiff As Integer
     Dim nLastRow As Long
     
+    ' Declare variables to hold the email item, date difference, and the last row in Excel worksheet
+    
     For i = objCurrentFolder.Items.Count To 1 Step -1
         If objCurrentFolder.Items(i).Class = olMail Then
             Set objMail = objCurrentFolder.Items(i)
+            
+            ' Check if the item is an email
             
             ' Check if the email has been replied to by checking the Categories property
             ' Assume a category "Replied" is applied when the email has been replied to
@@ -63,6 +89,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
                 ' Calculate the number of days since the email was received
                 nDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                 If nDateDiff < 7 Then
+                    ' Check if the email has not been replied to and received within the last 7 days
                     nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
                     With objExcelWorksheet
                         .Cells(nLastRow, 1) = objMail.Subject
@@ -75,9 +102,15 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
         End If
     Next
     
+    ' Loop through each item in the current folder (inbox and subfolders)
+    
     If objCurrentFolder.Folders.Count > 0 Then
         For Each objSubfolder In objCurrentFolder.Folders
             Call ProcessFolders(objSubfolder)
         Next
     End If
+    
+    ' Call the "ProcessFolders" subroutine recursively for each subfolder
 End Sub
+
+' The subroutine that processes emails in the given folder and its subfolders
