@@ -44,7 +44,7 @@ Sub ExportEmailsNotReplied()
     MsgBox "Complete!", vbExclamation
 End Sub
 
-Sub ProcessFolders(objCurrentFolder As Outlook.Folder)
+Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
     Dim nDateDiff As Integer
