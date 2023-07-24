@@ -2,7 +2,7 @@ Dim objexcelApplication As Excel.Application
 Dim objexcelworkbook As Excel.Workbook
 Dim objexcelworksheet As Excel.Worksheet
 
-Const MY_CUSTOM_PROPERTY_URL As String = "http://schemas.mycompany.com/mapi/proptag/MyCustomProperty"
+Const MY_CUSTOM_PROPERTY_NAME As String = "MyCustomProperty"
 
 Sub ExportEmailsNotReplied()
     Dim objinbox As Outlook.Folder
@@ -48,8 +48,7 @@ Sub ProcessFolders(ByVal objcurrentFolder As Outlook.Folder)
             Set objMail = objcurrentFolder.Items(i)
             ' Set the custom property "MyCustomProperty" to "True" when the email is replied to.
             If objMail.ResponseState = olReplied Then
-                objMail.PropertyAccessor.SetProperty MY_CUSTOM_PROPERTY_URL, True
-                objMail.Save ' Save the changes to the custom property
+                SetCustomProperty objMail, MY_CUSTOM_PROPERTY_NAME, True
             End If
         End If
     Next
@@ -60,4 +59,12 @@ Sub ProcessFolders(ByVal objcurrentFolder As Outlook.Folder)
             Call ProcessFolders(objsubfolder)
         Next
     End If
+End Sub
+
+Sub SetCustomProperty(ByVal objItem As Object, ByVal propertyName As String, ByVal propertyValue As Variant)
+    On Error Resume Next
+    objItem.UserProperties.Add propertyName, olYesNo, True, olHidden
+    objItem.UserProperties(propertyName).Value = propertyValue
+    objItem.Save
+    On Error GoTo 0
 End Sub
