@@ -4,7 +4,8 @@ Dim objExcelWorksheet As Excel.Worksheet
 
 Sub ExportEmailsNotReplied()
     Dim objNamespace As Outlook.Namespace
-    Dim objInbox As Outlook.Folder
+    Dim objSession As Outlook.NameSpace
+    Dim objSharedInbox As Outlook.Folder
     
     ' Replace "sh-operations@ubb.com" with the shared Outlook account's email address
     Const sharedAccountEmail As String = "sh-operations@ubb.com"
@@ -28,11 +29,14 @@ Sub ExportEmailsNotReplied()
     objExcelWorkbook.Activate
     
     Set objNamespace = Outlook.GetNamespace("MAPI")
-    ' Log in to the shared Outlook account
-    objNamespace.Logon sharedAccountEmail
-    Set objInbox = objNamespace.GetDefaultFolder(olFolderInbox)
+    ' Log in to the shared Outlook account using a session
+    Set objSession = objNamespace.Session
+    objSession.Logon
     
-    Call ProcessFolders(objInbox)
+    ' Get the shared inbox folder of the shared mailbox
+    Set objSharedInbox = objNamespace.Folders(sharedAccountEmail).Folders("Inbox")
+    
+    Call ProcessFolders(objSharedInbox)
     
     With objExcelWorksheet
         .Columns("A:D").AutoFit
