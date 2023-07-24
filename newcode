@@ -24,15 +24,13 @@ Sub ExportEmailsNotReplied()
     objexcelApplication.Visible = True
     objexcelworkbook.Activate
     
-    ' Access the shared mailbox as a separate account
+    ' Access the shared mailbox inbox as a separate account
     Dim objNamespace As Outlook.Namespace
-    Dim objSession As Outlook.NameSpace
     Dim objSharedMailbox As Outlook.Folder
     
     Set objNamespace = Application.GetNamespace("MAPI")
     ' Replace "shared.mailbox@example.com" with the email address of the shared mailbox.
-    Set objSession = objNamespace.Session.Accounts.Item("shared.mailbox@example.com").DeliveryStore.GetStore
-    Set objSharedMailbox = objSession.GetDefaultFolder(olFolderInbox)
+    Set objSharedMailbox = objNamespace.GetSharedDefaultFolder(objNamespace.GetNamespace("MAPI").Accounts.Item("shared.mailbox@example.com"), olFolderInbox)
     
     Call ProcessFolders(objSharedMailbox)
     
