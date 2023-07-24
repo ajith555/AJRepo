@@ -1,16 +1,17 @@
-Dim objexcelApplication As Excel.Application
-Dim objexcelworkbook As Excel.Workbook
-Dim objexcelworksheet As Excel.Worksheet
-
-Const MY_CUSTOM_PROPERTY_NAME As String = "MyCustomProperty"
+Dim objExcelApplication As Excel.Application
+Dim objExcelWorkbook As Excel.Workbook
+Dim objExcelWorksheet As Excel.Worksheet
 
 Sub ExportEmailsNotReplied()
-    Dim objinbox As Outlook.Folder
-    Set objexcelApplication = CreateObject("Excel.Application")
-    Set objexcelworkbook = objexcelApplication.Workbooks.Add
-    Set objexcelworksheet = objexcelworkbook.Worksheets(1)
+    Dim objInbox As Outlook.Folder
+    Dim sharedMailboxEmail As String
+    sharedMailboxEmail = "sh-operations@ubb.com" ' Replace this with the shared mailbox email address
     
-    With objexcelworksheet
+    Set objExcelApplication = CreateObject("Excel.Application")
+    Set objExcelWorkbook = objExcelApplication.Workbooks.Add
+    Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
+    
+    With objExcelWorksheet
         .Cells(1, 1) = "Subject"
         .Cells(1, 1).Font.Bold = True
         .Cells(1, 2) = "Received"
@@ -21,24 +22,20 @@ Sub ExportEmailsNotReplied()
         .Cells(1, 4).Font.Bold = True
     End With
     
-    objexcelApplication.Visible = True
-    objexcelworkbook.Activate
+    objExcelApplication.Visible = True
+    objExcelWorkbook.Activate
     
-    ' Access the shared mailbox inbox as a separate account
-    Dim objNamespace As Outlook.Namespace
-    Dim objSession As Outlook.NameSpace
-    Dim objSharedMailbox As Outlook.Folder
+    Set objInbox = GetSharedMailboxInbox(sharedMailboxEmail)
+    If objInbox Is Nothing Then
+        MsgBox "Failed to access the shared mailbox. Make sure you have the necessary permissions and the mailbox is added to your Outlook as a new account.", vbExclamation
+        Exit Sub
+    End If
     
-    Set objNamespace = Application.GetNamespace("MAPI")
-    ' Replace "shared.mailbox@example.com" with the email address of the shared mailbox.
-    Set objSession = objNamespace.Session.Accounts.Item("shared.mailbox@example.com").DeliveryStore.GetStore
-    Set objSharedMailbox = objSession.GetDefaultFolder(olFolderInbox)
+    Call ProcessFolders(objInbox)
     
-    Call ProcessFolders(objSharedMailbox)
-    
-    With objexcelworksheet
-        Columns("A:C").AutoFit
-        Rows.RowHeight = 15
+    With objExcelWorksheet
+        .Columns("A:C").AutoFit
+        .Rows.RowHeight = 15
         .Columns("D").ColumnWidth = 100
         .Columns("D").WrapText = False
     End With
@@ -46,35 +43,50 @@ Sub ExportEmailsNotReplied()
     MsgBox "Complete!", vbExclamation
 End Sub
 
-Sub ProcessFolders(ByVal objcurrentFolder As Outlook.Folder)
-    Dim objMail As Outlook.MailItem
-    Dim nDateDiff As Integer
-    Dim nLastrow As Integer
-    Dim i As Long ' Declare the variable "i" here
+Function GetSharedMailboxInbox(ByVal sharedMailboxEmail As String) As Outlook.Folder
+    Dim objNamespace As Outlook.Namespace
+    Dim objRecipient As Outlook.Recipient
     
-    For i = objcurrentFolder.Items.Count To 1 Step -1
-        If objcurrentFolder.Items(i).Class = olMail Then
-            Set objMail = objcurrentFolder.Items(i)
-            ' Set the custom property "MyCustomProperty" to "True" when the email is replied to.
-            If objMail.ResponseState = olReplied Then
-                SetCustomProperty objMail, MY_CUSTOM_PROPERTY_NAME, True
+    On Error Resume Next
+    Set objNamespace = Application.GetNamespace("MAPI")
+    Set objRecipient = objNamespace.CreateRecipient(sharedMailboxEmail)
+    
+    If objRecipient.Resolve Then
+        Set GetSharedMailboxInbox = objNamespace.GetSharedDefaultFolder(objRecipient, olFolderInbox)
+    End If
+    
+    On Error GoTo 0
+End Function
+
+Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
+    Dim objMail As Outlook.MailItem
+    Dim strReplied As String
+    Dim nDateDiff As Integer
+    Dim nLastRow As Integer
+    
+    For i = objCurrentFolder.Items.Count To 1 Step -1
+        If objCurrentFolder.Items(i).Class = olMail Then
+            Set objMail = objCurrentFolder.Items(i)
+            strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/ex10810003")
+            
+            If Not ((strReplied = "102") Or (strReplied = "103")) Then
+                nDateDiff = DateDiff("d", objMail.SentOn, Now)
+                If nDateDiff < 7 Then
+                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                    With objExcelWorksheet
+                        .Cells(nLastRow, 1) = objMail.Subject
+                        .Cells(nLastRow, 2) = objMail.ReceivedTime
+                        .Cells(nLastRow, 3) = objMail.SenderName
+                        .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100)
+                    End With
+                End If
             End If
         End If
     Next
-
-    If objcurrentFolder.Folders.Count > 0 Then
-        Dim objsubfolder As Outlook.Folder ' Declare the variable "objsubfolder" here
-        For Each objsubfolder In objcurrentFolder.Folders
-            Call ProcessFolders(objsubfolder)
+    
+    If objCurrentFolder.Folders.Count > 0 Then
+        For Each objSubfolder In objCurrentFolder.Folders
+            Call ProcessFolders(objSubfolder)
         Next
     End If
-End Sub
-
-Sub SetCustomProperty(ByVal objItem As Object, ByVal propertyName As String, ByVal propertyValue As Variant)
-    On Error Resume Next
-    Dim propertyAccessor As Outlook.propertyAccessor
-    Set propertyAccessor = objItem.propertyAccessor
-    propertyAccessor.SetProperty(propertyName, propertyValue)
-    objItem.Save
-    On Error GoTo 0
 End Sub
