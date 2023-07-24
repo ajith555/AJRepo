@@ -61,33 +61,3 @@ Sub ProcessFolders(ByVal objcurrentFolder As Outlook.Folder)
         Next
     End If
 End Sub
-
-Sub ExportEmailsNotReplied()
-    '... (existing code)
-
-    Set objinbox = Application.Session.GetDefaultFolder(olFolderInbox)
-    Call ProcessFolders(objinbox)
-
-    ' Retrieve emails that do not have the "MyCustomProperty" custom property or have the value "False".
-    For Each objMail In objinbox.Items
-        If objMail.Class = olMail Then
-            ' Check if the "MyCustomProperty" custom property exists and its value is "False" (not replied).
-            Dim repliedStatus As Boolean
-            repliedStatus = objMail.PropertyAccessor.GetProperty(MY_CUSTOM_PROPERTY_URL)
-            If Not repliedStatus Then
-                nDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
-                If nDateDiff < 7 Then
-                    nLastrow = objexcelworksheet.Range("A" & objexcelworksheet.Rows.Count).End(xlUp).Row + 1
-                    With objexcelworksheet
-                        .Cells(nLastrow, 1) = objMail.Subject
-                        .Cells(nLastrow, 2) = objMail.ReceivedTime
-                        .Cells(nLastrow, 3) = objMail.SenderName
-                        .Cells(nLastrow, 4) = Left(Trim(objMail.Body), 100)
-                    End With
-                End If
-            End If
-        End If
-    Next objMail
-
-    '... (existing code)
-End Sub
