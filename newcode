@@ -72,7 +72,6 @@ Sub ProcessFolders(ByVal objRootFolder As Outlook.Folder)
     Dim objMail As Outlook.MailItem
     Dim nDateDiff As Integer
     Dim nLastRow As Integer
-    Dim objMailFolder As Outlook.Folder ' Add this explicit declaration
 
     objFolderStack.Add objRootFolder ' Add the root folder to the stack
     
@@ -102,8 +101,8 @@ Sub ProcessFolders(ByVal objRootFolder As Outlook.Folder)
 
         ' Add subfolders to the stack for further processing
         If objSubfolder.Folders.Count > 0 Then
-            For Each objMailFolder In objSubfolder.Folders
-                objFolderStack.Add objMailFolder
+            For Each objSubfolder In objSubfolder.Folders
+                objFolderStack.Add objSubfolder
             Next
         End If
     Loop
