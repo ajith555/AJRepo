@@ -5,8 +5,25 @@ Dim objexcelworksheet As Excel.Worksheet
 Const MY_CUSTOM_PROPERTY_NAME As String = "MyCustomProperty"
 
 Sub ExportEmailsNotReplied()
-    ' ... (existing code)
-
+    Dim objinbox As Outlook.Folder
+    Set objexcelApplication = CreateObject("Excel.Application")
+    Set objexcelworkbook = objexcelApplication.Workbooks.Add
+    Set objexcelworksheet = objexcelworkbook.Worksheets(1)
+    
+    With objexcelworksheet
+        .Cells(1, 1) = "Subject"
+        .Cells(1, 1).Font.Bold = True
+        .Cells(1, 2) = "Received"
+        .Cells(1, 2).Font.Bold = True
+        .Cells(1, 3) = "Sender"
+        .Cells(1, 3).Font.Bold = True
+        .Cells(1, 4) = "Excerpts"
+        .Cells(1, 4).Font.Bold = True
+    End With
+    
+    objexcelApplication.Visible = True
+    objexcelworkbook.Activate
+    
     ' Access the shared mailbox as a separate account
     Dim objNamespace As Outlook.Namespace
     Dim objSession As Outlook.NameSpace
@@ -19,23 +36,38 @@ Sub ExportEmailsNotReplied()
     
     Call ProcessFolders(objSharedMailbox)
     
-    ' ... (existing code)
+    With objexcelworksheet
+        Columns("A:C").AutoFit
+        Rows.RowHeight = 15
+        .Columns("D").ColumnWidth = 100
+        .Columns("D").WrapText = False
+    End With
+    
+    MsgBox "Complete!", vbExclamation
 End Sub
 
 Sub ProcessFolders(ByVal objcurrentFolder As Outlook.Folder)
-    ' ... (existing code)
+    Dim objMail As Outlook.MailItem
+    Dim nDateDiff As Integer
+    Dim nLastrow As Integer
+    Dim i As Long ' Declare the variable "i" here
     
     For i = objcurrentFolder.Items.Count To 1 Step -1
         If objcurrentFolder.Items(i).Class = olMail Then
             Set objMail = objcurrentFolder.Items(i)
             ' Set the custom property "MyCustomProperty" to "True" when the email is replied to.
-            If objMail.IsMarkedAsTask Then
+            If objMail.LastModificationTime > objMail.ReceivedTime Then
                 SetCustomProperty objMail, MY_CUSTOM_PROPERTY_NAME, True
             End If
         End If
     Next
 
-    ' ... (existing code)
+    If objcurrentFolder.Folders.Count > 0 Then
+        Dim objsubfolder As Outlook.Folder ' Declare the variable "objsubfolder" here
+        For Each objsubfolder In objcurrentFolder.Folders
+            Call ProcessFolders(objsubfolder)
+        Next
+    End If
 End Sub
 
 Sub SetCustomProperty(ByVal objItem As Object, ByVal propertyName As String, ByVal propertyValue As Variant)
