@@ -62,6 +62,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
     Dim objMail As Outlook.MailItem
     Dim nDateDiff As Integer
     Dim nLastRow As Integer
+    Dim objSubfolder As Outlook.Folder ' Explicitly declare objSubfolder here
     
     For Each objMail In objCurrentFolder.Items
         If objMail.Class = olMail Then
