@@ -2,6 +2,7 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objInbox As Outlook.Folder
+Dim objProcessedEmails As Collection
 
 Sub ExportEmailsNotReplied()
     Dim targetEmail As String
@@ -29,6 +30,9 @@ Sub ExportEmailsNotReplied()
 
     objExcelApplication.Visible = True
     objExcelWorkbook.Activate
+
+    ' Initialize the collection to store processed emails
+    Set objProcessedEmails = New Collection
 
     ' Get the specified email account and its Inbox folder
     Set objNamespace = Outlook.GetNamespace("MAPI")
@@ -75,20 +79,26 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinatio
             Set objMail = objCurrentFolder.Items(i)
             strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
 
-            If (Not (strReplied = 102)) And (Not (strReplied = 103)) Then
-                nDateDiff = DateDiff("d", objMail.SentOn, Now)
-                If nDateDiff < 7 Then
-                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                    With objExcelWorksheet
-                        .Cells(nLastRow, 1) = objMail.Subject
-                        .Cells(nLastRow, 2) = objMail.ReceivedTime
-                        .Cells(nLastRow, 3) = objMail.SenderName
-                        .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
-                    End With
+            ' Check if the email has not been processed already
+            If Not EmailProcessed(objMail) Then
+                If (Not (strReplied = 102)) And (Not (strReplied = 103)) Then
+                    nDateDiff = DateDiff("d", objMail.SentOn, Now)
+                    If nDateDiff < 7 Then
+                        nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 1) = objMail.Subject
+                            .Cells(nLastRow, 2) = objMail.ReceivedTime
+                            .Cells(nLastRow, 3) = objMail.SenderName
+                            .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
+                        End With
 
-                    ' Move the retrieved email to the "ABC" folder
-                    If objCurrentFolder.Name <> objDestinationFolder.Name Then
-                        objMail.Move objDestinationFolder
+                        ' Move the retrieved email to the "ABC" folder
+                        If objCurrentFolder.Name <> objDestinationFolder.Name Then
+                            objMail.Move objDestinationFolder
+                        End If
+
+                        ' Add the processed email to the collection
+                        objProcessedEmails.Add objMail, CStr(objMail.EntryID)
                     End If
                 End If
             End If
@@ -102,3 +112,12 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinatio
         Next
     End If
 End Sub
+
+Function EmailProcessed(ByVal objMail As Outlook.MailItem) As Boolean
+    Dim strEntryID As String
+    strEntryID = objMail.EntryID
+
+    On Error Resume Next
+    EmailProcessed = Not (objProcessedEmails.Item(strEntryID) Is Nothing)
+    On Error GoTo 0
+End Function
