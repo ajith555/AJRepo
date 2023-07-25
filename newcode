@@ -1,14 +1,17 @@
+Option Explicit
+
 Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objInbox As Outlook.Folder
 Dim objABCFolder As Outlook.Folder
+Dim processedEmails As Collection ' Collection to store processed email EntryIDs
 
 Sub ExportEmailsNotReplied()
-    Dim strEmailAccount As String
-    strEmailAccount = "john.doe@example.com" ' Replace this with the email account you want to check
+    Dim targetEmail As String
+    targetEmail = "sh-torm-rli-clean-up@ubs.com"
     
-    On Error Resume Next
+    ' Create and initialize the Excel application and worksheet
     Set objExcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
@@ -27,16 +30,31 @@ Sub ExportEmailsNotReplied()
     objExcelApplication.Visible = True
     objExcelWorkbook.Activate
     
-    On Error GoTo ErrorHandler ' Add error handling for potential issues
-    
     Dim objNamespace As Outlook.Namespace
-    Set objNamespace = Application.GetNamespace("MAPI")
+    Set objNamespace = Outlook.GetNamespace("MAPI")
+    Set objInbox = objNamespace.Folders(targetEmail)
     
-    Set objInbox = objNamespace.GetSharedDefaultFolder(objNamespace.Accounts.Item(1), olFolderInbox) ' Assumes the first account is the desired one
-    Set objABCFolder = objInbox.Folders("ABC") ' Assumes there's a folder named "ABC" under Inbox, change this if needed
+    ' Check if the "ABC" folder exists or create it if it doesn't
+    Dim foundABC As Boolean
+    foundABC = False
+    For Each objFolder In objInbox.Folders
+        If objFolder.Name = "ABC" Then
+            foundABC = True
+            Set objABCFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
     
-    Call ProcessFolders(objInbox)
+    If Not foundABC Then
+        Set objABCFolder = objInbox.Folders.Add("ABC", olFolderInbox)
+    End If
+
+    ' Initialize the collection to store processed email EntryIDs
+    Set processedEmails = New Collection
     
+    Call ProcessFolders(objInbox, objABCFolder)
+    
+    ' Format the Excel columns and rows
     With objExcelWorksheet
         .Columns("A:C").AutoFit
         .Columns("D").ColumnWidth = 100
@@ -44,55 +62,54 @@ Sub ExportEmailsNotReplied()
     End With
     
     MsgBox "Complete!", vbExclamation
-    Exit Sub ' Exit the subroutine if everything ran successfully
-    
-ErrorHandler:
-    MsgBox "An error occurred: " & Err.Description, vbExclamation
-    On Error Resume Next
-    objExcelWorkbook.Close SaveChanges:=False
-    objExcelApplication.Quit
-    Set objExcelWorksheet = Nothing
-    Set objExcelWorkbook = Nothing
-    Set objExcelApplication = Nothing
-    Exit Sub
 End Sub
 
-Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
+Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
     Dim nDateDiff As Integer
     Dim nLastRow As Integer
     
-    On Error Resume Next ' Add error handling for potential issues in loop
-    
     For i = objCurrentFolder.Items.Count To 1 Step -1
         If objCurrentFolder.Items(i).Class = olMail Then
             Set objMail = objCurrentFolder.Items(i)
             strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
-            
             If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
-                nDateDiff = DateDiff("d", objMail.SentOn, Now)
-                If nDateDiff < 7 Then
-                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                    With objExcelWorksheet
-                        .Cells(nLastRow, 1) = objMail.Subject
-                        .Cells(nLastRow, 2) = objMail.ReceivedTime
-                        .Cells(nLastRow, 3) = objMail.SenderName
-                        .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
-                    End With
-                    objMail.Move objABCFolder ' Move the email to the "ABC" folder
+                ' Check if the email has been processed (based on EntryID)
+                If Not IsProcessed(objMail.EntryID) Then
+                    nDateDiff = DateDiff("d", objMail.SentOn, Now)
+                    If nDateDiff < 7 Then
+                        nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 1) = objMail.Subject
+                            .Cells(nLastRow, 2) = objMail.ReceivedTime
+                            .Cells(nLastRow, 3) = objMail.SenderName
+                            .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
+                        End With
+                        ' Add the EntryID of the processed email to the collection
+                        processedEmails.Add objMail.EntryID
+                        ' Move the retrieved email to the "ABC" folder
+                        If objCurrentFolder.Name <> objDestinationFolder.Name Then
+                            objMail.Move objDestinationFolder
+                        End If
+                    End If
                 End If
             End If
         End If
-    Next
-    
-    On Error GoTo 0 ' Reset error handling
+    Next i
     
     If objCurrentFolder.Folders.Count > 0 Then
-        Dim objSubfolder As Outlook.Folder
         For Each objSubfolder In objCurrentFolder.Folders
-            Call ProcessFolders(objSubfolder)
+            Call ProcessFolders(objSubfolder, objDestinationFolder)
         Next objSubfolder
     End If
 End Sub
+
+Function IsProcessed(ByVal entryID As String) As Boolean
+    Dim entryIDCheck As Variant
+    On Error Resume Next
+    entryIDCheck = processedEmails(entryID)
+    On Error GoTo 0
+    IsProcessed = Not IsEmpty(entryIDCheck)
+End Function
