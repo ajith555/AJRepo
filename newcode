@@ -37,6 +37,21 @@ Sub ExportEmailsNotReplied()
     Set objNamespace = Outlook.GetNamespace("MAPI")
     Set objRootFolder = objNamespace.Folders(targetEmail)
 
+    ' Check if the "ABC" folder exists or create it if it doesn't
+    Dim foundABC As Boolean
+    foundABC = False
+    For Each objFolder In objRootFolder.Folders
+        If objFolder.Name = "ABC" Then
+            foundABC = True
+            Set objInbox = objFolder
+            Exit For
+        End If
+    Next objFolder
+
+    If Not foundABC Then
+        Set objInbox = objRootFolder.Folders.Add("ABC", olFolderInbox)
+    End If
+
     ' Check and process the folders
     Call ProcessFolders(objRootFolder)
 
@@ -86,8 +101,11 @@ Sub ProcessEmail(ByVal objMail As Outlook.MailItem)
                     .Cells(nLastRow, 1) = objMail.Subject
                     .Cells(nLastRow, 2) = objMail.ReceivedTime
                     .Cells(nLastRow, 3) = objMail.SenderName
-                    .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
+                    .Cells(nLastRow, 4) = GetExcerpt(objMail.Body) ' Populate Excerpts with meaningful content
                 End With
+
+                ' Move the email to the "ABC" folder
+                objMail.Move objInbox
 
                 ' Add the processed email to the dictionary
                 objProcessedEmails(objMail.EntryID) = True
@@ -98,4 +116,23 @@ End Sub
 
 Function EmailProcessed(ByVal entryID As String) As Boolean
     EmailProcessed = objProcessedEmails.Exists(entryID)
+End Function
+
+Function GetExcerpt(ByVal bodyText As String) As String
+    Dim lines() As String
+    lines = Split(bodyText, vbCrLf)
+
+    Dim excerpt As String
+    Dim i As Long
+    Dim maxLines As Long
+    maxLines = 3 ' Change this to control the number of lines to include in the excerpt
+
+    For i = 0 To UBound(lines)
+        If Trim(lines(i)) <> "" Then
+            excerpt = excerpt & lines(i) & vbCrLf
+            If i = maxLines - 1 Then Exit For
+        End If
+    Next i
+
+    GetExcerpt = Left(excerpt, Len(excerpt) - 2) ' Remove the last vbCrLf from the excerpt
 End Function
