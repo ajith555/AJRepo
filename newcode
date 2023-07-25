@@ -1,33 +1,14 @@
 Option Explicit
 
+Const SpecificEmail As String = "example@ubb.com"
+
 Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
-Dim objOutlookNamespace As Outlook.Namespace
-Dim objSourceFolder As Outlook.Folder
-Dim objMoveFolder As Outlook.Folder
 
 Sub ExportEmailsNotReplied()
-    On Error GoTo ErrorHandler ' Add error handling
     Dim objInbox As Outlook.Folder
-    Dim emailAccount As String
-    
-    ' Update the email account and folder names here
-    emailAccount = "YourEmailAccount@example.com"
-    Set objSourceFolder = GetOutlookFolder(emailAccount, "Inbox") ' Add more folder names here if needed
-    Set objMoveFolder = GetOutlookFolder(emailAccount, "ABC move") ' Change "ABC move" to the destination folder name
-    
-    ' Check if the source and move folders are set correctly
-    If objSourceFolder Is Nothing Then
-        MsgBox "Source folder not found. Please check the folder name.", vbExclamation
-        Exit Sub
-    End If
-    
-    If objMoveFolder Is Nothing Then
-        MsgBox "Move folder not found. Please check the folder name.", vbExclamation
-        Exit Sub
-    End If
-    
+
     Set objExcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
@@ -46,42 +27,18 @@ Sub ExportEmailsNotReplied()
     objExcelApplication.Visible = True
     objExcelWorkbook.Activate
     
-    Call ProcessFolders(objSourceFolder)
+    Set objInbox = Application.Session.GetDefaultFolder(olFolderInbox)
+    Call ProcessFolders(objInbox)
     
     With objExcelWorksheet
         .Columns("A:C").AutoFit
+        .Rows.RowHeight = 15
         .Columns("D").ColumnWidth = 100
         .Columns("D").WrapText = False
     End With
     
     MsgBox "Complete!", vbExclamation
-    Exit Sub ' Exit the subroutine to skip the error handler
-ErrorHandler:
-    MsgBox "An error occurred: " & Err.Description, vbExclamation
 End Sub
-
-Function GetOutlookFolder(ByVal emailAccount As String, ByVal folderName As String) As Outlook.Folder
-    On Error Resume Next
-    Dim objOutlookApp As Outlook.Application
-    Dim objNamespace As Outlook.Namespace
-    Dim objRecipient As Outlook.Recipient
-    
-    Set objOutlookApp = New Outlook.Application
-    Set objNamespace = objOutlookApp.GetNamespace("MAPI")
-    
-    ' Get the recipient for the specified email account
-    Set objRecipient = objNamespace.CreateRecipient(emailAccount)
-    objRecipient.Resolve
-    
-    If objRecipient.Resolved Then
-        ' Get the folder for the specified folder name
-        Set GetOutlookFolder = objNamespace.GetSharedDefaultFolder(objRecipient, olFolderInbox).Folders(folderName)
-    End If
-    
-    Set objOutlookApp = Nothing
-    Set objNamespace = Nothing
-    Set objRecipient = Nothing
-End Function
 
 Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
     Dim i As Long
@@ -93,23 +50,24 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
     For i = objCurrentFolder.Items.Count To 1 Step -1
         If objCurrentFolder.Items(i).Class = olMail Then
             Set objMail = objCurrentFolder.Items(i)
-            strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
             
-            If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
-                nDateDiff = DateDiff("d", objMail.SentOn, Now)
+            ' Check if the email is from the specific account
+            If objMail.SenderEmailAddress = SpecificEmail Then
+                strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
                 
-                If nDateDiff < 7 Then
-                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
+                    nDateDiff = DateDiff("d", objMail.SentOn, Now)
                     
-                    With objExcelWorksheet
-                        .Cells(nLastRow, 1).Value = objMail.Subject
-                        .Cells(nLastRow, 2).Value = objMail.ReceivedTime
-                        .Cells(nLastRow, 3).Value = objMail.SenderName
-                        .Cells(nLastRow, 4).Value = Left(Trim(objMail.Body), 100) & "..."
-                    End With
-                    
-                    ' Move the email to the specified destination folder
-                    objMail.Move objMoveFolder
+                    If nDateDiff < 7 Then
+                        nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                        
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 1).Value = objMail.Subject
+                            .Cells(nLastRow, 2).Value = objMail.ReceivedTime
+                            .Cells(nLastRow, 3).Value = objMail.SenderName
+                            .Cells(nLastRow, 4).Value = Left(Trim(objMail.Body), 100) & "..."
+                        End With
+                    End If
                 End If
             End If
         End If
