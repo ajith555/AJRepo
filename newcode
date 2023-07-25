@@ -2,7 +2,6 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objInbox As Outlook.Folder
-Dim objProcessedEmails As Object ' Dictionary to store processed email EntryIDs
 
 Sub ExportEmailsNotReplied()
     Dim targetEmail As String
@@ -31,9 +30,6 @@ Sub ExportEmailsNotReplied()
     objExcelApplication.Visible = True
     objExcelWorkbook.Activate
 
-    ' Initialize the dictionary to store processed emails
-    Set objProcessedEmails = CreateObject("Scripting.Dictionary")
-
     ' Get the specified email account and its Inbox folder
     Set objNamespace = Outlook.GetNamespace("MAPI")
     Set objRootFolder = objNamespace.Folders(targetEmail)
@@ -54,8 +50,11 @@ Sub ExportEmailsNotReplied()
         Set objABCFolder = objInbox.Folders.Add("ABC", olFolderInbox)
     End If
 
-    ' Check and process the folders
-    Call ProcessFolders(objInbox, objABCFolder)
+    ' Move emails from all folders to the "ABC" folder
+    MoveEmailsToABCFolder objInbox, objABCFolder
+
+    ' Check and process the emails in the "ABC" folder
+    Call ProcessEmails(objABCFolder)
 
     ' Format the Excel columns and rows
     With objExcelWorksheet
@@ -67,7 +66,26 @@ Sub ExportEmailsNotReplied()
     MsgBox "Complete!", vbExclamation
 End Sub
 
-Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
+Sub MoveEmailsToABCFolder(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
+    Dim objMail As Outlook.MailItem
+    Dim i As Long
+
+    For i = objCurrentFolder.Items.Count To 1 Step -1
+        If objCurrentFolder.Items(i).Class = olMail Then
+            Set objMail = objCurrentFolder.Items(i)
+            objMail.Move objDestinationFolder
+        End If
+    Next
+
+    ' Recursively process subfolders
+    If objCurrentFolder.Folders.Count > 0 Then
+        For Each objSubfolder In objCurrentFolder.Folders
+            MoveEmailsToABCFolder objSubfolder, objDestinationFolder
+        Next
+    End If
+End Sub
+
+Sub ProcessEmails(ByVal objCurrentFolder As Outlook.Folder)
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
@@ -79,27 +97,16 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinatio
             Set objMail = objCurrentFolder.Items(i)
             strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
 
-            ' Check if the email has not been processed already
-            If Not EmailProcessed(objMail.EntryID) Then
-                If (Not (strReplied = 102)) And (Not (strReplied = 103)) Then
-                    nDateDiff = DateDiff("d", objMail.SentOn, Now)
-                    If nDateDiff < 7 Then
-                        nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                        With objExcelWorksheet
-                            .Cells(nLastRow, 1) = objMail.Subject
-                            .Cells(nLastRow, 2) = objMail.ReceivedTime
-                            .Cells(nLastRow, 3) = objMail.SenderName
-                            .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
-                        End With
-
-                        ' Move the retrieved email to the "ABC" folder
-                        If objCurrentFolder.Name <> objDestinationFolder.Name Then
-                            objMail.Move objDestinationFolder
-                        End If
-
-                        ' Add the processed email to the dictionary
-                        objProcessedEmails(objMail.EntryID) = True
-                    End If
+            If (Not (strReplied = 102)) And (Not (strReplied = 103)) Then
+                nDateDiff = DateDiff("d", objMail.SentOn, Now)
+                If nDateDiff < 7 Then
+                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                    With objExcelWorksheet
+                        .Cells(nLastRow, 1) = objMail.Subject
+                        .Cells(nLastRow, 2) = objMail.ReceivedTime
+                        .Cells(nLastRow, 3) = objMail.SenderName
+                        .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
+                    End With
                 End If
             End If
         End If
@@ -108,11 +115,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinatio
     ' Recursively process subfolders
     If objCurrentFolder.Folders.Count > 0 Then
         For Each objSubfolder In objCurrentFolder.Folders
-            Call ProcessFolders(objSubfolder, objDestinationFolder)
+            ProcessEmails objSubfolder
         Next
     End If
 End Sub
-
-Function EmailProcessed(ByVal entryID As String) As Boolean
-    EmailProcessed = objProcessedEmails.Exists(entryID)
-End Function
