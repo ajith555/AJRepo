@@ -14,6 +14,10 @@ Sub ExportEmailsNotReplied()
     ' Replace "ABCTest Folder" with the name of the destination folder
     Const destFolderName As String = "ABCTest Folder"
     
+    ' Array of folder names to check for emails
+    Dim foldersToCheck As Variant
+    foldersToCheck = Array("abc", "test", "abcc")
+    
     Set objExcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
@@ -50,7 +54,7 @@ Sub ExportEmailsNotReplied()
     End If
     
     ' Process emails and move to destination folder
-    Call ProcessFolders(objSharedInbox, objDestFolder)
+    Call ProcessFolders(objSharedInbox, objDestFolder, foldersToCheck)
     
     With objExcelWorksheet
         .Columns("A:D").AutoFit
@@ -62,7 +66,7 @@ Sub ExportEmailsNotReplied()
     MsgBox "Complete!", vbExclamation
 End Sub
 
-Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestFolder As Outlook.Folder) ' Modified
+Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestFolder As Outlook.Folder, ByVal foldersToCheck As Variant) ' Modified
     Dim objMail As Outlook.MailItem
     Dim nDateDiff As Integer
     Dim nLastRow As Long
@@ -71,21 +75,26 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestFolder
         If objCurrentFolder.Items(i).Class = olMail Then
             Set objMail = objCurrentFolder.Items(i)
             
-            ' Check if the email has been replied to by checking the Categories property
-            ' Assume a category "Replied" is applied when the email has been replied to
-            If Not objMail.Categories Like "*Replied*" Then
-                nDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
-                If nDateDiff < 7 Then
-                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                    With objExcelWorksheet
-                        .Cells(nLastRow, 1) = objMail.Subject
-                        .Cells(nLastRow, 2) = objMail.ReceivedTime
-                        .Cells(nLastRow, 3) = objMail.SenderName
-                        .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
-                    End With
-                    
-                    ' Move the email to the destination folder "ABCTest Folder"
-                    objMail.Move objDestFolder
+            ' Check if the email's parent folder name exists in the specified foldersToCheck array
+            Dim folderName As String
+            folderName = objCurrentFolder.Name
+            If IsInArray(folderName, foldersToCheck) Then
+                ' Check if the email has been replied to by checking the Categories property
+                ' Assume a category "Replied" is applied when the email has been replied to
+                If Not objMail.Categories Like "*Replied*" Then
+                    nDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
+                    If nDateDiff < 7 Then
+                        nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 1) = objMail.Subject
+                            .Cells(nLastRow, 2) = objMail.ReceivedTime
+                            .Cells(nLastRow, 3) = objMail.SenderName
+                            .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
+                        End With
+                        
+                        ' Move the email to the destination folder "ABCTest Folder"
+                        objMail.Move objDestFolder
+                    End If
                 End If
             End If
         End If
@@ -95,8 +104,20 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestFolder
         For Each objSubfolder In objCurrentFolder.Folders
             ' Skip processing subfolders other than the inbox
             If objSubfolder.Name = "Inbox" Then
-                Call ProcessFolders(objSubfolder, objDestFolder)
+                Call ProcessFolders(objSubfolder, objDestFolder, foldersToCheck)
             End If
         Next
     End If
 End Sub
+
+Function IsInArray(stringToBeFound As String, arr As Variant) As Boolean
+    ' Function to check if a string is in an array
+    Dim i As Long
+    For i = LBound(arr) To UBound(arr)
+        If arr(i) = stringToBeFound Then
+            IsInArray = True
+            Exit Function
+        End If
+    Next i
+    IsInArray = False
+End Function
