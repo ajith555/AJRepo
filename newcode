@@ -81,7 +81,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestFolder
             If IsInArray(folderName, foldersToCheck) Then
                 ' Check if the email has been replied to by checking the Categories property
                 ' Assume a category "Replied" is applied when the email has been replied to
-                If Not objMail.Categories Like "*Replied*" Then
+                If InStr(1, objMail.Categories, "Replied", vbTextCompare) = 0 Then
                     ' Check if the email was received within the last 7 days
                     nDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                     If nDateDiff <= 7 Then ' Changed to "less than or equal to" 7
