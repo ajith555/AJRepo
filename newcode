@@ -1,14 +1,14 @@
 Option Explicit
 
-Const SpecificEmail As String = "example@ubb.com"
-
 Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
+Dim objOutlook As Outlook.Application
+Dim objNamespace As Outlook.Namespace
+Dim objSourceFolder As Outlook.Folder
+Dim objDestinationFolder As Outlook.Folder
 
 Sub ExportEmailsNotReplied()
-    Dim objInbox As Outlook.Folder
-
     Set objExcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
@@ -27,12 +27,24 @@ Sub ExportEmailsNotReplied()
     objExcelApplication.Visible = True
     objExcelWorkbook.Activate
     
-    Set objInbox = Application.Session.GetDefaultFolder(olFolderInbox)
-    Call ProcessFolders(objInbox)
+    ' Define your email account
+    Dim emailAccount As String
+    emailAccount = "ex@uss.com"
+    
+    ' Initialize Outlook
+    Set objOutlook = New Outlook.Application
+    Set objNamespace = objOutlook.GetNamespace("MAPI")
+    
+    ' Set the source folder (Inbox in this example)
+    Set objSourceFolder = objNamespace.Folders(emailAccount).Folders("Inbox")
+    
+    ' Set the destination folder (ABC move in this example)
+    Set objDestinationFolder = objNamespace.Folders(emailAccount).Folders("ABC move")
+    
+    Call ProcessFolders(objSourceFolder)
     
     With objExcelWorksheet
         .Columns("A:C").AutoFit
-        .Rows.RowHeight = 15
         .Columns("D").ColumnWidth = 100
         .Columns("D").WrapText = False
     End With
@@ -50,24 +62,23 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
     For i = objCurrentFolder.Items.Count To 1 Step -1
         If objCurrentFolder.Items(i).Class = olMail Then
             Set objMail = objCurrentFolder.Items(i)
+            strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
             
-            ' Check if the email is from the specific account
-            If objMail.SenderEmailAddress = SpecificEmail Then
-                strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
+                nDateDiff = DateDiff("d", objMail.SentOn, Now)
                 
-                If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
-                    nDateDiff = DateDiff("d", objMail.SentOn, Now)
+                If nDateDiff < 7 Then
+                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
                     
-                    If nDateDiff < 7 Then
-                        nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                        
-                        With objExcelWorksheet
-                            .Cells(nLastRow, 1).Value = objMail.Subject
-                            .Cells(nLastRow, 2).Value = objMail.ReceivedTime
-                            .Cells(nLastRow, 3).Value = objMail.SenderName
-                            .Cells(nLastRow, 4).Value = Left(Trim(objMail.Body), 100) & "..."
-                        End With
-                    End If
+                    With objExcelWorksheet
+                        .Cells(nLastRow, 1).Value = objMail.Subject
+                        .Cells(nLastRow, 2).Value = objMail.ReceivedTime
+                        .Cells(nLastRow, 3).Value = objMail.SenderName
+                        .Cells(nLastRow, 4).Value = Left(Trim(objMail.Body), 100) & "..."
+                    End With
+                    
+                    ' Move the email to the destination folder (ABC move)
+                    objMail.Move objDestinationFolder
                 End If
             End If
         End If
