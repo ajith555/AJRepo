@@ -1,124 +1,76 @@
+Option Explicit ' Add this line at the beginning of the module
+
 Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
-Dim objABCTestFolder As Outlook.Folder ' Added
 
 Sub ExportEmailsNotReplied()
-    Dim objNamespace As Outlook.Namespace
-    Dim objSession As Outlook.NameSpace
-    Dim objSharedInbox As Outlook.Folder
-    Dim objDestFolder As Outlook.Folder ' Added
-    
-    ' Replace "sh-operations@ubb.com" with the shared Outlook account's email address
-    Const sharedAccountEmail As String = "sh-operations@ubb.com"
-    ' Replace "ABCTest Folder" with the name of the destination folder
-    Const destFolderName As String = "ABCTest Folder"
-    
-    ' Array of folder names to check for emails
-    Dim foldersToCheck As Variant
-    foldersToCheck = Array("abc", "test", "abcc")
-    
+    Dim objInbox As Outlook.Folder
+
     Set objExcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
     
     With objExcelWorksheet
-        .Cells(1, 1) = "Subject"
+        .Cells(1, 1).Value = "Subject"
         .Cells(1, 1).Font.Bold = True
-        .Cells(1, 2) = "Received"
+        .Cells(1, 2).Value = "Received"
         .Cells(1, 2).Font.Bold = True
-        .Cells(1, 3) = "Sender"
+        .Cells(1, 3).Value = "Sender"
         .Cells(1, 3).Font.Bold = True
-        .Cells(1, 4) = "Excerpts"
+        .Cells(1, 4).Value = "Excerpts"
         .Cells(1, 4).Font.Bold = True
     End With
     
     objExcelApplication.Visible = True
     objExcelWorkbook.Activate
     
-    Set objNamespace = Outlook.GetNamespace("MAPI")
-    Set objSession = objNamespace.Session
-    objSession.Logon
-    
-    ' Get the shared inbox folder of the shared mailbox
-    Set objSharedInbox = objNamespace.Folders(sharedAccountEmail).Folders("Inbox")
-    
-    ' Get the destination folder "ABCTest Folder" under the shared inbox
-    On Error Resume Next ' Ignore error if the folder doesn't exist
-    Set objDestFolder = objSharedInbox.Folders(destFolderName)
-    On Error GoTo 0 ' Reset error handling
-    
-    ' Check if the destination folder exists, if not, create it
-    If objDestFolder Is Nothing Then
-        Set objDestFolder = objSharedInbox.Folders.Add(destFolderName)
-    End If
-    
-    ' Process emails and move to destination folder
-    Call ProcessFolders(objSharedInbox, objDestFolder, foldersToCheck)
+    Set objInbox = Application.Session.GetDefaultFolder(olFolderInbox)
+    Call ProcessFolders(objInbox)
     
     With objExcelWorksheet
-        .Columns("A:D").AutoFit
+        .Columns("A:C").AutoFit
+        .Rows.RowHeight = 15
         .Columns("D").ColumnWidth = 100
         .Columns("D").WrapText = False
-        .Rows.RowHeight = 15
     End With
     
     MsgBox "Complete!", vbExclamation
 End Sub
 
-Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestFolder As Outlook.Folder, ByVal foldersToCheck As Variant)
+Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
+    Dim i As Long
     Dim objMail As Outlook.MailItem
+    Dim strReplied As String
     Dim nDateDiff As Integer
-    Dim nLastRow As Long
+    Dim nLastRow As Integer
     
     For i = objCurrentFolder.Items.Count To 1 Step -1
         If objCurrentFolder.Items(i).Class = olMail Then
             Set objMail = objCurrentFolder.Items(i)
+            strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
             
-            ' Check if the email's parent folder name exists in the specified foldersToCheck array
-            Dim folderName As String
-            folderName = objCurrentFolder.Name
-            If IsInArray(folderName, foldersToCheck) Then
-                ' Check if the email has been replied to by checking the Categories property
-                ' Assume a category "Replied" is applied when the email has been replied to
-                If InStr(1, objMail.Categories, "Replied", vbTextCompare) = 0 Then
-                    ' Check if the email was received within the last 7 days
-                    nDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
-                    If nDateDiff <= 7 Then ' Changed to "less than or equal to" 7
-                        nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                        With objExcelWorksheet
-                            .Cells(nLastRow, 1) = objMail.Subject
-                            .Cells(nLastRow, 2) = objMail.ReceivedTime
-                            .Cells(nLastRow, 3) = objMail.SenderName
-                            .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
-                        End With
-                        
-                        ' Move the email to the destination folder "ABCTest Folder"
-                        objMail.Move objDestFolder
-                    End If
+            If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
+                nDateDiff = DateDiff("d", objMail.SentOn, Now)
+                
+                If nDateDiff < 7 Then
+                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                    
+                    With objExcelWorksheet
+                        .Cells(nLastRow, 1).Value = objMail.Subject
+                        .Cells(nLastRow, 2).Value = objMail.ReceivedTime
+                        .Cells(nLastRow, 3).Value = objMail.SenderName
+                        .Cells(nLastRow, 4).Value = Left(Trim(objMail.Body), 100) & "..."
+                    End With
                 End If
             End If
         End If
     Next
     
     If objCurrentFolder.Folders.Count > 0 Then
+        Dim objSubfolder As Outlook.Folder
         For Each objSubfolder In objCurrentFolder.Folders
-            ' Skip processing subfolders other than the inbox
-            If objSubfolder.Name = "Inbox" Then
-                Call ProcessFolders(objSubfolder, objDestFolder, foldersToCheck)
-            End If
+            Call ProcessFolders(objSubfolder)
         Next
     End If
 End Sub
-
-Function IsInArray(stringToBeFound As String, arr As Variant) As Boolean
-    ' Function to check if a string is in an array
-    Dim i As Long
-    For i = LBound(arr) To UBound(arr)
-        If arr(i) = stringToBeFound Then
-            IsInArray = True
-            Exit Function
-        End If
-    Next i
-    IsInArray = False
-End Function
