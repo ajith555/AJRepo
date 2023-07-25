@@ -1,12 +1,21 @@
-Option Explicit ' Add this line at the beginning of the module
+Option Explicit
 
 Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
+Dim objOutlookNamespace As Outlook.Namespace
+Dim objSourceFolder As Outlook.Folder
+Dim objMoveFolder As Outlook.Folder
 
 Sub ExportEmailsNotReplied()
     Dim objInbox As Outlook.Folder
-
+    Dim emailAccount As String
+    
+    ' Update the email account and folder names here
+    emailAccount = "YourEmailAccount@example.com"
+    Set objSourceFolder = GetOutlookFolder(emailAccount, "Inbox") ' Add more folder names here if needed
+    Set objMoveFolder = GetOutlookFolder(emailAccount, "ABC move") ' Change "ABC move" to the destination folder name
+    
     Set objExcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
@@ -25,18 +34,39 @@ Sub ExportEmailsNotReplied()
     objExcelApplication.Visible = True
     objExcelWorkbook.Activate
     
-    Set objInbox = Application.Session.GetDefaultFolder(olFolderInbox)
-    Call ProcessFolders(objInbox)
+    Call ProcessFolders(objSourceFolder)
     
     With objExcelWorksheet
         .Columns("A:C").AutoFit
-        .Rows.RowHeight = 15
         .Columns("D").ColumnWidth = 100
         .Columns("D").WrapText = False
     End With
     
     MsgBox "Complete!", vbExclamation
 End Sub
+
+Function GetOutlookFolder(ByVal emailAccount As String, ByVal folderName As String) As Outlook.Folder
+    On Error Resume Next
+    Dim objOutlookApp As Outlook.Application
+    Dim objNamespace As Outlook.Namespace
+    Dim objRecipient As Outlook.Recipient
+    
+    Set objOutlookApp = New Outlook.Application
+    Set objNamespace = objOutlookApp.GetNamespace("MAPI")
+    
+    ' Get the recipient for the specified email account
+    Set objRecipient = objNamespace.CreateRecipient(emailAccount)
+    objRecipient.Resolve
+    
+    If objRecipient.Resolved Then
+        ' Get the folder for the specified folder name
+        Set GetOutlookFolder = objNamespace.GetSharedDefaultFolder(objRecipient, olFolderInbox).Folders(folderName)
+    End If
+    
+    Set objOutlookApp = Nothing
+    Set objNamespace = Nothing
+    Set objRecipient = Nothing
+End Function
 
 Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
     Dim i As Long
@@ -62,6 +92,9 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
                         .Cells(nLastRow, 3).Value = objMail.SenderName
                         .Cells(nLastRow, 4).Value = Left(Trim(objMail.Body), 100) & "..."
                     End With
+                    
+                    ' Move the email to the specified destination folder
+                    objMail.Move objMoveFolder
                 End If
             End If
         End If
