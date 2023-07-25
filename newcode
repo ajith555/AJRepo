@@ -3,10 +3,24 @@ Option Explicit ' Add this line at the beginning of the module
 Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
+Dim outlookAccount As String
+Dim dataFolderNames() As String
+Dim moveFolderName As String
 
 Sub ExportEmailsNotReplied()
     Dim objInbox As Outlook.Folder
-
+    Dim objABCtest As Outlook.Folder
+    Dim objOrigin As Outlook.Folder
+    Dim outlookNamespace As Outlook.NameSpace
+    Dim moveFolder As Outlook.Folder
+    
+    ' Set your Outlook email account and move folder here:
+    outlookAccount = "your_email_account@example.com"
+    moveFolderName = "ABC move" ' folder where the emails will be moved after fetching data
+    
+    ' Add folders to fetch from
+    dataFolderNames = Split("Inbox,ABCtest,Origin", ",") ' Separate folder names with commas
+    
     Set objExcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
@@ -25,8 +39,24 @@ Sub ExportEmailsNotReplied()
     objExcelApplication.Visible = True
     objExcelWorkbook.Activate
     
-    Set objInbox = Application.Session.GetDefaultFolder(olFolderInbox)
-    Call ProcessFolders(objInbox)
+    ' Get the Outlook namespace and move folder
+    Set outlookNamespace = Outlook.Application.GetNamespace("MAPI")
+    Set moveFolder = outlookNamespace.Folders(outlookAccount).Folders(moveFolderName)
+    
+    Dim folderName As Variant
+    For Each folderName In dataFolderNames
+        Select Case folderName
+            Case "Inbox"
+                Set objInbox = outlookNamespace.Folders(outlookAccount).Folders(folderName)
+                Call ProcessFolders(objInbox, moveFolder)
+            Case "ABCtest"
+                Set objABCtest = outlookNamespace.Folders(outlookAccount).Folders(folderName)
+                Call ProcessFolders(objABCtest, moveFolder)
+            Case "Origin"
+                Set objOrigin = outlookNamespace.Folders(outlookAccount).Folders(folderName)
+                Call ProcessFolders(objOrigin, moveFolder)
+        End Select
+    Next folderName
     
     With objExcelWorksheet
         .Columns("A:C").AutoFit
@@ -38,7 +68,7 @@ Sub ExportEmailsNotReplied()
     MsgBox "Complete!", vbExclamation
 End Sub
 
-Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
+Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objMoveFolder As Outlook.Folder)
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
@@ -62,6 +92,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
                         .Cells(nLastRow, 3).Value = objMail.SenderName
                         .Cells(nLastRow, 4).Value = Left(Trim(objMail.Body), 100) & "..."
                     End With
+                    objMail.Move objMoveFolder ' Move the email to the "ABC move" folder
                 End If
             End If
         End If
@@ -70,7 +101,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
     If objCurrentFolder.Folders.Count > 0 Then
         Dim objSubfolder As Outlook.Folder
         For Each objSubfolder In objCurrentFolder.Folders
-            Call ProcessFolders(objSubfolder)
+            Call ProcessFolders(objSubfolder, objMoveFolder)
         Next
     End If
 End Sub
