@@ -1,22 +1,11 @@
 Option Explicit ' Add this line at the beginning of the module
 
-' Constants for email account and folder names
-Const EmailAccount As String = "YourEmail@domain.com" ' Update with your email account
-Const MainFolderName As String = "Inbox" ' Update with the main folder name you want to check
-Const MoveToFolderName As String = "ABC move" ' Update with the name of the folder to move emails to
-
-' Array to hold the names of additional folders to check for emails
-Dim AdditionalFolders() As String
-Const Folder1 As String = "Folder1" ' Update with the name of additional folder 1 (if any)
-Const Folder2 As String = "Folder2" ' Update with the name of additional folder 2 (if any)
-
 Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 
 Sub ExportEmailsNotReplied()
     Dim objInbox As Outlook.Folder
-    Dim objNamespace As Outlook.Namespace
 
     Set objExcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
@@ -36,15 +25,8 @@ Sub ExportEmailsNotReplied()
     objExcelApplication.Visible = True
     objExcelWorkbook.Activate
     
-    ' Get the desired Outlook folder using the email account and main folder name
-    Set objNamespace = Application.GetNamespace("MAPI")
-    Set objInbox = objNamespace.Folders(EmailAccount).Folders(MainFolderName)
-    
-    ' Populate additional folders array
-    PopulateAdditionalFolders
-    
-    ' Process the main folder and additional folders
-    Call ProcessFolder(objInbox)
+    Set objInbox = Application.Session.GetDefaultFolder(olFolderInbox)
+    Call ProcessFolders(objInbox)
     
     With objExcelWorksheet
         .Columns("A:C").AutoFit
@@ -56,7 +38,7 @@ Sub ExportEmailsNotReplied()
     MsgBox "Complete!", vbExclamation
 End Sub
 
-Sub ProcessFolder(ByVal objCurrentFolder As Outlook.Folder)
+Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
@@ -80,9 +62,6 @@ Sub ProcessFolder(ByVal objCurrentFolder As Outlook.Folder)
                         .Cells(nLastRow, 3).Value = objMail.SenderName
                         .Cells(nLastRow, 4).Value = Left(Trim(objMail.Body), 100) & "..."
                     End With
-                    
-                    ' Move the email to the specified folder
-                    objMail.Move objCurrentFolder.Folders(MoveToFolderName)
                 End If
             End If
         End If
@@ -91,13 +70,7 @@ Sub ProcessFolder(ByVal objCurrentFolder As Outlook.Folder)
     If objCurrentFolder.Folders.Count > 0 Then
         Dim objSubfolder As Outlook.Folder
         For Each objSubfolder In objCurrentFolder.Folders
-            Call ProcessFolder(objSubfolder)
+            Call ProcessFolders(objSubfolder)
         Next
     End If
-End Sub
-
-Sub PopulateAdditionalFolders()
-    ' Update this section with additional folder names as needed
-    ' If there are no additional folders, simply leave this subroutine empty
-    AdditionalFolders = Array(Folder1, Folder2)
 End Sub
