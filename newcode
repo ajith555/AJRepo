@@ -28,6 +28,8 @@ Sub ExportEmailsNotReplied()
         Exit Sub
     End If
     
+    On Error GoTo ErrorHandler ' Add error handling for potential issues
+    
     Set objExcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
@@ -58,6 +60,17 @@ Sub ExportEmailsNotReplied()
     End With
     
     MsgBox "Complete!", vbExclamation
+    Exit Sub ' Exit the subroutine if everything ran successfully
+    
+ErrorHandler:
+    MsgBox "An error occurred: " & Err.Description, vbExclamation
+    On Error Resume Next
+    objExcelWorkbook.Close SaveChanges:=False
+    objExcelApplication.Quit
+    Set objExcelWorksheet = Nothing
+    Set objExcelWorkbook = Nothing
+    Set objExcelApplication = Nothing
+    Exit Sub
 End Sub
 
 Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
@@ -66,6 +79,8 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
     Dim strReplied As String
     Dim nDateDiff As Integer
     Dim nLastRow As Integer
+    
+    On Error Resume Next ' Add error handling for potential issues in loop
     
     For i = objCurrentFolder.Items.Count To 1 Step -1
         If objCurrentFolder.Items(i).Class = olMail Then
@@ -87,6 +102,8 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
             End If
         End If
     Next
+    
+    On Error GoTo 0 ' Reset error handling
     
     If objCurrentFolder.Folders.Count > 0 Then
         Dim objSubfolder As Outlook.Folder
