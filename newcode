@@ -9,6 +9,7 @@ Sub ExportEmailsNotReplied()
 
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
+    Dim objABCFolder As Outlook.Folder
 
     ' Create and initialize the Excel application and worksheet
     Set objExcelApplication = CreateObject("Excel.Application")
@@ -34,8 +35,23 @@ Sub ExportEmailsNotReplied()
     Set objRootFolder = objNamespace.Folders(targetEmail)
     Set objInbox = objRootFolder.Folders("Inbox")
 
+    ' Check if the "ABC" folder exists or create it if it doesn't
+    Dim foundABC As Boolean
+    foundABC = False
+    For Each objFolder In objInbox.Folders
+        If objFolder.Name = "ABC" Then
+            foundABC = True
+            Set objABCFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
+
+    If Not foundABC Then
+        Set objABCFolder = objInbox.Folders.Add("ABC", olFolderInbox)
+    End If
+
     ' Check and process the folders
-    Call ProcessFolders(objInbox)
+    Call ProcessFolders(objInbox, objABCFolder)
 
     ' Format the Excel columns and rows
     With objExcelWorksheet
@@ -47,13 +63,12 @@ Sub ExportEmailsNotReplied()
     MsgBox "Complete!", vbExclamation
 End Sub
 
-Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
+Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
     Dim nDateDiff As Integer
     Dim nLastRow As Integer
-    Dim objDestinationFolder As Outlook.Folder
 
     For i = objCurrentFolder.Items.Count To 1 Step -1
         If objCurrentFolder.Items(i).Class = olMail Then
@@ -72,17 +87,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
                     End With
 
                     ' Move the retrieved email to the "ABC" folder
-                    If objCurrentFolder.Name <> "ABC" Then
-                        If objDestinationFolder Is Nothing Then
-                            ' Find or create the "ABC" folder
-                            On Error Resume Next
-                            Set objDestinationFolder = objCurrentFolder.Folders("ABC")
-                            On Error GoTo 0
-                            If objDestinationFolder Is Nothing Then
-                                Set objDestinationFolder = objCurrentFolder.Folders.Add("ABC", olFolderInbox)
-                            End If
-                        End If
-
+                    If objCurrentFolder.Name <> objDestinationFolder.Name Then
                         objMail.Move objDestinationFolder
                     End If
                 End If
@@ -93,7 +98,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
     ' Recursively process subfolders
     If objCurrentFolder.Folders.Count > 0 Then
         For Each objSubfolder In objCurrentFolder.Folders
-            Call ProcessFolders(objSubfolder)
+            Call ProcessFolders(objSubfolder, objDestinationFolder)
         Next
     End If
 End Sub
