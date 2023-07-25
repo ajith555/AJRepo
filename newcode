@@ -5,31 +5,10 @@ Dim objInbox As Outlook.Folder
 Dim objABCFolder As Outlook.Folder
 
 Sub ExportEmailsNotReplied()
-    Dim objNamespace As Outlook.Namespace
-    Dim objAccounts As Outlook.Accounts
-    Dim objAccount As Outlook.Account
-    
     Dim strEmailAccount As String
-    strEmailAccount = InputBox("Enter the email account to check (e.g., john.doe@example.com):")
+    strEmailAccount = "john.doe@example.com" ' Replace this with the email account you want to check
     
     On Error Resume Next
-    Set objNamespace = Application.GetNamespace("MAPI")
-    Set objAccounts = objNamespace.Accounts
-    
-    For Each objAccount In objAccounts
-        If objAccount.SmtpAddress = strEmailAccount Then
-            On Error GoTo 0
-            Exit For
-        End If
-    Next objAccount
-    
-    If objAccount Is Nothing Then
-        MsgBox "Email account not found. Please enter a valid email account.", vbExclamation
-        Exit Sub
-    End If
-    
-    On Error GoTo ErrorHandler ' Add error handling for potential issues
-    
     Set objExcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
@@ -48,7 +27,12 @@ Sub ExportEmailsNotReplied()
     objExcelApplication.Visible = True
     objExcelWorkbook.Activate
     
-    Set objInbox = objNamespace.GetSharedDefaultFolder(objAccount, olFolderInbox)
+    On Error GoTo ErrorHandler ' Add error handling for potential issues
+    
+    Dim objNamespace As Outlook.Namespace
+    Set objNamespace = Application.GetNamespace("MAPI")
+    
+    Set objInbox = objNamespace.GetSharedDefaultFolder(objNamespace.Accounts.Item(1), olFolderInbox) ' Assumes the first account is the desired one
     Set objABCFolder = objInbox.Folders("ABC") ' Assumes there's a folder named "ABC" under Inbox, change this if needed
     
     Call ProcessFolders(objInbox)
