@@ -5,6 +5,11 @@ Const EmailAccount As String = "YourEmail@domain.com" ' Update with your email a
 Const MainFolderName As String = "Inbox" ' Update with the main folder name you want to check
 Const MoveToFolderName As String = "ABC move" ' Update with the name of the folder to move emails to
 
+' Array to hold the names of additional folders to check for emails
+Dim AdditionalFolders() As String
+Const Folder1 As String = "Folder1" ' Update with the name of additional folder 1 (if any)
+Const Folder2 As String = "Folder2" ' Update with the name of additional folder 2 (if any)
+
 Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
@@ -35,7 +40,11 @@ Sub ExportEmailsNotReplied()
     Set objNamespace = Application.GetNamespace("MAPI")
     Set objInbox = objNamespace.Folders(EmailAccount).Folders(MainFolderName)
     
-    Call ProcessFolders(objInbox)
+    ' Populate additional folders array
+    PopulateAdditionalFolders
+    
+    ' Process the main folder and additional folders
+    Call ProcessFolder(objInbox)
     
     With objExcelWorksheet
         .Columns("A:C").AutoFit
@@ -47,7 +56,7 @@ Sub ExportEmailsNotReplied()
     MsgBox "Complete!", vbExclamation
 End Sub
 
-Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
+Sub ProcessFolder(ByVal objCurrentFolder As Outlook.Folder)
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
@@ -82,7 +91,13 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
     If objCurrentFolder.Folders.Count > 0 Then
         Dim objSubfolder As Outlook.Folder
         For Each objSubfolder In objCurrentFolder.Folders
-            Call ProcessFolders(objSubfolder)
+            Call ProcessFolder(objSubfolder)
         Next
     End If
+End Sub
+
+Sub PopulateAdditionalFolders()
+    ' Update this section with additional folder names as needed
+    ' If there are no additional folders, simply leave this subroutine empty
+    AdditionalFolders = Array(Folder1, Folder2)
 End Sub
