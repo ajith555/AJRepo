@@ -2,7 +2,7 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objInbox As Outlook.Folder
-Dim objProcessedEmails As Collection
+Dim objProcessedEmails As Object ' Dictionary to store processed email EntryIDs
 
 Sub ExportEmailsNotReplied()
     Dim targetEmail As String
@@ -31,8 +31,8 @@ Sub ExportEmailsNotReplied()
     objExcelApplication.Visible = True
     objExcelWorkbook.Activate
 
-    ' Initialize the collection to store processed emails
-    Set objProcessedEmails = New Collection
+    ' Initialize the dictionary to store processed emails
+    Set objProcessedEmails = CreateObject("Scripting.Dictionary")
 
     ' Get the specified email account and its Inbox folder
     Set objNamespace = Outlook.GetNamespace("MAPI")
@@ -80,7 +80,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinatio
             strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
 
             ' Check if the email has not been processed already
-            If Not EmailProcessed(objMail) Then
+            If Not EmailProcessed(objMail.EntryID) Then
                 If (Not (strReplied = 102)) And (Not (strReplied = 103)) Then
                     nDateDiff = DateDiff("d", objMail.SentOn, Now)
                     If nDateDiff < 7 Then
@@ -97,8 +97,8 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinatio
                             objMail.Move objDestinationFolder
                         End If
 
-                        ' Add the processed email to the collection
-                        objProcessedEmails.Add objMail, CStr(objMail.EntryID)
+                        ' Add the processed email to the dictionary
+                        objProcessedEmails(objMail.EntryID) = True
                     End If
                 End If
             End If
@@ -113,11 +113,6 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinatio
     End If
 End Sub
 
-Function EmailProcessed(ByVal objMail As Outlook.MailItem) As Boolean
-    Dim strEntryID As String
-    strEntryID = objMail.EntryID
-
-    On Error Resume Next
-    EmailProcessed = Not (objProcessedEmails.Item(strEntryID) Is Nothing)
-    On Error GoTo 0
+Function EmailProcessed(ByVal entryID As String) As Boolean
+    EmailProcessed = objProcessedEmails.Exists(entryID)
 End Function
