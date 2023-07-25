@@ -66,7 +66,7 @@ Sub ExportEmailsNotReplied()
     MsgBox "Complete!", vbExclamation
 End Sub
 
-Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestFolder As Outlook.Folder, ByVal foldersToCheck As Variant) ' Modified
+Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestFolder As Outlook.Folder, ByVal foldersToCheck As Variant)
     Dim objMail As Outlook.MailItem
     Dim nDateDiff As Integer
     Dim nLastRow As Long
@@ -82,8 +82,9 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestFolder
                 ' Check if the email has been replied to by checking the Categories property
                 ' Assume a category "Replied" is applied when the email has been replied to
                 If Not objMail.Categories Like "*Replied*" Then
+                    ' Check if the email was received within the last 7 days
                     nDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
-                    If nDateDiff < 7 Then
+                    If nDateDiff <= 7 Then ' Changed to "less than or equal to" 7
                         nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
                         With objExcelWorksheet
                             .Cells(nLastRow, 1) = objMail.Subject
