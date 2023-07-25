@@ -8,6 +8,7 @@ Dim objSourceFolder As Outlook.Folder
 Dim objMoveFolder As Outlook.Folder
 
 Sub ExportEmailsNotReplied()
+    On Error GoTo ErrorHandler ' Add error handling
     Dim objInbox As Outlook.Folder
     Dim emailAccount As String
     
@@ -15,6 +16,17 @@ Sub ExportEmailsNotReplied()
     emailAccount = "YourEmailAccount@example.com"
     Set objSourceFolder = GetOutlookFolder(emailAccount, "Inbox") ' Add more folder names here if needed
     Set objMoveFolder = GetOutlookFolder(emailAccount, "ABC move") ' Change "ABC move" to the destination folder name
+    
+    ' Check if the source and move folders are set correctly
+    If objSourceFolder Is Nothing Then
+        MsgBox "Source folder not found. Please check the folder name.", vbExclamation
+        Exit Sub
+    End If
+    
+    If objMoveFolder Is Nothing Then
+        MsgBox "Move folder not found. Please check the folder name.", vbExclamation
+        Exit Sub
+    End If
     
     Set objExcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
@@ -43,6 +55,9 @@ Sub ExportEmailsNotReplied()
     End With
     
     MsgBox "Complete!", vbExclamation
+    Exit Sub ' Exit the subroutine to skip the error handler
+ErrorHandler:
+    MsgBox "An error occurred: " & Err.Description, vbExclamation
 End Sub
 
 Function GetOutlookFolder(ByVal emailAccount As String, ByVal folderName As String) As Outlook.Folder
