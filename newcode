@@ -2,20 +2,36 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objInbox As Outlook.Folder
-Dim objProcessedEmails As Object ' Dictionary to store processed email EntryIDs
+Dim objABCFolder As Outlook.Folder
 
 Sub ExportEmailsNotReplied()
-    Dim targetEmail As String
-    targetEmail = "your_email@example.com" ' Replace this with the desired email address
-
     Dim objNamespace As Outlook.Namespace
-    Dim objRootFolder As Outlook.Folder
-
-    ' Create and initialize the Excel application and worksheet
+    Dim objAccounts As Outlook.Accounts
+    Dim objAccount As Outlook.Account
+    
+    Dim strEmailAccount As String
+    strEmailAccount = InputBox("Enter the email account to check (e.g., john.doe@example.com):")
+    
+    On Error Resume Next
+    Set objNamespace = Application.GetNamespace("MAPI")
+    Set objAccounts = objNamespace.Accounts
+    
+    For Each objAccount In objAccounts
+        If objAccount.SmtpAddress = strEmailAccount Then
+            On Error GoTo 0
+            Exit For
+        End If
+    Next objAccount
+    
+    If objAccount Is Nothing Then
+        MsgBox "Email account not found. Please enter a valid email account.", vbExclamation
+        Exit Sub
+    End If
+    
     Set objExcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
-
+    
     With objExcelWorksheet
         .Cells(1, 1) = "Subject"
         .Cells(1, 1).Font.Bold = True
@@ -26,113 +42,56 @@ Sub ExportEmailsNotReplied()
         .Cells(1, 4) = "Excerpts"
         .Cells(1, 4).Font.Bold = True
     End With
-
+    
     objExcelApplication.Visible = True
     objExcelWorkbook.Activate
-
-    ' Initialize the dictionary to store processed emails
-    Set objProcessedEmails = CreateObject("Scripting.Dictionary")
-
-    ' Get the specified email account and its Inbox folder
-    Set objNamespace = Outlook.GetNamespace("MAPI")
-    Set objRootFolder = objNamespace.Folders(targetEmail)
-
-    ' Check if the "ABC" folder exists or create it if it doesn't
-    Dim foundABC As Boolean
-    foundABC = False
-    For Each objFolder In objRootFolder.Folders
-        If objFolder.Name = "ABC" Then
-            foundABC = True
-            Set objInbox = objFolder
-            Exit For
-        End If
-    Next objFolder
-
-    If Not foundABC Then
-        Set objInbox = objRootFolder.Folders.Add("ABC", olFolderInbox)
-    End If
-
-    ' Check and process the folders
-    Call ProcessFolders(objRootFolder)
-
-    ' Format the Excel columns and rows
+    
+    Set objInbox = objNamespace.GetSharedDefaultFolder(objAccount, olFolderInbox)
+    Set objABCFolder = objInbox.Folders("ABC") ' Assumes there's a folder named "ABC" under Inbox, change this if needed
+    
+    Call ProcessFolders(objInbox)
+    
     With objExcelWorksheet
         .Columns("A:C").AutoFit
         .Columns("D").ColumnWidth = 100
         .Columns("D").WrapText = False
     End With
-
+    
     MsgBox "Complete!", vbExclamation
 End Sub
 
 Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
-    Dim objMail As Outlook.MailItem
     Dim i As Long
-
-    For i = objCurrentFolder.Items.Count To 1 Step -1
-        If objCurrentFolder.Items(i).Class = olMail Then
-            Set objMail = objCurrentFolder.Items(i)
-            Call ProcessEmail(objMail)
-        End If
-    Next
-
-    ' Recursively process subfolders
-    If objCurrentFolder.Folders.Count > 0 Then
-        For Each objSubfolder In objCurrentFolder.Folders
-            Call ProcessFolders(objSubfolder)
-        Next
-    End If
-End Sub
-
-Sub ProcessEmail(ByVal objMail As Outlook.MailItem)
+    Dim objMail As Outlook.MailItem
     Dim strReplied As String
     Dim nDateDiff As Integer
     Dim nLastRow As Integer
-
-    strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
-
-    ' Check if the email has not been processed already
-    If Not EmailProcessed(objMail.EntryID) Then
-        If (Not (strReplied = 102)) And (Not (strReplied = 103)) Then
-            nDateDiff = DateDiff("d", objMail.SentOn, Now)
-            If nDateDiff < 7 Then
-                nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                With objExcelWorksheet
-                    .Cells(nLastRow, 1) = objMail.Subject
-                    .Cells(nLastRow, 2) = objMail.ReceivedTime
-                    .Cells(nLastRow, 3) = objMail.SenderName
-                    .Cells(nLastRow, 4) = GetExcerpt(objMail.Body) ' Populate Excerpts with meaningful content
-                End With
-
-                ' Move the email to the "ABC" folder
-                objMail.Move objInbox
-
-                ' Add the processed email to the dictionary
-                objProcessedEmails(objMail.EntryID) = True
+    
+    For i = objCurrentFolder.Items.Count To 1 Step -1
+        If objCurrentFolder.Items(i).Class = olMail Then
+            Set objMail = objCurrentFolder.Items(i)
+            strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            
+            If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
+                nDateDiff = DateDiff("d", objMail.SentOn, Now)
+                If nDateDiff < 7 Then
+                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                    With objExcelWorksheet
+                        .Cells(nLastRow, 1) = objMail.Subject
+                        .Cells(nLastRow, 2) = objMail.ReceivedTime
+                        .Cells(nLastRow, 3) = objMail.SenderName
+                        .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
+                    End With
+                    objMail.Move objABCFolder ' Move the email to the "ABC" folder
+                End If
             End If
         End If
+    Next
+    
+    If objCurrentFolder.Folders.Count > 0 Then
+        Dim objSubfolder As Outlook.Folder
+        For Each objSubfolder In objCurrentFolder.Folders
+            Call ProcessFolders(objSubfolder)
+        Next objSubfolder
     End If
 End Sub
-
-Function EmailProcessed(ByVal entryID As String) As Boolean
-    EmailProcessed = objProcessedEmails.Exists(entryID)
-End Function
-
-Function GetExcerpt(ByVal bodyText As String) As String
-    Dim lines() As String
-    lines = Split(bodyText, vbCrLf)
-
-    Dim excerpt As String
-    Dim i As Long
-    Dim maxLines As Long
-    maxLines = 3 ' Change this to control the number of lines to include in the excerpt
-
-    For i = 0 To UBound(lines)
-        If Trim(lines(i)) <> "" Then
-            excerpt = excerpt & lines(i) & vbCrLf
-            If i = maxLines - 1 Then Exit For
-        End If
-    Next i
-
-    GetExcerpt = Left(excerpt, Len(excerpt) - 2) ' Remove the last vbCrLf from the excerpt
-End Function
