@@ -10,6 +10,7 @@ Sub ExportEmailsNotReplied()
     Dim objRootFolder As Outlook.Folder
     Dim objABCfolder As Outlook.Folder
 
+    'Create and initialize the Excel application and worksheet
     Set objexcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objexcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
@@ -28,10 +29,12 @@ Sub ExportEmailsNotReplied()
     objexcelApplication.Visible = True
     objExcelWorkbook.Activate
 
+    'Get the specified email account and its Inbox folder
     Set objNamespace = Outlook.GetNamespace("MAPI")
     Set objRootFolder = objNamespace.Folders(targetEmail)
     Set objinbox = objRootFolder.Folders("Inbox")
 
+    'Check if the "ABC" folder exists or create it if it doesn't
     Dim foundABC As Boolean
     foundABC = False
     For Each objFolder In objinbox.Folders
@@ -46,6 +49,7 @@ Sub ExportEmailsNotReplied()
         Set objABCfolder = objinbox.Folders.Add("ABC", olFolderInbox)
     End If
 
+    'Check and process the folders
     Call ProcessFolders(objinbox, objABCfolder)
 
     With objExcelWorksheet
@@ -54,42 +58,46 @@ Sub ExportEmailsNotReplied()
         .Columns("D").WrapText = False
     End With
 
-    Call RemoveDuplicatesFromWorkbook
-
-    For Each objMail In objinbox.Items
-        If TypeOf objMail Is Outlook.MailItem Then ' Check if the item is of type MailItem
-            objMail.Move objDestinationFolder
-        End If
-    Next objMail
-
     MsgBox "Complete!", vbExclamation
+
+    ' Remove duplicates from the generated Excel workbook
+    Call RemoveDuplicates(objExcelWorksheet)
 End Sub
 
 Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
-    Dim objSubfolder As Outlook.Folder
+    Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
     Dim nDateDiff As Integer
     Dim nLastRow As Integer
 
-    For Each objMail In objCurrentFolder.Items
-        strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+    For i = objCurrentFolder.Items.Count To 1 Step -1
+        If objCurrentFolder.Items(i).Class = olMail Then
+            Set objMail = objCurrentFolder.Items(i)
+            strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
 
-        If (Not (strReplied = 102)) And (Not (strReplied = 103)) Then
-            nDateDiff = DateDiff("d", objMail.sentOn, Now)
+            If (Not (strReplied = 102)) And (Not (strReplied = 103)) Then
+                nDateDiff = DateDiff("d", objMail.sentOn, Now)
 
-            If nDateDiff < 7 Then
-                nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                With objExcelWorksheet
-                    .Cells(nLastRow, 1) = objMail.Subject
-                    .Cells(nLastRow, 2) = objMail.ReceivedTime
-                    .Cells(nLastRow, 3) = objMail.senderName
-                    .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100)
-                End With
+                If nDateDiff < 7 Then
+                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                    With objExcelWorksheet
+                        .Cells(nLastRow, 1) = objMail.Subject
+                        .Cells(nLastRow, 2) = objMail.ReceivedTime
+                        .Cells(nLastRow, 3) = objMail.senderName
+                        .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100)
+                    End With
+
+                    'Move the retrieved email to the "ABC" folder
+                    If objCurrentFolder.Name <> objDestinationFolder.Name Then
+                        objMail.Move objDestinationFolder
+                    End If
+                End If
             End If
         End If
-    Next objMail
+    Next i
 
+    'Recursively process subfolders
     If objCurrentFolder.Folders.Count > 0 Then
         For Each objSubfolder In objCurrentFolder.Folders
             Call ProcessFolders(objSubfolder, objDestinationFolder)
@@ -97,18 +105,21 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinatio
     End If
 End Sub
 
-Sub RemoveDuplicatesFromWorkbook()
+Sub RemoveDuplicates(ByVal ws As Excel.Worksheet)
     Dim lastRow As Long
-    Dim lastCol As Long
-    Dim ws As Worksheet
-    Dim rng As Range
+    Dim rangeToCheck As Excel.Range
+    Dim colsToCheck As String
+    Dim hasHeader As Boolean
 
-    Set ws = objExcelWorkbook.Worksheets(1)
+    ' Set the range to check for duplicates
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(Excel.xlUp).Row
+    colsToCheck = "A:D" ' Check all columns (A, B, C, D)
+    hasHeader = True    ' Assumes the first row has headers, change to False if not
 
-    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
-    lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+    If lastRow > 1 Then ' Ensure there's data to check
+        Set rangeToCheck = ws.Range(ws.Cells(IIf(hasHeader, 2, 1), ws.Cells(lastRow, ws.Columns.Count).End(Excel.xlToLeft)))
 
-    Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
-
-    rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4), Header:=xlYes
+        ' Remove duplicates from the range
+        rangeToCheck.RemoveDuplicates Columns:=Array(1, 2, 3, 4), Header:=IIf(hasHeader, Excel.xlYes, Excel.xlNo)
+    End If
 End Sub
