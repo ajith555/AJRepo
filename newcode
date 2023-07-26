@@ -58,6 +58,9 @@ Sub ExportEmailsNotReplied()
         .Columns("D").WrapText = False
     End With
     
+    ' Remove duplicates from the generated Excel workbook
+    Call RemoveDuplicatesFromWorkbook
+    
     MsgBox "Complete!", vbExclamation
 End Sub
 
@@ -100,4 +103,24 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinatio
             Call ProcessFolders(objSubfolder, objDestinationFolder)
         Next objSubfolder
     End If
+End Sub
+
+Sub RemoveDuplicatesFromWorkbook()
+    Dim lastRow As Long
+    Dim lastCol As Long
+    Dim ws As Worksheet
+    Dim rng As Range
+    
+    ' Set the worksheet to the first sheet in the workbook (assuming only one sheet is used)
+    Set ws = objExcelWorkbook.Worksheets(1)
+    
+    ' Find the last row and column in the worksheet
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+    
+    ' Set the range from the first cell to the last cell with data in the worksheet
+    Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
+    
+    ' Remove duplicates based on all columns in the range
+    rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4), Header:=xlYes
 End Sub
