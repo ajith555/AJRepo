@@ -2,7 +2,6 @@ Dim objexcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objinbox As Outlook.Folder
-Dim processedEmails As Object ' Dictionary to store processed emails
 
 Sub ExportEmailsNotReplied()
     Dim targetEmail As String
@@ -10,12 +9,12 @@ Sub ExportEmailsNotReplied()
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
     Dim objABCfolder As Outlook.Folder
-
+    
     'Create and initialize the Excel application and worksheet
     Set objexcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objexcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
-
+    
     With objExcelWorksheet
         .Cells(1, 1) = "Subject"
         .Cells(1, 1).Font.Bold = True
@@ -26,18 +25,15 @@ Sub ExportEmailsNotReplied()
         .Cells(1, 4) = "Excerpts"
         .Cells(1, 4).Font.Bold = True
     End With
-
+    
     objexcelApplication.Visible = True
     objExcelWorkbook.Activate
-
+    
     'Get the specified email account and its Inbox folder
     Set objNamespace = Outlook.GetNamespace("MAPI")
     Set objRootFolder = objNamespace.Folders(targetEmail)
     Set objinbox = objRootFolder.Folders("Inbox")
-
-    'Create dictionary to store processed emails
-    Set processedEmails = CreateObject("Scripting.Dictionary")
-
+    
     'Check if the "ABC" folder exists or create it if it doesn't
     Dim foundABC As Boolean
     foundABC = False
@@ -48,20 +44,20 @@ Sub ExportEmailsNotReplied()
             Exit For
         End If
     Next objFolder
-
+    
     If Not foundABC Then
         Set objABCfolder = objinbox.Folders.Add("ABC", olFolderInbox)
     End If
-
+    
     'Check and process the folders
     Call ProcessFolders(objinbox, objABCfolder)
-
+    
     With objExcelWorksheet
         .Columns("A:C").AutoFit
         .Columns("D").ColumnWidth = 100
         .Columns("D").WrapText = False
     End With
-
+    
     MsgBox "Complete!", vbExclamation
 End Sub
 
@@ -76,28 +72,22 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinatio
         If objCurrentFolder.Items(i).Class = olMail Then
             Set objMail = objCurrentFolder.Items(i)
             strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
-
+            
             If (Not (strReplied = 102)) And (Not (strReplied = 103)) Then
-                nDateDiff = DateDiff("d", objMail.SentOn, Now)
-
+                nDateDiff = DateDiff("d", objMail.sentOn, Now)
+                
                 If nDateDiff < 7 Then
-                    'Check if the email has already been processed to avoid duplicates
-                    If Not processedEmails.Exists(objMail.EntryID) Then
-                        nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                        With objExcelWorksheet
-                            .Cells(nLastRow, 1) = objMail.Subject
-                            .Cells(nLastRow, 2) = objMail.ReceivedTime
-                            .Cells(nLastRow, 3) = objMail.senderName
-                            .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100)
-                        End With
-                        
-                        'Add the processed email to the dictionary
-                        processedEmails.Add objMail.EntryID, True
-                        
-                        'Move the retrieved email to the "ABC" folder
-                        If objCurrentFolder.Name <> objDestinationFolder.Name Then
-                            objMail.Move objDestinationFolder
-                        End If
+                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                    With objExcelWorksheet
+                        .Cells(nLastRow, 1) = objMail.Subject
+                        .Cells(nLastRow, 2) = objMail.ReceivedTime
+                        .Cells(nLastRow, 3) = objMail.senderName
+                        .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100)
+                    End With
+                    
+                    'Move the retrieved email to the "ABC" folder
+                    If objCurrentFolder.Name <> objDestinationFolder.Name Then
+                        objMail.Move objDestinationFolder
                     End If
                 End If
             End If
