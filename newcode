@@ -67,27 +67,25 @@ End Sub
 
 Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
     Dim objSubfolder As Outlook.Folder
-    Dim objMail As Object
+    Dim objMail As Outlook.MailItem
     Dim strReplied As String
     Dim nDateDiff As Integer
     Dim nLastRow As Integer
 
     For Each objMail In objCurrentFolder.Items
-        If TypeOf objMail Is Outlook.MailItem Then
-            strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+        strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
 
-            If (Not (strReplied = 102)) And (Not (strReplied = 103)) Then
-                nDateDiff = DateDiff("d", objMail.sentOn, Now)
+        If (Not (strReplied = 102)) And (Not (strReplied = 103)) Then
+            nDateDiff = DateDiff("d", objMail.sentOn, Now)
 
-                If nDateDiff < 7 Then
-                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                    With objExcelWorksheet
-                        .Cells(nLastRow, 1) = objMail.Subject
-                        .Cells(nLastRow, 2) = objMail.ReceivedTime
-                        .Cells(nLastRow, 3) = objMail.senderName
-                        .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100)
-                    End With
-                End If
+            If nDateDiff < 7 Then
+                nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                With objExcelWorksheet
+                    .Cells(nLastRow, 1) = objMail.Subject
+                    .Cells(nLastRow, 2) = objMail.ReceivedTime
+                    .Cells(nLastRow, 3) = objMail.senderName
+                    .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100)
+                End With
             End If
         End If
     Next objMail
