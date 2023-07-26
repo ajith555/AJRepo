@@ -1,21 +1,21 @@
-Option Explicit
-
-Dim objExcelApplication As Excel.Application
+Dim objexcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
-Dim objInbox As Outlook.Folder
-Dim objABCFolder As Outlook.Folder
-Dim processedEmails As Collection ' Collection to store processed email EntryIDs
+Dim objinbox As Outlook.Folder
+Dim processedEmails As Object ' Dictionary to store processed emails
 
 Sub ExportEmailsNotReplied()
     Dim targetEmail As String
-    targetEmail = "sh-torm-rli-clean-up@ubs.com"
-    
-    ' Create and initialize the Excel application and worksheet
-    Set objExcelApplication = CreateObject("Excel.Application")
-    Set objExcelWorkbook = objExcelApplication.Workbooks.Add
+    targetEmail = "test@ubs.com"
+    Dim objNamespace As Outlook.Namespace
+    Dim objRootFolder As Outlook.Folder
+    Dim objABCfolder As Outlook.Folder
+
+    'Create and initialize the Excel application and worksheet
+    Set objexcelApplication = CreateObject("Excel.Application")
+    Set objExcelWorkbook = objexcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
-    
+
     With objExcelWorksheet
         .Cells(1, 1) = "Subject"
         .Cells(1, 1).Font.Bold = True
@@ -26,41 +26,42 @@ Sub ExportEmailsNotReplied()
         .Cells(1, 4) = "Excerpts"
         .Cells(1, 4).Font.Bold = True
     End With
-    
-    objExcelApplication.Visible = True
+
+    objexcelApplication.Visible = True
     objExcelWorkbook.Activate
-    
-    Dim objNamespace As Outlook.Namespace
+
+    'Get the specified email account and its Inbox folder
     Set objNamespace = Outlook.GetNamespace("MAPI")
-    Set objInbox = objNamespace.Folders(targetEmail)
-    
-    ' Check if the "ABC" folder exists or create it if it doesn't
+    Set objRootFolder = objNamespace.Folders(targetEmail)
+    Set objinbox = objRootFolder.Folders("Inbox")
+
+    'Create dictionary to store processed emails
+    Set processedEmails = CreateObject("Scripting.Dictionary")
+
+    'Check if the "ABC" folder exists or create it if it doesn't
     Dim foundABC As Boolean
     foundABC = False
-    For Each objFolder In objInbox.Folders
+    For Each objFolder In objinbox.Folders
         If objFolder.Name = "ABC" Then
             foundABC = True
-            Set objABCFolder = objFolder
+            Set objABCfolder = objFolder
             Exit For
         End If
     Next objFolder
-    
+
     If Not foundABC Then
-        Set objABCFolder = objInbox.Folders.Add("ABC", olFolderInbox)
+        Set objABCfolder = objinbox.Folders.Add("ABC", olFolderInbox)
     End If
 
-    ' Initialize the collection to store processed email EntryIDs
-    Set processedEmails = New Collection
-    
-    Call ProcessFolders(objInbox, objABCFolder)
-    
-    ' Format the Excel columns and rows
+    'Check and process the folders
+    Call ProcessFolders(objinbox, objABCfolder)
+
     With objExcelWorksheet
         .Columns("A:C").AutoFit
         .Columns("D").ColumnWidth = 100
         .Columns("D").WrapText = False
     End With
-    
+
     MsgBox "Complete!", vbExclamation
 End Sub
 
@@ -70,26 +71,30 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinatio
     Dim strReplied As String
     Dim nDateDiff As Integer
     Dim nLastRow As Integer
-    
+
     For i = objCurrentFolder.Items.Count To 1 Step -1
         If objCurrentFolder.Items(i).Class = olMail Then
             Set objMail = objCurrentFolder.Items(i)
             strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
-            If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
-                ' Check if the email has been processed (based on EntryID)
-                If Not IsProcessed(objMail.EntryID) Then
-                    nDateDiff = DateDiff("d", objMail.SentOn, Now)
-                    If nDateDiff < 7 Then
+
+            If (Not (strReplied = 102)) And (Not (strReplied = 103)) Then
+                nDateDiff = DateDiff("d", objMail.SentOn, Now)
+
+                If nDateDiff < 7 Then
+                    'Check if the email has already been processed to avoid duplicates
+                    If Not processedEmails.Exists(objMail.EntryID) Then
                         nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
                         With objExcelWorksheet
                             .Cells(nLastRow, 1) = objMail.Subject
                             .Cells(nLastRow, 2) = objMail.ReceivedTime
-                            .Cells(nLastRow, 3) = objMail.SenderName
-                            .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
+                            .Cells(nLastRow, 3) = objMail.senderName
+                            .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100)
                         End With
-                        ' Add the EntryID of the processed email to the collection
-                        processedEmails.Add objMail.EntryID
-                        ' Move the retrieved email to the "ABC" folder
+                        
+                        'Add the processed email to the dictionary
+                        processedEmails.Add objMail.EntryID, True
+                        
+                        'Move the retrieved email to the "ABC" folder
                         If objCurrentFolder.Name <> objDestinationFolder.Name Then
                             objMail.Move objDestinationFolder
                         End If
@@ -99,17 +104,10 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinatio
         End If
     Next i
     
+    'Recursively process subfolders
     If objCurrentFolder.Folders.Count > 0 Then
         For Each objSubfolder In objCurrentFolder.Folders
             Call ProcessFolders(objSubfolder, objDestinationFolder)
         Next objSubfolder
     End If
 End Sub
-
-Function IsProcessed(ByVal entryID As String) As Boolean
-    Dim entryIDCheck As Variant
-    On Error Resume Next
-    entryIDCheck = processedEmails(entryID)
-    On Error GoTo 0
-    IsProcessed = Not IsEmpty(entryIDCheck)
-End Function
