@@ -9,12 +9,11 @@ Sub ExportEmailsNotReplied()
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
     Dim objABCfolder As Outlook.Folder
-    
-    'Create and initialize the Excel application and worksheet
+
     Set objexcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objexcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
-    
+
     With objExcelWorksheet
         .Cells(1, 1) = "Subject"
         .Cells(1, 1).Font.Bold = True
@@ -25,16 +24,14 @@ Sub ExportEmailsNotReplied()
         .Cells(1, 4) = "Excerpts"
         .Cells(1, 4).Font.Bold = True
     End With
-    
+
     objexcelApplication.Visible = True
     objExcelWorkbook.Activate
-    
-    'Get the specified email account and its Inbox folder
+
     Set objNamespace = Outlook.GetNamespace("MAPI")
     Set objRootFolder = objNamespace.Folders(targetEmail)
     Set objinbox = objRootFolder.Folders("Inbox")
-    
-    'Check if the "ABC" folder exists or create it if it doesn't
+
     Dim foundABC As Boolean
     foundABC = False
     For Each objFolder In objinbox.Folders
@@ -44,23 +41,27 @@ Sub ExportEmailsNotReplied()
             Exit For
         End If
     Next objFolder
-    
+
     If Not foundABC Then
         Set objABCfolder = objinbox.Folders.Add("ABC", olFolderInbox)
     End If
-    
-    'Check and process the folders
+
     Call ProcessFolders(objinbox, objABCfolder)
-    
+
     With objExcelWorksheet
         .Columns("A:C").AutoFit
         .Columns("D").ColumnWidth = 100
         .Columns("D").WrapText = False
     End With
-    
-    ' Remove duplicates from the generated Excel workbook
+
     Call RemoveDuplicatesFromWorkbook
-    
+
+    For Each objMail In objinbox.Items
+        If objMail.Class = olMail Then
+            objMail.Move objDestinationFolder
+        End If
+    Next objMail
+
     MsgBox "Complete!", vbExclamation
 End Sub
 
@@ -75,10 +76,10 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinatio
         If objCurrentFolder.Items(i).Class = olMail Then
             Set objMail = objCurrentFolder.Items(i)
             strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
-            
+
             If (Not (strReplied = 102)) And (Not (strReplied = 103)) Then
                 nDateDiff = DateDiff("d", objMail.sentOn, Now)
-                
+
                 If nDateDiff < 7 Then
                     nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
                     With objExcelWorksheet
@@ -87,17 +88,12 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinatio
                         .Cells(nLastRow, 3) = objMail.senderName
                         .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100)
                     End With
-                    
-                    'Move the retrieved email to the "ABC" folder
-                    If objCurrentFolder.Name <> objDestinationFolder.Name Then
-                        objMail.Move objDestinationFolder
-                    End If
+
                 End If
             End If
         End If
     Next i
-    
-    'Recursively process subfolders
+
     If objCurrentFolder.Folders.Count > 0 Then
         For Each objSubfolder In objCurrentFolder.Folders
             Call ProcessFolders(objSubfolder, objDestinationFolder)
@@ -110,17 +106,13 @@ Sub RemoveDuplicatesFromWorkbook()
     Dim lastCol As Long
     Dim ws As Worksheet
     Dim rng As Range
-    
-    ' Set the worksheet to the first sheet in the workbook (assuming only one sheet is used)
+
     Set ws = objExcelWorkbook.Worksheets(1)
-    
-    ' Find the last row and column in the worksheet
+
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
     lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
-    
-    ' Set the range from the first cell to the last cell with data in the worksheet
+
     Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
-    
-    ' Remove duplicates based on all columns in the range
+
     rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4), Header:=xlYes
 End Sub
