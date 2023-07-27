@@ -70,34 +70,32 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
     Dim nDateDiff As Integer
+    Dim nReplyDateDiff As Integer
     Dim nLastRow As Integer
     
     For i = objCurrentfolder.Items.Count To 1 Step -1
         If objCurrentfolder.Items(i).Class = olMail Then
             Set objMail = objCurrentfolder.Items(i)
-            strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
             
             If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
-                ' Check if the email was received within the last 7 days
-                nDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
-                If nDateDiff <= 7 Then
-                    ' Check if the email has not been replied to in the past 2 days
-                    Dim lastReply As Date
-                    lastReply = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10820040")
-                    If lastReply = #1/1/4501# Or DateDiff("d", lastReply, Now) > 2 Then
-                        nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                        
-                        With objExcelWorksheet
-                            .Cells(nLastRow, 1) = objMail.Subject
-                            .Cells(nLastRow, 2) = objMail.ReceivedTime
-                            .Cells(nLastRow, 3) = objMail.SenderName
-                            .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
-                        End With
-                        
-                        ' Move the retrieved email to the "(1) AGED" folder
-                        If objCurrentfolder.Name <> objDestinationFolder.Name Then
-                            objMail.Move objDestinationFolder
-                        End If
+                nDateDiff = DateDiff("d", objMail.SentOn, Now)
+                nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
+                
+                ' Check if email is from the last 7 days and not replied for more than 2 days
+                If nDateDiff <= 7 And nReplyDateDiff > 2 Then
+                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                    
+                    With objExcelWorksheet
+                        .Cells(nLastRow, 1) = objMail.Subject
+                        .Cells(nLastRow, 2) = objMail.ReceivedTime
+                        .Cells(nLastRow, 3) = objMail.SenderName
+                        .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
+                    End With
+                    
+                    ' Move the retrieved email to the "(1) AGED" folder
+                    If objCurrentfolder.Name <> objDestinationFolder.Name Then
+                        objMail.Move objDestinationFolder
                     End If
                 End If
             End If
