@@ -1,20 +1,21 @@
-Dim objexcelApplication As Excel.Application
+Option Explicit
+
+Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objinbox As Outlook.Folder
 
 Sub ExportEmailsNotReplied()
     Dim targetEmail As String
-    targetEmail = "test@ubs.com"
+    targetEmail = "testing@ubs.com"
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
-    Dim objABCfolder As Outlook.Folder
-
-    'Create and initialize the Excel application and worksheet
-    Set objexcelApplication = CreateObject("Excel.Application")
-    Set objExcelWorkbook = objexcelApplication.Workbooks.Add
+    Dim objABCFolder As Outlook.Folder
+    
+    Set objExcelApplication = CreateObject("Excel.Application")
+    Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
-
+    
     With objExcelWorksheet
         .Cells(1, 1) = "Subject"
         .Cells(1, 1).Font.Bold = True
@@ -25,101 +26,96 @@ Sub ExportEmailsNotReplied()
         .Cells(1, 4) = "Excerpts"
         .Cells(1, 4).Font.Bold = True
     End With
-
-    objexcelApplication.Visible = True
-    objExcelWorkbook.Activate
-
-    'Get the specified email account and its Inbox folder
+    
+    objExcelApplication.Visible = True
+    
+    ' Get the specified email account and its Inbox folder
     Set objNamespace = Outlook.GetNamespace("MAPI")
     Set objRootFolder = objNamespace.Folders(targetEmail)
     Set objinbox = objRootFolder.Folders("Inbox")
-
-    'Check if the "ABC" folder exists or create it if it doesn't
+    
+    ' Check if the "ABC" folder exists or create it if it doesn't
     Dim foundABC As Boolean
     foundABC = False
+    Dim objFolder As Outlook.Folder
     For Each objFolder In objinbox.Folders
-        If objFolder.Name = "ABC" Then
+        If objFolder.Name = "(1) AGED" Then
             foundABC = True
-            Set objABCfolder = objFolder
+            Set objABCFolder = objFolder
             Exit For
         End If
     Next objFolder
-
+    
     If Not foundABC Then
-        Set objABCfolder = objinbox.Folders.Add("ABC", olFolderInbox)
+        Set objABCFolder = objinbox.Folders.Add("(1) AGED", olFolderInbox)
     End If
-
-    'Check and process the folders
-    Call ProcessFolders(objinbox, objABCfolder)
-
+    
+    ' Check and process the folders
+    ProcessFolders objinbox, objABCFolder
+    
+    ' Format the Excel columns and rows
     With objExcelWorksheet
         .Columns("A:C").AutoFit
         .Columns("D").ColumnWidth = 100
         .Columns("D").WrapText = False
     End With
-
+    
+    RemoveDuplicatesFromWorkbook
+    
     MsgBox "Complete!", vbExclamation
-
-    ' Remove duplicates from the generated Excel workbook
-    Call RemoveDuplicates(objExcelWorksheet)
 End Sub
 
-Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
+Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
     Dim nDateDiff As Integer
     Dim nLastRow As Integer
-
-    For i = objCurrentFolder.Items.Count To 1 Step -1
-        If objCurrentFolder.Items(i).Class = olMail Then
-            Set objMail = objCurrentFolder.Items(i)
-            strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
-
-            If (Not (strReplied = 102)) And (Not (strReplied = 103)) Then
-                nDateDiff = DateDiff("d", objMail.sentOn, Now)
-
+    
+    For i = objCurrentfolder.Items.Count To 1 Step -1
+        If objCurrentfolder.Items(i).Class = olMail Then
+            Set objMail = objCurrentfolder.Items(i)
+            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            
+            If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
+                nDateDiff = DateDiff("d", objMail.SentOn, Now)
+                
                 If nDateDiff < 7 Then
                     nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                    
                     With objExcelWorksheet
                         .Cells(nLastRow, 1) = objMail.Subject
                         .Cells(nLastRow, 2) = objMail.ReceivedTime
-                        .Cells(nLastRow, 3) = objMail.senderName
-                        .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100)
+                        .Cells(nLastRow, 3) = objMail.SenderName
+                        .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
                     End With
-
-                    'Move the retrieved email to the "ABC" folder
-                    If objCurrentFolder.Name <> objDestinationFolder.Name Then
+                    
+                    ' Move the retrieved email to the "(1) AGED" folder
+                    If objCurrentfolder.Name <> objDestinationFolder.Name Then
                         objMail.Move objDestinationFolder
                     End If
                 End If
             End If
         End If
     Next i
-
-    'Recursively process subfolders
-    If objCurrentFolder.Folders.Count > 0 Then
-        For Each objSubfolder In objCurrentFolder.Folders
-            Call ProcessFolders(objSubfolder, objDestinationFolder)
+    
+    If objCurrentfolder.Folders.Count > 0 Then
+        Dim objSubfolder As Outlook.Folder
+        For Each objSubfolder In objCurrentfolder.Folders
+            ProcessFolders objSubfolder, objDestinationFolder
         Next objSubfolder
     End If
 End Sub
 
-Sub RemoveDuplicates(ByVal ws As Excel.Worksheet)
+Sub RemoveDuplicatesFromWorkbook()
     Dim lastRow As Long
-    Dim rangeToCheck As Excel.Range
-    Dim colsToCheck As String
-    Dim hasHeader As Boolean
-
-    ' Set the range to check for duplicates
-    lastRow = ws.Cells(ws.Rows.Count, 1).End(Excel.xlUp).Row
-    colsToCheck = "A:D" ' Check all columns (A, B, C, D)
-    hasHeader = True    ' Assumes the first row has headers, change to False if not
-
-    If lastRow > 1 Then ' Ensure there's data to check
-        Set rangeToCheck = ws.Range(ws.Cells(IIf(hasHeader, 2, 1), ws.Cells(lastRow, ws.Columns.Count).End(Excel.xlToLeft)))
-
-        ' Remove duplicates from the range
-        rangeToCheck.RemoveDuplicates Columns:=Array(1, 2, 3, 4), Header:=IIf(hasHeader, Excel.xlYes, Excel.xlNo)
-    End If
+    Dim lastCol As Long
+    Dim ws As Worksheet
+    Dim rng As Range
+    
+    Set ws = objExcelWorkbook.Worksheets(1)
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+    Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
+    rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4), Header:=xlYes
 End Sub
