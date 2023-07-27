@@ -78,15 +78,10 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
             strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
             
             If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
-                nDateDiff = DateDiff("d", objMail.SentOn, Now)
+                ' Check if the email has been received more than 2 days ago and hasn't been replied to
+                nDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                 
-                ' New logic to check last reply time
-                Dim lastReplyTime As Date
-                On Error Resume Next
-                lastReplyTime = objMail.GetLastExchangeModificationTime
-                On Error GoTo 0
-                
-                If nDateDiff < 7 And DateDiff("d", lastReplyTime, Now) >= 2 Then
+                If nDateDiff > 2 Then
                     nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
                     
                     With objExcelWorksheet
