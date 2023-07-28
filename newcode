@@ -12,7 +12,8 @@ Sub ExportEmailsNotReplied()
     Dim objRootFolder As Outlook.Folder
     Dim objABCFolder As Outlook.Folder
     
-    Set objExcelApplication = CreateObject("Excel.Application")
+    ' Create Excel objects
+    Set objExcelApplication = New Excel.Application
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
     
