@@ -1,68 +1,22 @@
-import win32com.client
-import os
-import datetime
-import zipfile
 
-outlook = win32com.client.Dispatch('outlook.application').GetNamespace("MAPI")
-inbox = outlook.GetDefaultFolder('6').Folders('ABCTest')
-messages = inbox.Items
+import requests
 
-messages.Sort("[ReceivedTime]", True)
+# Replace these with your API endpoint and cookie name
+api_url = 'https://api.example.com/endpoint'
+cookie_name = 'session_cookie'
 
-# Fetch only the latest email with subject containing 'FFTS'
-latest_msg = None
-for msg in messages:
-    if 'FFTS' in str(msg.Subject):
-        latest_msg = msg
-        break
+# Replace this with the actual cookie value you want to send
+cookie_value = 'abc123def456'
 
-# Check if there is a latest email with 'FFTS' in the subject
-if latest_msg:
-    # Fetch To, CC, Subject, and From information from the latest email
-    latest_subject = latest_msg.Subject
-    latest_to = latest_msg.To
-    latest_cc = latest_msg.CC
-    latest_sender = latest_msg.SenderName
+# Set up the request headers with the cookie
+headers = {'Cookie': f'{cookie_name}={cookie_value}'}
 
-    print("Latest Subject:", latest_subject)
-    print("To:", latest_to)
-    print("CC:", latest_cc)
-    print("From:", latest_sender)
+# Make the API request with the cookies as credentials
+response = requests.get(api_url, headers=headers)
 
-    path = 'P:/Documents/PycharmProjects/pythonLearning/TestingFolder/'
-    folder_extension = datetime.datetime.now().strftime("%Y%m%d")
-    path_with_date = path + folder_extension
-    if not os.path.exists(path_with_date):
-        os.makedirs(path_with_date)
-
-    unzip_path = 'P:/Ajith/Unzip/'
-    unzip_extension = datetime.datetime.now().strftime("%Y%m%d")
-    unzip_path_with_date = unzip_path + unzip_extension
-    if not os.path.exists(unzip_path_with_date):
-        os.makedirs(unzip_path_with_date)
-
-    # Remove existing files from the folders before saving new ones
-    for filename in os.listdir(path_with_date):
-        file_path = os.path.join(path_with_date, filename)
-        if os.path.isfile(file_path):
-            os.remove(file_path)
-
-    for filename in os.listdir(unzip_path_with_date):
-        file_path = os.path.join(unzip_path_with_date, filename)
-        if os.path.isfile(file_path):
-            os.remove(file_path)
-
-    for atch in latest_msg.Attachments:
-        # Save attachments with unique file names
-        attachment_path = os.path.join(path_with_date, atch.FileName)
-        atch.SaveAsFile(attachment_path)
-
-        # Check if the attachment is a zip file
-        if attachment_path.lower().endswith('.zip'):
-            # Unzip the file to the specified path
-            with zipfile.ZipFile(attachment_path, 'r') as zip_ref:
-                zip_ref.extractall(unzip_path_with_date)
-
-    print("Attachments saved and unzipped successfully.")
+# Process the response as needed
+if response.status_code == 200:
+    data = response.json()
+    # Process the JSON response data
 else:
-    print("No emails with subject containing 'FFTS' found in the folder.")
+    print(f"API request failed with status code: {response.status_code}")
