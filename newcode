@@ -98,7 +98,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
             isExcluded = False
             Dim excludedSender As Variant
             For Each excludedSender In excludedSenders
-                If senderEmail = excludedSender Then
+                If LCase(senderEmail) = LCase(excludedSender) Then
                     isExcluded = True
                     Exit For
                 End If
