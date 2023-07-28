@@ -84,7 +84,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     
     ' Define excluded sender email addresses
     Dim excludedSenders As Variant
-    excludedSenders = Array("abc@gmail.com", "cc@hotmail.com", "example@example.com") ' Add more addresses if needed
+    excludedSenders = Array("kushal-ajith.shetty@ubs.com") ' Add more addresses if needed
     
     For i = objCurrentfolder.Items.Count To 1 Step -1
         If objCurrentfolder.Items(i).Class = olMail Then
@@ -98,6 +98,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                 If Recipient.Address <> "" Then
                     Dim senderEmail As String
                     senderEmail = LCase(Recipient.Address)
+                    Dim excludedEmail As Variant ' Define excludedEmail here
                     For Each excludedEmail In excludedSenders
                         If LCase(excludedEmail) = senderEmail Then
                             isExcludedSender = True
@@ -113,7 +114,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                 nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                 
                 ' Check if email is from the last 7 days and not replied for more than 2 days
-                If nDateDiff <= 4 And nReplyDateDiff > 2 Then
+                If nDateDiff <= 3 And nReplyDateDiff > 2 Then
                     nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
                     
                     With objExcelWorksheet
