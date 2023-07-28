@@ -24,13 +24,12 @@ Sub ExportEmailsNotReplied()
         .Cells(1, 2).Font.Bold = True
         .Cells(1, 3) = "Sender"
         .Cells(1, 3).Font.Bold = True
-        .Cells(1, 4) = "Excerpts"
+        .Cells(1, 4) = "Recipients"
         .Cells(1, 4).Font.Bold = True
-        .Cells(1, 5) = "Recipients"
+        .Cells(1, 5) = "Excerpts"
         .Cells(1, 5).Font.Bold = True
         .Columns("A:E").AutoFit
-        .Columns("D").ColumnWidth = 100
-        .Columns("E").WrapText = True
+        .Columns("D").WrapText = True
     End With
     
     objExcelApplication.Visible = True
@@ -92,7 +91,6 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                         .Cells(nLastRow, 1) = objMail.Subject
                         .Cells(nLastRow, 2) = objMail.ReceivedTime
                         .Cells(nLastRow, 3) = objMail.SenderName
-                        .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
                     End With
                     
                     Dim recipients As String
@@ -103,7 +101,8 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                     recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
                     
                     With objExcelWorksheet
-                        .Cells(nLastRow, 5) = recipients ' Add recipients' names to the new column
+                        .Cells(nLastRow, 4) = recipients ' Add recipients' names to the new column
+                        .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
                     End With
 
                     ' Move the retrieved email to the "(1) AGED" folder
