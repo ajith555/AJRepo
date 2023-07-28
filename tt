@@ -7,8 +7,8 @@ def fetch_json_data_from_api(api_url, cookie_name, cookie_value):
     headers = {'Cookie': f'{cookie_name}={cookie_value}'}
 
     try:
-        # Make the API request with certificate verification disabled (not recommended for production)
-        response = requests.get(api_url, headers=headers, verify=False)
+        # Make the API request with SSL certificate verification enabled (recommended for production)
+        response = requests.get(api_url, headers=headers)
         response.raise_for_status()  # Check for any HTTP errors
     except requests.exceptions.RequestException as e:
         print(f"API request failed: {e}")
@@ -18,14 +18,18 @@ def fetch_json_data_from_api(api_url, cookie_name, cookie_value):
     soup = BeautifulSoup(response.content, 'html.parser')
 
     # Find the JSON data within the HTML (adjust this based on the HTML structure)
-    json_string = soup.find('script', {'type': 'application/json'}).string
+    json_script = soup.find('script', {'type': 'application/json'})
 
-    # Parse the JSON string into a JSON object
-    try:
-        json_data = json.loads(json_string)
-        return json_data
-    except json.JSONDecodeError as e:
-        print(f"Failed to parse JSON data: {e}")
+    if json_script is not None and json_script.string:
+        try:
+            # Parse the JSON string into a JSON object
+            json_data = json.loads(json_script.string)
+            return json_data
+        except json.JSONDecodeError as e:
+            print(f"Failed to parse JSON data: {e}")
+            return None
+    else:
+        print("JSON data not found in the API response.")
         return None
 
 if __name__ == "__main__":
