@@ -10,7 +10,7 @@ Sub ExportEmailsNotReplied()
     
     Dim targetEmail As String
     targetEmail = "kushal-ajith.shetty@ubs.com"
-    Dim excludedSenders() As String
+    Dim excludedSenders() As Variant
     excludedSenders = Array("kushal-ajith.shetty@ubs.com") ' Add any other excluded senders here
 
     Dim objNamespace As Outlook.Namespace
@@ -25,7 +25,7 @@ Sub ExportEmailsNotReplied()
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
     
     ' Set fixed row height for all rows in the worksheet
-    objExcelWorksheet.Rows.RowHeight = 22
+    objExcelWorksheet.Rows.RowHeight = 20
 
     With objExcelWorksheet
         .Cells(1, 1) = "Subject"
@@ -86,8 +86,9 @@ ErrorHandler:
         Set objExcelApplication = Nothing
     End If
 End Sub
+
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder, ByVal excludedSenders() As Variant)
-    On Error Resume Next
+    On Error GoTo ErrorHandler
     
     Dim i As Long
     Dim objMail As Outlook.MailItem
@@ -97,8 +98,8 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     Dim nLastRow As Integer
     Dim Recipient As Outlook.Recipient
 
-    On Error GoTo ErrorHandler
-    
+    Dim sender As Variant ' Variable to hold the sender's email address
+
     For i = objCurrentfolder.Items.Count To 1 Step -1
         If objCurrentfolder.Items(i).Class = olMail Then
             Set objMail = objCurrentfolder.Items(i)
@@ -106,13 +107,12 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
             ' Check if the sender is excluded
             Dim isExcluded As Boolean
             isExcluded = False
-            Dim excludedSender As Variant
-            For Each excludedSender In excludedSenders
-                If StrComp(objMail.SenderEmailAddress, excludedSender, vbTextCompare) = 0 Then
+            For Each sender In excludedSenders
+                If StrComp(objMail.SenderEmailAddress, sender, vbTextCompare) = 0 Then
                     isExcluded = True
                     Exit For
                 End If
-            Next excludedSender
+            Next sender
             
             If Not isExcluded Then
                 strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
@@ -153,7 +153,6 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
         End If
     Next i
     
-    On Error GoTo 0
     Exit Sub ' Exit the subroutine if no errors occur
 
 ErrorHandler:
@@ -164,4 +163,19 @@ ErrorHandler:
         objExcelApplication.Quit
         Set objExcelApplication = Nothing
     End If
+End Sub
+
+Sub RemoveDuplicatesFromWorkbook()
+    Dim lastRow As Long
+    Dim lastCol As Long
+    Dim ws As Worksheet
+    Dim rng As Range
+    
+    Set ws = objExcelWorkbook.Worksheets(1)
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    lastCol = ws.Cells(1, ws.Columns.Count
+
+    lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+    Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
+    rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4, 5), Header:=xlYes
 End Sub
