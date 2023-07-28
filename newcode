@@ -75,6 +75,9 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     Dim nDateDiff As Integer
     Dim nReplyDateDiff As Integer
     Dim nLastRow As Integer
+    Dim Recipient As Outlook.Recipient ' Add explicit declaration for Recipient variable
+    
+    On Error Resume Next ' Error handling for Recipient object
     
     For i = objCurrentfolder.Items.Count To 1 Step -1
         If objCurrentfolder.Items(i).Class = olMail Then
@@ -115,6 +118,8 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
             End If
         End If
     Next i
+    
+    On Error GoTo 0 ' Reset error handling
     
     If objCurrentfolder.Folders.Count > 0 Then
         Dim objSubfolder As Outlook.Folder
