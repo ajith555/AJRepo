@@ -2,27 +2,39 @@ import requests
 from bs4 import BeautifulSoup
 import json
 
-# Replace these with your API endpoint and cookie name
-api_url = 'https://api.example.com/endpoint'
-cookie_name = 'session_cookie'
+def fetch_json_data_from_api(api_url, cookie_name, cookie_value):
+    # Set up the request headers with the cookie
+    headers = {'Cookie': f'{cookie_name}={cookie_value}'}
 
-# Replace this with the actual cookie value you want to send
-cookie_value = 'abc123def456'
+    try:
+        # Make the API request with certificate verification disabled (not recommended for production)
+        response = requests.get(api_url, headers=headers, verify=False)
+        response.raise_for_status()  # Check for any HTTP errors
+    except requests.exceptions.RequestException as e:
+        print(f"API request failed: {e}")
+        return None
 
-# Set up the request headers with the cookie
-headers = {'Cookie': f'{cookie_name}={cookie_value}'}
+    # Parse the HTML content using BeautifulSoup
+    soup = BeautifulSoup(response.content, 'html.parser')
 
-# Make the API request with the cookies as credentials
-response = requests.get(api_url, headers=headers)
+    # Find the JSON data within the HTML (adjust this based on the HTML structure)
+    json_string = soup.find('script', {'type': 'application/json'}).string
 
-# Parse the HTML content using BeautifulSoup
-soup = BeautifulSoup(response.content, 'html.parser')
+    # Parse the JSON string into a JSON object
+    try:
+        json_data = json.loads(json_string)
+        return json_data
+    except json.JSONDecodeError as e:
+        print(f"Failed to parse JSON data: {e}")
+        return None
 
-# Find the JSON data within the HTML (adjust this based on the HTML structure)
-json_string = soup.find('script', {'type': 'application/json'}).string
+if __name__ == "__main__":
+    api_url = 'https://api.example.com/endpoint'
+    cookie_name = 'session_cookie'
+    cookie_value = 'abc123def456'
 
-# Parse the JSON string into a JSON object
-json_data = json.loads(json_string)
+    json_data = fetch_json_data_from_api(api_url, cookie_name, cookie_value)
 
-# Now you can access the key-value data in the JSON object
-print(json_data['key'])
+    if json_data:
+        # Now you can access the key-value data in the JSON object
+        print(json_data['key'])
