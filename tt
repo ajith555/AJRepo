@@ -1,5 +1,6 @@
-
 import requests
+from bs4 import BeautifulSoup
+import json
 
 # Replace these with your API endpoint and cookie name
 api_url = 'https://api.example.com/endpoint'
@@ -14,9 +15,14 @@ headers = {'Cookie': f'{cookie_name}={cookie_value}'}
 # Make the API request with the cookies as credentials
 response = requests.get(api_url, headers=headers)
 
-# Process the response as needed
-if response.status_code == 200:
-    data = response.json()
-    # Process the JSON response data
-else:
-    print(f"API request failed with status code: {response.status_code}")
+# Parse the HTML content using BeautifulSoup
+soup = BeautifulSoup(response.content, 'html.parser')
+
+# Find the JSON data within the HTML (adjust this based on the HTML structure)
+json_string = soup.find('script', {'type': 'application/json'}).string
+
+# Parse the JSON string into a JSON object
+json_data = json.loads(json_string)
+
+# Now you can access the key-value data in the JSON object
+print(json_data['key'])
