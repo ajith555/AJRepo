@@ -11,7 +11,7 @@ Sub ExportEmailsNotReplied()
     Dim targetEmail As String
     targetEmail = "kushal-ajith.shetty@ubs.com"
     Dim excludedSenders() As String
-    excludedSenders = Array("kushal-ajith.shetty@ubs.com", "test@ub.com") ' Add any other excluded senders here
+    excludedSenders = Array("kushal-ajith.shetty@ubs.com") ' Add any other excluded senders here
 
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
@@ -86,7 +86,7 @@ ErrorHandler:
         Set objExcelApplication = Nothing
     End If
 End Sub
-Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder, ByVal excludedSenders() As String)
+Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder, ByVal excludedSenders() As Variant)
     On Error Resume Next
     
     Dim i As Long
@@ -122,7 +122,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                     nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                     
                     ' Check if email is from the last 7 days and not replied for more than 2 days
-                    If nDateDiff <= 7 And nReplyDateDiff > 2 Then
+                    If nDateDiff <= 3 And nReplyDateDiff > 2 Then
                         nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
                         
                         With objExcelWorksheet
