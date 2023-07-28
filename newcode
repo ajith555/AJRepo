@@ -11,14 +11,14 @@ Sub ExportEmailsNotReplied()
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
     Dim objABCFolder As Outlook.Folder
-    
+
     ' Create Excel objects
     Set objExcelApplication = New Excel.Application
     objExcelApplication.Visible = True ' Set Excel application visible before working with columns
 
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
-    
+
     ' Set fixed row height for all rows in the worksheet
     objExcelWorksheet.Rows.RowHeight = 22
 
@@ -34,12 +34,12 @@ Sub ExportEmailsNotReplied()
         .Cells(1, 5) = "Excerpts"
         .Cells(1, 5).Font.Bold = True
     End With
-    
+
     ' Get the specified email account and its Inbox folder
     Set objNamespace = Outlook.GetNamespace("MAPI")
     Set objRootFolder = objNamespace.Folders(targetEmail)
     Set objinbox = objRootFolder.Folders("Inbox")
-    
+
     ' Check if the "ABC" folder exists or create it if it doesn't
     Dim foundABC As Boolean
     foundABC = False
@@ -51,11 +51,11 @@ Sub ExportEmailsNotReplied()
             Exit For
         End If
     Next objFolder
-    
+
     If Not foundABC Then
         Set objABCFolder = objinbox.Folders.Add("(1) AGED", olFolderInbox)
     End If
-    
+
     ' Check and process the folders
     ProcessFolders objinbox, objABCFolder
 
@@ -67,7 +67,7 @@ Sub ExportEmailsNotReplied()
     End With
 
     RemoveDuplicatesFromWorkbook
-    
+
     MsgBox "Complete!", vbExclamation
 End Sub
 
@@ -79,52 +79,47 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     Dim nReplyDateDiff As Integer
     Dim nLastRow As Integer
     Dim Recipient As Outlook.Recipient
-    Dim excludedSenders() As Variant ' Array to hold excluded email addresses
-    
+    Dim excludedSenders As Object ' Dictionary to hold excluded email addresses
+
     On Error Resume Next
 
-    ' Add the email addresses to be excluded from processing to the array
-    excludedSenders = Array("kushal-ajith.shetty@ubs.com", "example@example.com") ' Add more emails if needed
+    ' Create a Dictionary to hold excluded email addresses
+    Set excludedSenders = CreateObject("Scripting.Dictionary")
+
+    ' Add the email addresses to be excluded from processing to the Dictionary
+    excludedSenders("kushal-ajith.shetty@ubs.com") = True
+    excludedSenders("example@example.com") = True ' Add more emails if needed
 
     For i = objCurrentfolder.Items.Count To 1 Step -1
         If objCurrentfolder.Items(i).Class = olMail Then
             Set objMail = objCurrentfolder.Items(i)
             strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
 
-            ' Check if the sender's email address is in the excludedSenders array
+            ' Check if the sender's email address is in the excludedSenders Dictionary
             Dim senderEmail As String
             senderEmail = objMail.SenderEmailAddress
-            Dim isExcluded As Boolean
-            isExcluded = False
-            Dim excludedSender As Variant
-            For Each excludedSender In excludedSenders
-                If LCase(senderEmail) = LCase(excludedSender) Then
-                    isExcluded = True
-                    Exit For
-                End If
-            Next excludedSender
 
-            If Not isExcluded And (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
+            If Not excludedSenders.Exists(senderEmail) And (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
                 nDateDiff = DateDiff("d", objMail.SentOn, Now)
                 nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
-                
+
                 ' Check if email is from the last 7 days and not replied for more than 2 days
                 If nDateDiff <= 7 And nReplyDateDiff > 2 Then
                     nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                    
+
                     With objExcelWorksheet
                         .Cells(nLastRow, 1) = objMail.Subject
                         .Cells(nLastRow, 2) = objMail.ReceivedTime
                         .Cells(nLastRow, 3) = objMail.SenderName
                     End With
-                    
+
                     Dim recipients As String
                     recipients = ""
                     For Each Recipient In objMail.Recipients
                         recipients = recipients & Recipient.Name & "; "
                     Next Recipient
                     recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
-                    
+
                     With objExcelWorksheet
                         .Cells(nLastRow, 4) = recipients ' Add recipients' names to the new column
                         .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
@@ -138,9 +133,9 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
             End If
         End If
     Next i
-    
+
     On Error GoTo 0
-    
+
     If objCurrentfolder.Folders.Count > 0 Then
         Dim objSubfolder As Outlook.Folder
         For Each objSubfolder In objCurrentfolder.Folders
@@ -154,7 +149,7 @@ Sub RemoveDuplicatesFromWorkbook()
     Dim lastCol As Long
     Dim ws As Worksheet
     Dim rng As Range
-    
+
     Set ws = objExcelWorkbook.Worksheets(1)
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
     lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
