@@ -44,6 +44,7 @@ Sub ExportEmailsNotReplied()
     Dim foundABC As Boolean
     foundABC = False
     Dim objFolder As Outlook.Folder
+    On Error Resume Next
     For Each objFolder In objinbox.Folders
         If objFolder.Name = "(1) AGED" Then
             foundABC = True
@@ -55,6 +56,7 @@ Sub ExportEmailsNotReplied()
     If Not foundABC Then
         Set objABCFolder = objinbox.Folders.Add("(1) AGED", olFolderInbox)
     End If
+    On Error GoTo 0
     
     ' Check and process the folders
     ProcessFolders objinbox, objABCFolder
