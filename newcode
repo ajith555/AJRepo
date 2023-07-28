@@ -58,7 +58,14 @@ Sub ExportEmailsNotReplied()
     
     ' Check and process the folders
     ProcessFolders objinbox, objABCFolder
-    
+
+    ' Format the Excel columns and rows
+    With objExcelWorksheet
+        .Columns("A:D").AutoFit
+        .Columns("E").ColumnWidth = 100
+        .Columns("E").WrapText = False
+    End With
+
     RemoveDuplicatesFromWorkbook
     
     MsgBox "Complete!", vbExclamation
