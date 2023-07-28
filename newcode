@@ -20,7 +20,7 @@ Sub ExportEmailsNotReplied()
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
     
     ' Set fixed row height for all rows in the worksheet
-    objExcelWorksheet.Rows.RowHeight = 20
+    objExcelWorksheet.Rows.RowHeight = 22
 
     With objExcelWorksheet
         .Cells(1, 1) = "Subject"
@@ -139,11 +139,11 @@ End Sub
 Function IsSenderExcluded(ByVal senderName As String) As Boolean
     ' Define the excluded sender names here
     Dim excludedNames() As String
-    excludedNames = Array("Shetty, Kushal-Ajith")
+    excludedNames = Array("Shetty, Kushal-Ajith", "Another Excluded Name", "Yet Another Excluded Name")
     
     Dim i As Integer
     For i = LBound(excludedNames) To UBound(excludedNames)
-        If senderName = excludedNames(i) Then
+        If LCase(Trim(senderName)) = LCase(Trim(excludedNames(i))) Then
             IsSenderExcluded = True
             Exit Function
         End If
@@ -164,3 +164,9 @@ Sub RemoveDuplicatesFromWorkbook()
     Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
     rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4, 5), Header:=xlYes
 End Sub
+
+' This Sub should be placed in the same module to run the macro
+Sub RunExportEmailsNotReplied()
+    ExportEmailsNotReplied
+End Sub
+
