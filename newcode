@@ -84,69 +84,71 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     
     ' Define excluded sender email addresses
     Dim excludedSenders As Variant
-    excludedSenders = Array("kushal-ajith.shetty@ubs.com") ' Add more addresses if needed
+    excludedSenders = Array("abc@gmail.com", "cc@hotmail.com", "example@example.com") ' Add more addresses if needed
     
-    For i = objCurrentfolder.Items.Count To 1 Step -1
-        If objCurrentfolder.Items(i).Class = olMail Then
-            Set objMail = objCurrentfolder.Items(i)
-            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
-            
-            ' Check if the sender's email address is in the excluded list
-            Dim isExcludedSender As Boolean
-            isExcludedSender = False
-            For Each Recipient In objMail.Recipients
-                If Recipient.Address <> "" Then
-                    Dim senderEmail As String
-                    senderEmail = LCase(Recipient.Address)
-                    Dim excludedEmail As Variant ' Define excludedEmail here
-                    For Each excludedEmail In excludedSenders
-                        If LCase(excludedEmail) = senderEmail Then
-                            isExcludedSender = True
-                            Exit For
-                        End If
-                    Next excludedEmail
-                    If isExcludedSender Then Exit For
-                End If
-            Next Recipient
-            
-            If Not isExcludedSender And (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
-                nDateDiff = DateDiff("d", objMail.SentOn, Now)
-                nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
+    If Not objCurrentfolder Is Nothing Then
+        For i = objCurrentfolder.Items.Count To 1 Step -1
+            If objCurrentfolder.Items(i).Class = olMail Then
+                Set objMail = objCurrentfolder.Items(i)
+                strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
                 
-                ' Check if email is from the last 7 days and not replied for more than 2 days
-                If nDateDiff <= 3 And nReplyDateDiff > 2 Then
-                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                ' Check if the sender's email address is in the excluded list
+                Dim isExcludedSender As Boolean
+                isExcludedSender = False
+                For Each Recipient In objMail.Recipients
+                    If Recipient.Address <> "" Then
+                        Dim senderEmail As String
+                        senderEmail = LCase(Recipient.Address)
+                        Dim excludedEmail As Variant ' Define excludedEmail here
+                        For Each excludedEmail In excludedSenders
+                            If LCase(excludedEmail) = senderEmail Then
+                                isExcludedSender = True
+                                Exit For
+                            End If
+                        Next excludedEmail
+                        If isExcludedSender Then Exit For
+                    End If
+                Next Recipient
+                
+                If Not isExcludedSender And (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
+                    nDateDiff = DateDiff("d", objMail.SentOn, Now)
+                    nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                     
-                    With objExcelWorksheet
-                        .Cells(nLastRow, 1) = objMail.Subject
-                        .Cells(nLastRow, 2) = objMail.ReceivedTime
-                        .Cells(nLastRow, 3) = objMail.SenderName
-                    End With
-                    
-                    Dim recipients As String
-                    recipients = ""
-                    For Each Recipient In objMail.Recipients
-                        recipients = recipients & Recipient.Name & "; "
-                    Next Recipient
-                    recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
-                    
-                    With objExcelWorksheet
-                        .Cells(nLastRow, 4) = recipients ' Add recipients' names to the new column
-                        .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
-                    End With
-
-                    ' Move the retrieved email to the "(1) AGED" folder
-                    If objCurrentfolder.Name <> objDestinationFolder.Name Then
-                        objMail.Move objDestinationFolder
+                    ' Check if email is from the last 7 days and not replied for more than 2 days
+                    If nDateDiff <= 4 And nReplyDateDiff > 2 Then
+                        nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                        
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 1) = objMail.Subject
+                            .Cells(nLastRow, 2) = objMail.ReceivedTime
+                            .Cells(nLastRow, 3) = objMail.SenderName
+                        End With
+                        
+                        Dim recipients As String
+                        recipients = ""
+                        For Each Recipient In objMail.Recipients
+                            recipients = recipients & Recipient.Name & "; "
+                        Next Recipient
+                        recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
+                        
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 4) = recipients ' Add recipients' names to the new column
+                            .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
+                        End With
+    
+                        ' Move the retrieved email to the "(1) AGED" folder
+                        If objCurrentfolder.Name <> objDestinationFolder.Name Then
+                            objMail.Move objDestinationFolder
+                        End If
                     End If
                 End If
             End If
-        End If
-    Next i
+        Next i
+    End If
     
     On Error GoTo 0
     
-    If objCurrentfolder.Folders.Count > 0 Then
+    If Not objCurrentfolder Is Nothing And objCurrentfolder.Folders.Count > 0 Then
         Dim objSubfolder As Outlook.Folder
         For Each objSubfolder In objCurrentfolder.Folders
             ProcessFolders objSubfolder, objDestinationFolder
