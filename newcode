@@ -29,7 +29,10 @@ Sub ExportEmailsNotReplied()
         .Cells(1, 5) = "Excerpts"
         .Cells(1, 5).Font.Bold = True
         .Columns("A:E").AutoFit
-        .Columns("D").WrapText = True
+        .Columns("D").ColumnWidth = 100
+        .Columns("D").WrapText = False
+        .Columns("E").AutoFit
+        .Columns("E").WrapText = True
     End With
     
     objExcelApplication.Visible = True
