@@ -109,7 +109,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                 nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                 
                 ' Check if email is from the last 7 days and not replied for more than 2 days
-                If nDateDiff <= 3 And nReplyDateDiff > 2 Then
+                If nDateDiff <= 7 And nReplyDateDiff > 2 Then
                     nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
                     
                     With objExcelWorksheet
