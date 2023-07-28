@@ -7,7 +7,7 @@ Dim objinbox As Outlook.Folder
 
 Sub ExportEmailsNotReplied()
     Dim targetEmail As String
-    targetEmail = "kushal-ajith.shetty@ubs.com"
+    targetEmail = "testing@ubs.com"
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
     Dim objABCFolder As Outlook.Folder
@@ -23,10 +23,10 @@ Sub ExportEmailsNotReplied()
         .Cells(1, 2).Font.Bold = True
         .Cells(1, 3) = "Sender"
         .Cells(1, 3).Font.Bold = True
-        .Cells(1, 3) = "Recipients"
-        .Cells(1, 3).Font.Bold = True
         .Cells(1, 4) = "Excerpts"
         .Cells(1, 4).Font.Bold = True
+        .Cells(1, 5) = "Recipients"
+        .Cells(1, 5).Font.Bold = True
     End With
     
     objExcelApplication.Visible = True
@@ -57,9 +57,9 @@ Sub ExportEmailsNotReplied()
     
     ' Format the Excel columns and rows
     With objExcelWorksheet
-        .Columns("A:C").AutoFit
-        .Columns("D").ColumnWidth = 100
-        .Columns("D").WrapText = False
+        .Columns("A:D").AutoFit
+        .Columns("E").ColumnWidth = 100
+        .Columns("E").WrapText = False
     End With
     
     RemoveDuplicatesFromWorkbook
@@ -85,17 +85,27 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                 nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                 
                 ' Check if email is from the last 7 days and not replied for more than 2 days
-                If nDateDiff <= 4 And nReplyDateDiff > 2 Then
+                If nDateDiff <= 7 And nReplyDateDiff > 2 Then
                     nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
                     
                     With objExcelWorksheet
                         .Cells(nLastRow, 1) = objMail.Subject
                         .Cells(nLastRow, 2) = objMail.ReceivedTime
                         .Cells(nLastRow, 3) = objMail.SenderName
-                        .Cells(nLastRow, 4) = objMail.Recipients
-                        .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..."
+                        .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
                     End With
-                    
+
+                    Dim recipients As String
+                    recipients = ""
+                    For Each Recipient In objMail.Recipients
+                        recipients = recipients & Recipient.Address & "; "
+                    Next Recipient
+                    recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
+
+                    With objExcelWorksheet
+                        .Cells(nLastRow, 5) = recipients ' Add recipients to the new column
+                    End With
+
                     ' Move the retrieved email to the "(1) AGED" folder
                     If objCurrentfolder.Name <> objDestinationFolder.Name Then
                         objMail.Move objDestinationFolder
