@@ -82,12 +82,33 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     
     On Error Resume Next
     
+    ' Define excluded sender email addresses
+    Dim excludedSenders As Variant
+    excludedSenders = Array("abc@gmail.com", "cc@hotmail.com", "example@example.com") ' Add more addresses if needed
+    
     For i = objCurrentfolder.Items.Count To 1 Step -1
         If objCurrentfolder.Items(i).Class = olMail Then
             Set objMail = objCurrentfolder.Items(i)
             strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
             
-            If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
+            ' Check if the sender's email address is in the excluded list
+            Dim isExcludedSender As Boolean
+            isExcludedSender = False
+            For Each Recipient In objMail.Recipients
+                If Recipient.Address <> "" Then
+                    Dim senderEmail As String
+                    senderEmail = LCase(Recipient.Address)
+                    For Each excludedEmail In excludedSenders
+                        If LCase(excludedEmail) = senderEmail Then
+                            isExcludedSender = True
+                            Exit For
+                        End If
+                    Next excludedEmail
+                    If isExcludedSender Then Exit For
+                End If
+            Next Recipient
+            
+            If Not isExcludedSender And (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
                 nDateDiff = DateDiff("d", objMail.SentOn, Now)
                 nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                 
