@@ -7,7 +7,7 @@ Dim objinbox As Outlook.Folder
 
 Sub ExportEmailsNotReplied()
     Dim targetEmail As String
-    targetEmail = "testing@ubs.com"
+    targetEmail = "kushal-ajith.shetty@ubs.com"
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
     Dim objABCFolder As Outlook.Folder
@@ -23,10 +23,10 @@ Sub ExportEmailsNotReplied()
         .Cells(1, 2).Font.Bold = True
         .Cells(1, 3) = "Sender"
         .Cells(1, 3).Font.Bold = True
-        .Cells(1, 4) = "Recipients"
+        .Cells(1, 3) = "Recipients"
+        .Cells(1, 3).Font.Bold = True
+        .Cells(1, 4) = "Excerpts"
         .Cells(1, 4).Font.Bold = True
-        .Cells(1, 5) = "Excerpts"
-        .Cells(1, 5).Font.Bold = True
     End With
     
     objExcelApplication.Visible = True
@@ -57,9 +57,9 @@ Sub ExportEmailsNotReplied()
     
     ' Format the Excel columns and rows
     With objExcelWorksheet
-        .Columns("A:E").AutoFit
+        .Columns("A:C").AutoFit
+        .Columns("D").ColumnWidth = 100
         .Columns("D").WrapText = False
-        .Columns("E").WrapText = False
     End With
     
     RemoveDuplicatesFromWorkbook
@@ -85,17 +85,14 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                 nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                 
                 ' Check if email is from the last 7 days and not replied for more than 2 days
-                If nDateDiff <= 7 And nReplyDateDiff > 2 Then
+                If nDateDiff <= 4 And nReplyDateDiff > 2 Then
                     nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                    
-                    Dim recipients As String
-                    recipients = ExtractEmailAddressFromRecipients(objMail)
                     
                     With objExcelWorksheet
                         .Cells(nLastRow, 1) = objMail.Subject
                         .Cells(nLastRow, 2) = objMail.ReceivedTime
                         .Cells(nLastRow, 3) = objMail.SenderName
-                        .Cells(nLastRow, 4) = Left(Trim(recipients), 100) & "..."
+                        .Cells(nLastRow, 4) = objMail.Recipients
                         .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..."
                     End With
                     
@@ -128,14 +125,3 @@ Sub RemoveDuplicatesFromWorkbook()
     Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
     rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4, 5), Header:=xlYes
 End Sub
-
-Function ExtractEmailAddressFromRecipients(ByRef objMail As Outlook.MailItem) As String
-    Dim recipient As Outlook.Recipient
-    Dim recipientsEmails As String
-    
-    For Each recipient In objMail.Recipients
-        recipientsEmails = recipientsEmails & recipient.Address & "; "
-    Next recipient
-    
-    ExtractEmailAddressFromRecipients = recipientsEmails
-End Function
