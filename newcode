@@ -7,7 +7,7 @@ Dim objinbox As Outlook.Folder
 
 Sub ExportEmailsNotReplied()
     Dim targetEmail As String
-    targetEmail = "testing@ubs.com"
+    targetEmail = "kushal-ajith.shetty@ubs.com"
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
     Dim objABCFolder As Outlook.Folder
@@ -92,7 +92,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                 nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                 
                 ' Check if email is from the last 7 days and not replied for more than 2 days
-                If nDateDiff <= 7 And nReplyDateDiff > 2 Then
+                If nDateDiff <= 4 And nReplyDateDiff > 2 Then
                     nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
                     
                     With objExcelWorksheet
