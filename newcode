@@ -89,13 +89,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                     nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
                     
                     Dim recipients As String
-                    recipients = ""
-                    Dim recipient As Outlook.Recipient
-                    
-                    ' Get the recipients' names and email addresses
-                    For Each recipient In objMail.Recipients
-                        recipients = recipients & recipient.Name & " (" & recipient.Address & "); "
-                    Next recipient
+                    recipients = ExtractEmailAddressFromRecipients(objMail)
                     
                     With objExcelWorksheet
                         .Cells(nLastRow, 1) = objMail.Subject
@@ -134,3 +128,14 @@ Sub RemoveDuplicatesFromWorkbook()
     Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
     rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4, 5), Header:=xlYes
 End Sub
+
+Function ExtractEmailAddressFromRecipients(ByRef objMail As Outlook.MailItem) As String
+    Dim recipient As Outlook.Recipient
+    Dim recipientsEmails As String
+    
+    For Each recipient In objMail.Recipients
+        recipientsEmails = recipientsEmails & recipient.Address & "; "
+    Next recipient
+    
+    ExtractEmailAddressFromRecipients = recipientsEmails
+End Function
