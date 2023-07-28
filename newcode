@@ -79,27 +79,31 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     For i = objCurrentfolder.Items.Count To 1 Step -1
         If objCurrentfolder.Items(i).Class = olMail Then
             Set objMail = objCurrentfolder.Items(i)
-            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
             
-            If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
-                nDateDiff = DateDiff("d", objMail.SentOn, Now)
-                nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
+            ' Check if the item is a MailItem (as it could be other types of items in the folder)
+            If TypeOf objMail Is Outlook.MailItem Then
+                strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
                 
-                ' Check if email is from the last 7 days and not replied for more than 2 days
-                If nDateDiff <= 4 And nReplyDateDiff > 2 Then
-                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
+                    nDateDiff = DateDiff("d", objMail.SentOn, Now)
+                    nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                     
-                    With objExcelWorksheet
-                        .Cells(nLastRow, 1) = objMail.Subject
-                        .Cells(nLastRow, 2) = objMail.ReceivedTime
-                        .Cells(nLastRow, 3) = objMail.SenderName
-                        .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
-                        .Cells(nLastRow, 5) = GetRecipients(objMail) ' Add the recipients' email addresses to the new column
-                    End With
-                    
-                    ' Move the retrieved email to the "(1) AGED" folder
-                    If objCurrentfolder.Name <> objDestinationFolder.Name Then
-                        objMail.Move objDestinationFolder
+                    ' Check if email is from the last 7 days and not replied for more than 2 days
+                    If nDateDiff <= 4 And nReplyDateDiff > 2 Then
+                        nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                        
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 1) = objMail.Subject
+                            .Cells(nLastRow, 2) = objMail.ReceivedTime
+                            .Cells(nLastRow, 3) = objMail.SenderName
+                            .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
+                            .Cells(nLastRow, 5) = GetRecipients(objMail) ' Add the recipients' email addresses to the new column
+                        End With
+                        
+                        ' Move the retrieved email to the "(1) AGED" folder
+                        If objCurrentfolder.Name <> objDestinationFolder.Name Then
+                            objMail.Move objDestinationFolder
+                        End If
                     End If
                 End If
             End If
@@ -120,9 +124,11 @@ Function GetRecipients(ByVal objMail As Outlook.MailItem) As String
     
     recipients = ""
     
+    On Error Resume Next ' Ignore any invalid recipients
     For Each recipient In objMail.Recipients
         recipients = recipients & recipient.Address & "; "
     Next recipient
+    On Error GoTo 0 ' Restore normal error handling
     
     GetRecipients = Left(recipients, Len(recipients) - 2) ' Remove the last semicolon and space
 End Function
