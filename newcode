@@ -6,6 +6,7 @@ Dim objExcelWorksheet As Excel.Worksheet
 Dim objinbox As Outlook.Folder
 
 Sub ExportEmailsNotReplied()
+    On Error Resume Next
     Dim targetEmail As String
     targetEmail = "kushal-ajith.shetty@ubs.com"
     Dim objNamespace As Outlook.Namespace
@@ -98,6 +99,9 @@ Sub ExportEmailsNotReplied()
         .Columns("E").WrapText = False
     End With
 
+    ' Remove duplicates from the Excel worksheet
+    RemoveDuplicatesFromWorkbook
+
     MsgBox "Complete!", vbExclamation
 End Sub
 
@@ -105,12 +109,10 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
-    Dim nDateDiff As Integer
-    Dim nReplyDateDiff As Integer
-    Dim nLastRow As Integer
+    Dim nDateDiff As Date
+    Dim nReplyDateDiff As Date
+    Dim nLastRow As Long
     Dim Recipient As Outlook.Recipient
-
-    On Error Resume Next
 
     ' Create dictionaries to store subject and email items
     Dim dictSubject As Object
@@ -122,37 +124,26 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     For i = objCurrentfolder.Items.Count To 1 Step -1
         If objCurrentfolder.Items(i).Class = olMail Then
             Set objMail = objCurrentfolder.Items(i)
-            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
 
             ' Add the condition to check if the sender name is to be excluded
             Dim excludedSenders As String
             excludedSenders = "Shetty, Kushal-Ajith; Sakaria, Pramod" ' Add other sender names as needed
             If InStr(1, excludedSenders, objMail.SenderName, vbTextCompare) = 0 Then
-                nDateDiff = DateDiff("d", objMail.SentOn, Now)
-                nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
+                nDateDiff = objMail.SentOn
+                nReplyDateDiff = objMail.ReceivedTime
 
                 ' Check if email is from the last 7 days and not replied for more than 2 days
-                If nDateDiff <= 7 And nReplyDateDiff > 2 Then
+                If DateDiff("d", nDateDiff, Now) <= 7 And DateDiff("d", nReplyDateDiff, Now) > 2 Then
                     ' Move replied emails to "(1) AGED Replied" folder
                     If (strReplied = "102") Or (strReplied = "103") Then
                         objMail.Move objRepliedFolder
                     Else
                         ' Check if the subject already exists in the dictionary
                         If dictSubject.Exists(objMail.Subject) Then
-                            ' Check the received time of the existing email
-                            Dim existingItem As Outlook.MailItem
-                            Set existingItem = dictSubject(objMail.Subject)
-                            If existingItem.ReceivedTime < objMail.ReceivedTime Then
-                                ' Move the existing email to "(1) AGED Duplicates" folder
-                                dictDuplicate.Add objMail.Subject & objMail.ReceivedTime, objMail
-                                objMail.Move objDuplicatesFolder
-                                ' Update the dictionary with the latest email item
-                                Set dictSubject(objMail.Subject) = objMail
-                            Else
-                                ' Move the current email to "(1) AGED Duplicates" folder
-                                dictDuplicate.Add objMail.Subject & objMail.ReceivedTime, objMail
-                                objMail.Move objDuplicatesFolder
-                            End If
+                            ' Move the current email to "(1) AGED Duplicates" folder
+                            dictDuplicate.Add objMail.Subject, objMail
+                            objMail.Move objDuplicatesFolder
                         Else
                             ' Add the email item to the dictionary
                             dictSubject.Add objMail.Subject, objMail
@@ -164,8 +155,6 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
             End If
         End If
     Next i
-
-    On Error GoTo 0
 
     ' Process emails in subfolders
     If objCurrentfolder.Folders.Count > 0 Then
