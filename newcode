@@ -91,16 +91,96 @@ Sub ExportEmailsNotReplied()
 End Sub
 
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
-    ' Rest of the code remains the same...
+    Dim i As Long
+    Dim objMail As Outlook.MailItem
+    Dim strReplied As String
+    Dim nDateDiff As Integer
+    Dim nReplyDateDiff As Integer
+    Dim nLastRow As Integer
+    Dim Recipient As Outlook.Recipient
+    
+    On Error Resume Next
+    
+    For i = objCurrentfolder.Items.Count To 1 Step -1
+        If objCurrentfolder.Items(i).Class = olMail Then
+            Set objMail = objCurrentfolder.Items(i)
+            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            
+            ' Add the condition to check if the sender name is to be excluded
+            Dim excludedSenders As String
+            excludedSenders = "Shetty, Kushal-Ajith; Sakaria, Pramod" ' Add other sender names as needed
+            If InStr(1, excludedSenders, objMail.SenderName, vbTextCompare) = 0 Then
+                If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
+                    nDateDiff = DateDiff("d", objMail.SentOn, Now)
+                    nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
+                
+                    ' Check if email is from the last 7 days and not replied for more than 2 days
+                    If nDateDiff <= 3 And nReplyDateDiff > 2 Then
+                        nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                    
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 1) = objMail.Subject
+                            .Cells(nLastRow, 2) = objMail.ReceivedTime
+                            .Cells(nLastRow, 3) = objMail.SenderName
+                        End With
+                    
+                        Dim recipients As String
+                        recipients = ""
+                        For Each Recipient In objMail.Recipients
+                            recipients = recipients & Recipient.Name & "; "
+                        Next Recipient
+                        recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
+                    
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 4) = recipients ' Add recipients' names to the new column
+                            .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
+                        End With
+
+                        ' Move the retrieved email to the "(1) AGED" folder
+                        If objCurrentfolder.Name <> objDestinationFolder.Name Then
+                            objMail.Move objDestinationFolder
+                        End If
+                    End If
+                End If
+            End If
+        End If
+    Next i
+
+    On Error GoTo 0
+    
+    If objCurrentfolder.Folders.Count > 0 Then
+        Dim objSubfolder As Outlook.Folder
+        For Each objSubfolder In objCurrentfolder.Folders
+            ProcessFolders objSubfolder, objDestinationFolder
+        Next objSubfolder
+    End If
 End Sub
 
 Sub RemoveDuplicatesFromSubjectColumn()
     Dim lastRow As Long
     Dim ws As Worksheet
     Dim rng As Range
+    Dim colSubject As Range
     
     Set ws = objExcelWorkbook.Worksheets(1)
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
-    Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, 1)) ' Range based on "Subject" column
-    rng.RemoveDuplicates Columns:=Array(1), Header:=xlYes
+    Set rng = ws.Range(ws.Cells(2, 1), ws.Cells(lastRow, 1)) ' Range excluding header row for "Subject" column
+    Set colSubject = rng.Resize(, 1).Offset(, 0) ' Resize to a single column
+
+    ' Find duplicates in "Subject" column
+    Dim duplicateValues As Variant
+    duplicateValues = Application.Match(colSubject, colSubject, 0)
+    
+    ' Loop through duplicate values and delete corresponding rows
+    Dim i As Long
+    Dim firstOccurrence As Long
+    For i = LBound(duplicateValues) To UBound(duplicateValues)
+        If Not IsError(duplicateValues(i)) Then
+            firstOccurrence = duplicateValues(i)
+            If firstOccurrence <> i + 1 Then ' Check if it's not the first occurrence
+                ws.Rows(i + 1).Delete Shift:=xlUp ' Delete the entire row, considering header row is at index 1
+            End If
+        End If
+    Next i
+End Sub
 End Sub
