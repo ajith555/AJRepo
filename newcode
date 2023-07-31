@@ -115,7 +115,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     ' Create dictionaries to store subject and email items
     Dim dictSubject As Object
     Set dictSubject = CreateObject("Scripting.Dictionary")
-
+    
     ' Loop through emails and process them
     For i = objCurrentfolder.Items.Count To 1 Step -1
         If objCurrentfolder.Items(i).Class = olMail Then
