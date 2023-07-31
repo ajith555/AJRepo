@@ -98,8 +98,6 @@ Sub ExportEmailsNotReplied()
         .Columns("E").WrapText = False
     End With
 
-    RemoveDuplicatesFromWorkbook
-
     MsgBox "Complete!", vbExclamation
 End Sub
 
