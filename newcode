@@ -144,7 +144,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                             Set existingItem = dictSubject(objMail.Subject)
                             If existingItem.ReceivedTime < objMail.ReceivedTime Then
                                 ' Move the existing email to "(1) AGED Duplicates" folder
-                                existingItem.Move objDuplicatesFolder
+                                objMail.Move objDuplicatesFolder
                                 ' Update the dictionary with the latest email item
                                 Set dictSubject(objMail.Subject) = objMail
                             Else
