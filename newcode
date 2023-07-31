@@ -10,9 +10,6 @@ Sub ExportEmailsNotReplied()
     targetEmail = "kushal-ajith.shetty@ubs.com"
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
-    Dim objABCFolder As Outlook.Folder
-    Dim objABCDuplicatesFolder As Outlook.Folder
-    Dim objAGEDRepliedFolder As Outlook.Folder
     
     ' Create Excel objects
     Set objExcelApplication = New Excel.Application
@@ -42,51 +39,15 @@ Sub ExportEmailsNotReplied()
     Set objRootFolder = objNamespace.Folders(targetEmail)
     Set objinbox = objRootFolder.Folders("Inbox")
     
-    ' Check if the "(1) AGED" folder exists or create it if it doesn't
-    Dim foundABC As Boolean
-    foundABC = False
-    Dim objFolder As Outlook.Folder
-    For Each objFolder In objinbox.Folders
-        If objFolder.Name = "(1) AGED" Then
-            foundABC = True
-            Set objABCFolder = objFolder
-            Exit For
-        End If
-    Next objFolder
+    ' Create or update required folders
+    Dim objABCFolder As Outlook.Folder
+    Set objABCFolder = GetOrCreateFolder(objinbox, "(1) AGED")
     
-    If Not foundABC Then
-        Set objABCFolder = objinbox.Folders.Add("(1) AGED", olFolderInbox)
-    End If
-
-    ' Check if the "(1) AGED Duplicates" folder exists or create it if it doesn't
-    Dim foundABCDuplicates As Boolean
-    foundABCDuplicates = False
-    For Each objFolder In objinbox.Folders
-        If objFolder.Name = "(1) AGED Duplicates" Then
-            foundABCDuplicates = True
-            Set objABCDuplicatesFolder = objFolder
-            Exit For
-        End If
-    Next objFolder
+    Dim objABCDuplicatesFolder As Outlook.Folder
+    Set objABCDuplicatesFolder = GetOrCreateFolder(objinbox, "(1) AGED Duplicates")
     
-    If Not foundABCDuplicates Then
-        Set objABCDuplicatesFolder = objinbox.Folders.Add("(1) AGED Duplicates", olFolderInbox)
-    End If
-    
-    ' Check if the "(1) AGED Replied" folder exists or create it if it doesn't
-    Dim foundAGEDReplied As Boolean
-    foundAGEDReplied = False
-    For Each objFolder In objinbox.Folders
-        If objFolder.Name = "(1) AGED Replied" Then
-            foundAGEDReplied = True
-            Set objAGEDRepliedFolder = objFolder
-            Exit For
-        End If
-    Next objFolder
-    
-    If Not foundAGEDReplied Then
-        Set objAGEDRepliedFolder = objinbox.Folders.Add("(1) AGED Replied", olFolderInbox)
-    End If
+    Dim objAGEDRepliedFolder As Outlook.Folder
+    Set objAGEDRepliedFolder = GetOrCreateFolder(objinbox, "(1) AGED Replied")
     
     ' Check and process the folders
     ProcessFolders objinbox, objABCFolder, objABCDuplicatesFolder, objAGEDRepliedFolder
@@ -103,6 +64,19 @@ Sub ExportEmailsNotReplied()
     MsgBox "Complete!", vbExclamation
 End Sub
 
+Function GetOrCreateFolder(parentFolder As Outlook.Folder, folderName As String) As Outlook.Folder
+    Dim foundFolder As Outlook.Folder
+    On Error Resume Next
+    Set foundFolder = parentFolder.Folders(folderName)
+    On Error GoTo 0
+    
+    If foundFolder Is Nothing Then
+        Set foundFolder = parentFolder.Folders.Add(folderName, olFolderInbox)
+    End If
+    
+    Set GetOrCreateFolder = foundFolder
+End Function
+
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder, ByVal objDuplicatesFolder As Outlook.Folder, ByVal objRepliedFolder As Outlook.Folder)
     Dim i As Long
     Dim objMail As Outlook.MailItem
@@ -113,6 +87,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     Dim Recipient As Outlook.Recipient
     Dim mailSubject As String
     Dim mailReceivedTime As Date
+    Dim mailSenderName As String
     
     On Error Resume Next
     
@@ -133,6 +108,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                     If nDateDiff <= 7 And nReplyDateDiff > 2 Then
                         mailSubject = objMail.Subject
                         mailReceivedTime = objMail.ReceivedTime
+                        mailSenderName = objMail.SenderName
                         
                         ' Check if there are duplicates with the same subject
                         Dim j As Long
@@ -140,7 +116,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                         duplicateCount = 0
                         For j = objCurrentfolder.Items.Count To 1 Step -1
                             If objCurrentfolder.Items(j).Class = olMail Then
-                                If objCurrentfolder.Items(j).Subject = mailSubject And objCurrentfolder.Items(j).ReceivedTime > mailReceivedTime Then
+                                If objCurrentfolder.Items(j).Subject = mailSubject And objCurrentfolder.Items(j).ReceivedTime > mailReceivedTime And objCurrentfolder.Items(j).SenderName = mailSenderName Then
                                     duplicateCount = duplicateCount + 1
                                     If duplicateCount > 1 Then
                                         ' Move the duplicate emails to the "(1) AGED Duplicates" folder
