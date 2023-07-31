@@ -13,14 +13,14 @@ Sub ExportEmailsNotReplied()
     Dim objABCFolder As Outlook.Folder
     Dim objABCDuplicatesFolder As Outlook.Folder
     Dim objABCRepliedFolder As Outlook.Folder
-    
+
     ' Create Excel objects
     Set objExcelApplication = New Excel.Application
     objExcelApplication.Visible = True ' Set Excel application visible before working with columns
 
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
-    
+
     ' Set fixed row height for all rows in the worksheet
     objExcelWorksheet.Rows.RowHeight = 22
 
@@ -36,12 +36,12 @@ Sub ExportEmailsNotReplied()
         .Cells(1, 5) = "Excerpts"
         .Cells(1, 5).Font.Bold = True
     End With
-    
+
     ' Get the specified email account and its Inbox folder
     Set objNamespace = Outlook.GetNamespace("MAPI")
     Set objRootFolder = objNamespace.Folders(targetEmail)
     Set objinbox = objRootFolder.Folders("Inbox")
-    
+
     ' Check if the "(1) AGED" folder exists or create it if it doesn't
     Dim foundABCFolder As Boolean
     foundABCFolder = False
@@ -53,11 +53,11 @@ Sub ExportEmailsNotReplied()
             Exit For
         End If
     Next objFolder
-    
+
     If Not foundABCFolder Then
         Set objABCFolder = objinbox.Folders.Add("(1) AGED", olFolderInbox)
     End If
-    
+
     ' Check if the "(1) AGED Duplicates" folder exists or create it if it doesn't
     Dim foundABCDuplicatesFolder As Boolean
     foundABCDuplicatesFolder = False
@@ -68,11 +68,11 @@ Sub ExportEmailsNotReplied()
             Exit For
         End If
     Next objFolder
-    
+
     If Not foundABCDuplicatesFolder Then
         Set objABCDuplicatesFolder = objinbox.Folders.Add("(1) AGED Duplicates", olFolderInbox)
     End If
-    
+
     ' Check if the "(1) AGED Replied" folder exists or create it if it doesn't
     Dim foundABCRepliedFolder As Boolean
     foundABCRepliedFolder = False
@@ -83,11 +83,11 @@ Sub ExportEmailsNotReplied()
             Exit For
         End If
     Next objFolder
-    
+
     If Not foundABCRepliedFolder Then
         Set objABCRepliedFolder = objinbox.Folders.Add("(1) AGED Replied", olFolderInbox)
     End If
-    
+
     ' Check and process the folders (including exclusion, replied emails, and duplicate handling)
     ProcessFolders objinbox, objABCFolder, objABCDuplicatesFolder, objABCRepliedFolder, objNamespace
 
@@ -109,13 +109,15 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     Dim nReplyDateDiff As Integer
     Dim nLastRow As Integer
     Dim Recipient As Outlook.Recipient
-    
+
     On Error Resume Next
-    
+
     ' Create dictionaries to store subject and email items
     Dim dictSubject As Object
     Set dictSubject = CreateObject("Scripting.Dictionary")
-    
+    Dim dictDuplicate As Object
+    Set dictDuplicate = CreateObject("Scripting.Dictionary")
+
     ' Loop through emails and process them
     For i = objCurrentfolder.Items.Count To 1 Step -1
         If objCurrentfolder.Items(i).Class = olMail Then
@@ -142,11 +144,13 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                             Set existingItem = dictSubject(objMail.Subject)
                             If existingItem.ReceivedTime < objMail.ReceivedTime Then
                                 ' Move the existing email to "(1) AGED Duplicates" folder
+                                dictDuplicate.Add objMail.Subject & objMail.ReceivedTime, objMail
                                 objMail.Move objDuplicatesFolder
                                 ' Update the dictionary with the latest email item
                                 Set dictSubject(objMail.Subject) = objMail
                             Else
                                 ' Move the current email to "(1) AGED Duplicates" folder
+                                dictDuplicate.Add objMail.Subject & objMail.ReceivedTime, objMail
                                 objMail.Move objDuplicatesFolder
                             End If
                         Else
@@ -162,7 +166,8 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     Next i
 
     On Error GoTo 0
-    
+
+    ' Process emails in subfolders
     If objCurrentfolder.Folders.Count > 0 Then
         Dim objSubfolder As Outlook.Folder
         For Each objSubfolder In objCurrentfolder.Folders
