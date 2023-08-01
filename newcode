@@ -4,14 +4,14 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objinbox As Outlook.Folder
-Dim objABCFolder As Outlook.Folder ' Add this declaration
+Dim objABCFolder As Outlook.Folder
 
 Sub ExportEmailsNotReplied()
     Dim targetEmail As String
     targetEmail = "kushal-ajith.shetty@ubs.com"
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
-    Dim objDuplicateFolder As Outlook.Folder ' Add this declaration
+    Dim objDuplicateFolder As Outlook.Folder
 
     ' Create Excel objects
     Set objExcelApplication = New Excel.Application
@@ -98,7 +98,7 @@ Sub ExportEmailsNotReplied()
     Next i
 
     ' Remove duplicates from the Excel workbook
-    RemoveDuplicatesFromWorkbook objExcelWorkbook
+    RemoveDuplicatesFromWorksheet
 
     MsgBox "Complete!", vbExclamation
 
@@ -228,13 +228,13 @@ Function IsDuplicateSubject(ByVal objMail As Outlook.MailItem, ByVal objCurrentF
     IsDuplicateSubject = False
 End Function
 
-Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
+Sub RemoveDuplicatesFromWorksheet()
     Dim lastRow As Long
     Dim ws As Excel.Worksheet
     Dim rng As Excel.Range
     Dim subjectDict As Object ' Dictionary to track duplicate subjects
 
-    Set ws = wb.Worksheets(1)
+    Set ws = objExcelWorksheet
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
     Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, 1)) ' Only consider the "Subject" column (Column A)
 
