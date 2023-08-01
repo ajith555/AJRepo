@@ -70,7 +70,7 @@ Sub ExportEmailsNotReplied()
     MoveRepliedEmails objABCFolder
     
     ' Check and move duplicate emails to "(1) AGED Duplicate" folder
-    CheckAndMoveDuplicateEmails
+    CheckAndMoveDuplicateEmails targetEmail
 
     ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
@@ -182,7 +182,7 @@ Sub MoveRepliedEmails(ByVal objSourceFolder As Outlook.Folder)
     Next i
 End Sub
 
-Sub CheckAndMoveDuplicateEmails()
+Sub CheckAndMoveDuplicateEmails(ByVal targetEmail As String)
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
     Dim objAgedFolder As Outlook.Folder
