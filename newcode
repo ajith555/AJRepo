@@ -68,13 +68,13 @@ Sub ExportEmailsNotReplied()
 
     RemoveDuplicatesFromWorkbook
 
-    MsgBox "Complete!", vbExclamation
-
     ' Clean up
     Set objExcelWorksheet = Nothing
     Set objExcelWorkbook = Nothing
     objExcelApplication.Quit
     Set objExcelApplication = Nothing
+    
+    MsgBox "Complete!", vbExclamation
 End Sub
 
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
@@ -188,6 +188,12 @@ Sub MoveRepliedEmails()
     ' Check and move replied emails
     ProcessRepliedEmails objAGEDFolder, objRepliedFolder
 
+    ' Clean up
+    Set objRepliedFolder = Nothing
+    Set objAGEDFolder = Nothing
+    Set objRootFolder = Nothing
+    Set objNamespace = Nothing
+    
     MsgBox "Replied emails moved!", vbExclamation
 End Sub
 
