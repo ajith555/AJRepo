@@ -4,13 +4,14 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objinbox As Outlook.Folder
+Dim objABCFolder As Outlook.Folder ' Add this declaration
 
 Sub ExportEmailsNotReplied()
     Dim targetEmail As String
     targetEmail = "kushal-ajith.shetty@ubs.com"
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
-    Dim objABCFolder As Outlook.Folder
+    Dim objDuplicateFolder As Outlook.Folder ' Add this declaration
 
     ' Create Excel objects
     Set objExcelApplication = New Excel.Application
@@ -69,8 +70,32 @@ Sub ExportEmailsNotReplied()
     ' Move replied emails from "(1) AGED" to "(1) AGED Replied" folder
     MoveRepliedEmails objABCFolder
 
-    ' Move emails with duplicate subjects to "(1) AGED Duplicate" folder
-    MoveDuplicateSubjects
+    ' Check if the "(1) AGED Duplicate" folder exists or create it if it doesn't
+    Dim foundDuplicate As Boolean
+    foundDuplicate = False
+    For Each objFolder In objinbox.Folders
+        If objFolder.Name = "(1) AGED Duplicate" Then
+            foundDuplicate = True
+            Set objDuplicateFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
+
+    If Not foundDuplicate Then
+        Set objDuplicateFolder = objinbox.Folders.Add("(1) AGED Duplicate", olFolderInbox)
+    End If
+
+    ' Move emails with duplicate subjects from "(1) AGED" to "(1) AGED Duplicate" folder
+    Dim objMail As Outlook.MailItem
+    Dim i As Long
+    For i = 1 To objABCFolder.Items.Count
+        If objABCFolder.Items(i).Class = olMail Then
+            Set objMail = objABCFolder.Items(i)
+            If IsDuplicateSubject(objMail, objABCFolder) Then
+                objMail.Move objDuplicateFolder
+            End If
+        End If
+    Next i
 
     ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
@@ -177,38 +202,6 @@ Sub MoveRepliedEmails(ByVal objSourceFolder As Outlook.Folder)
             strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
             If (strReplied = "102" Or strReplied = "103") Then
                 objMail.Move objRepliedFolder
-            End If
-        End If
-    Next i
-End Sub
-
-Sub MoveDuplicateSubjects()
-    Dim objDuplicateFolder As Outlook.Folder
-    Dim objMail As Outlook.MailItem
-    Dim i As Long
-
-    ' Check if the "(1) AGED Duplicate" folder exists or create it if it doesn't
-    Dim foundDuplicate As Boolean
-    foundDuplicate = False
-    Dim objFolder As Outlook.Folder
-    For Each objFolder In objinbox.Folders
-        If objFolder.Name = "(1) AGED Duplicate" Then
-            foundDuplicate = True
-            Set objDuplicateFolder = objFolder
-            Exit For
-        End If
-    Next objFolder
-
-    If Not foundDuplicate Then
-        Set objDuplicateFolder = objinbox.Folders.Add("(1) AGED Duplicate", olFolderInbox)
-    End If
-
-    ' Move emails with duplicate subjects from "(1) AGED" to "(1) AGED Duplicate" folder
-    For i = 1 To objABCFolder.Items.Count
-        If objABCFolder.Items(i).Class = olMail Then
-            Set objMail = objABCFolder.Items(i)
-            If IsDuplicateSubject(objMail, objABCFolder) Then
-                objMail.Move objDuplicateFolder
             End If
         End If
     Next i
