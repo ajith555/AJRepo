@@ -56,7 +56,7 @@ Sub ExportEmailsNotReplied()
         Set objABCFolder = objinbox.Folders.Add("(1) AGED", olFolderInbox)
     End If
     
-    ' Check and process the folders
+    ' Check and process the folders to export unreplied emails
     ProcessFolders objinbox, objABCFolder
 
     ' Format the Excel columns and rows
@@ -66,15 +66,19 @@ Sub ExportEmailsNotReplied()
         .Columns("E").WrapText = False
     End With
 
+    ' Move replied emails from "(1) AGED" to "(1) AGED Replied" folder
+    MoveRepliedEmails objABCFolder
+    
+    ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook
+
+    MsgBox "Complete!", vbExclamation
 
     ' Clean up
     Set objExcelWorksheet = Nothing
     Set objExcelWorkbook = Nothing
     objExcelApplication.Quit
     Set objExcelApplication = Nothing
-    
-    MsgBox "Complete!", vbExclamation
 End Sub
 
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
@@ -102,7 +106,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                     nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                 
                     ' Check if email is from the last 3 days and not replied for more than 2 days
-                    If nDateDiff <= 3 And nReplyDateDiff > 2 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
+                    If nDateDiff <= 4 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
                         nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
                     
                         With objExcelWorksheet
@@ -143,6 +147,40 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     End If
 End Sub
 
+Sub MoveRepliedEmails(ByVal objSourceFolder As Outlook.Folder)
+    Dim objRepliedFolder As Outlook.Folder
+    Dim objMail As Outlook.MailItem
+    Dim i As Long
+
+    ' Check if the "(1) AGED Replied" folder exists or create it if it doesn't
+    Dim foundReplied As Boolean
+    foundReplied = False
+    Dim objFolder As Outlook.Folder
+    For Each objFolder In objinbox.Folders
+        If objFolder.Name = "(1) AGED Replied" Then
+            foundReplied = True
+            Set objRepliedFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
+    
+    If Not foundReplied Then
+        Set objRepliedFolder = objinbox.Folders.Add("(1) AGED Replied", olFolderInbox)
+    End If
+
+    ' Move replied emails from "(1) AGED" to "(1) AGED Replied" folder
+    For i = objSourceFolder.Items.Count To 1 Step -1
+        If objSourceFolder.Items(i).Class = olMail Then
+            Set objMail = objSourceFolder.Items(i)
+            Dim strReplied As String
+            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            If (strReplied = "102" Or strReplied = "103") Then
+                objMail.Move objRepliedFolder
+            End If
+        End If
+    Next i
+End Sub
+
 Sub RemoveDuplicatesFromWorkbook()
     Dim lastRow As Long
     Dim lastCol As Long
@@ -154,75 +192,4 @@ Sub RemoveDuplicatesFromWorkbook()
     lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
     Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
     rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4, 5), Header:=xlYes
-End Sub
-
-Sub MoveRepliedEmails()
-    Dim targetEmail As String
-    targetEmail = "kushal-ajith.shetty@ubs.com"
-    Dim objNamespace As Outlook.Namespace
-    Dim objRootFolder As Outlook.Folder
-    Dim objAGEDFolder As Outlook.Folder
-    Dim objRepliedFolder As Outlook.Folder
-    
-    ' Get the specified email account and its Inbox folder
-    Set objNamespace = Outlook.GetNamespace("MAPI")
-    Set objRootFolder = objNamespace.Folders(targetEmail)
-    Set objAGEDFolder = objRootFolder.Folders("(1) AGED")
-    
-    ' Check if the "(1) AGED Replied" folder exists or create it if it doesn't
-    Dim foundReplied As Boolean
-    foundReplied = False
-    Dim objFolder As Outlook.Folder
-    For Each objFolder In objAGEDFolder.Folders
-        If objFolder.Name = "(1) AGED Replied" Then
-            foundReplied = True
-            Set objRepliedFolder = objFolder
-            Exit For
-        End If
-    Next objFolder
-    
-    If Not foundReplied Then
-        Set objRepliedFolder = objAGEDFolder.Folders.Add("(1) AGED Replied", olFolderInbox)
-    End If
-    
-    ' Check and move replied emails
-    ProcessRepliedEmails objAGEDFolder, objRepliedFolder
-
-    ' Clean up
-    Set objRepliedFolder = Nothing
-    Set objAGEDFolder = Nothing
-    Set objRootFolder = Nothing
-    Set objNamespace = Nothing
-    
-    MsgBox "Replied emails moved!", vbExclamation
-End Sub
-
-Sub ProcessRepliedEmails(ByVal objSourceFolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
-    Dim i As Long
-    Dim objMail As Outlook.MailItem
-    Dim strReplied As String
-    
-    On Error Resume Next
-    
-    For i = objSourceFolder.Items.Count To 1 Step -1
-        If objSourceFolder.Items(i).Class = olMail Then
-            Set objMail = objSourceFolder.Items(i)
-            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
-            
-            ' Check if email is replied
-            If strReplied = "102" Or strReplied = "103" Then
-                ' Move the replied email to the "(1) AGED Replied" folder
-                objMail.Move objDestinationFolder
-            End If
-        End If
-    Next i
-
-    On Error GoTo 0
-    
-    If objSourceFolder.Folders.Count > 0 Then
-        Dim objSubfolder As Outlook.Folder
-        For Each objSubfolder In objSourceFolder.Folders
-            ProcessRepliedEmails objSubfolder, objDestinationFolder
-        Next objSubfolder
-    End If
 End Sub
