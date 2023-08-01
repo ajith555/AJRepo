@@ -97,8 +97,8 @@ Sub ExportEmailsNotReplied()
         End If
     Next i
 
-    ' Remove duplicates from the Excel workbook
-    RemoveDuplicatesFromWorksheet
+    ' Remove duplicates from the Excel worksheet
+    RemoveDuplicatesFromWorksheet objExcelWorksheet
 
     MsgBox "Complete!", vbExclamation
 
@@ -228,13 +228,11 @@ Function IsDuplicateSubject(ByVal objMail As Outlook.MailItem, ByVal objCurrentF
     IsDuplicateSubject = False
 End Function
 
-Sub RemoveDuplicatesFromWorksheet()
+Sub RemoveDuplicatesFromWorksheet(ByVal ws As Excel.Worksheet)
     Dim lastRow As Long
-    Dim ws As Excel.Worksheet
     Dim rng As Excel.Range
     Dim subjectDict As Object ' Dictionary to track duplicate subjects
 
-    Set ws = objExcelWorksheet
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
     Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, 1)) ' Only consider the "Subject" column (Column A)
 
