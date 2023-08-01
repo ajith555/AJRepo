@@ -66,6 +66,8 @@ Sub ExportEmailsNotReplied()
         .Columns("E").WrapText = False
     End With
 
+    RemoveDuplicatesFromWorkbook
+
     MsgBox "Complete!", vbExclamation
 End Sub
 
@@ -134,3 +136,19 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
         Next objSubfolder
     End If
 End Sub
+
+Sub RemoveDuplicatesFromWorkbook()
+    Dim lastRow As Long
+    Dim lastCol As Long
+    Dim ws As Worksheet
+    Dim rng As Range
+    
+    Set ws = objExcelWorkbook.Worksheets(1)
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+    Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
+    
+    ' Change the Columns parameter to only check duplicates in the "Subject" column (Column 1)
+    rng.RemoveDuplicates Columns:=Array(1), Header:=xlYes
+End Sub
+
