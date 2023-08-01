@@ -111,9 +111,9 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
-    Dim nDateDiff As Integer
-    Dim nReplyDateDiff As Integer
-    Dim nLastRow As Integer
+    Dim nDateDiff As Long ' Change from Integer to Long
+    Dim nReplyDateDiff As Long ' Change from Integer to Long
+    Dim nLastRow As Long ' Change from Integer to Long
     Dim Recipient As Outlook.Recipient
 
     On Error Resume Next
