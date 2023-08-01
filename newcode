@@ -4,6 +4,7 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objinbox As Outlook.Folder
+Dim objABCFolder As Outlook.Folder ' Rename this variable to avoid conflict
 Dim objFolder As Outlook.Folder ' Declare objFolder at the module level
 
 Sub ExportEmailsNotReplied()
@@ -13,7 +14,6 @@ Sub ExportEmailsNotReplied()
     targetEmail = "kushal-ajith.shetty@ubs.com"
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
-    Dim objABCFolder As Outlook.Folder
 
     ' Create Excel objects
     Set objExcelApplication = New Excel.Application
@@ -46,14 +46,14 @@ Sub ExportEmailsNotReplied()
     ' Check if the "ABC" folder exists or create it if it doesn't
     Dim foundABC As Boolean
     foundABC = False
-    Dim objFolder As Outlook.Folder
-    For Each objFolder In objinbox.Folders
-        If objFolder.Name = "(1) AGED" Then
+    Dim objTempFolder As Outlook.Folder ' Rename this variable to avoid conflict with objFolder
+    For Each objTempFolder In objinbox.Folders
+        If objTempFolder.Name = "(1) AGED" Then
             foundABC = True
-            Set objABCFolder = objFolder
+            Set objABCFolder = objTempFolder
             Exit For
         End If
-    Next objFolder
+    Next objTempFolder
 
     If Not foundABC Then
         Set objABCFolder = objinbox.Folders.Add("(1) AGED", olFolderInbox)
