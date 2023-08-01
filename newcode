@@ -39,7 +39,7 @@ Sub ExportEmailsNotReplied()
     End With
 
     ' Get the specified email account and its Inbox folder
-    Set objNamespace = Outlook.GetNamespace("MAPI")
+    Set objNamespace = Outlook.Application.GetNamespace("MAPI") ' Corrected line
     Set objRootFolder = objNamespace.Folders(targetEmail)
     Set objinbox = objRootFolder.Folders("Inbox")
 
