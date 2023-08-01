@@ -70,15 +70,13 @@ Sub ExportEmailsNotReplied()
     MoveRepliedEmails objABCFolder
     
     ' Remove duplicates from the Excel workbook
-    RemoveDuplicatesFromWorkbook
+    RemoveDuplicatesFromWorkbook objExcelWorkbook
 
     MsgBox "Complete!", vbExclamation
 
     ' Clean up
     Set objExcelWorksheet = Nothing
     Set objExcelWorkbook = Nothing
-    objExcelApplication.Quit
-    Set objExcelApplication = Nothing
 End Sub
 
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
@@ -181,13 +179,14 @@ Sub MoveRepliedEmails(ByVal objSourceFolder As Outlook.Folder)
     Next i
 End Sub
 
-Sub RemoveDuplicatesFromWorkbook()
+
+Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
     Dim lastRow As Long
     Dim ws As Excel.Worksheet
     Dim rng As Excel.Range
     Dim subjectDict As Object ' Dictionary to track duplicate subjects
     
-    Set ws = objExcelWorkbook.Worksheets(1)
+    Set ws = wb.Worksheets(1)
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
     Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, 1)) ' Only consider the "Subject" column (Column A)
 
@@ -207,4 +206,3 @@ Sub RemoveDuplicatesFromWorkbook()
         End If
     Next subjectCell
 End Sub
-
