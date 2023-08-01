@@ -6,8 +6,6 @@ Dim objExcelWorksheet As Excel.Worksheet
 Dim objinbox As Outlook.Folder
 
 Sub ExportEmailsNotReplied()
-    On Error GoTo ErrorHandler
-    
     Dim targetEmail As String
     targetEmail = "kushal-ajith.shetty@ubs.com"
     Dim objNamespace As Outlook.Namespace
@@ -71,25 +69,9 @@ Sub ExportEmailsNotReplied()
     RemoveDuplicatesFromWorkbook
 
     MsgBox "Complete!", vbExclamation
-
-ExitHandler:
-    ' Clean up objects and exit the procedure
-    Set objExcelWorksheet = Nothing
-    Set objExcelWorkbook = Nothing
-    Set objExcelApplication = Nothing
-    Set objinbox = Nothing
-    Set objABCFolder = Nothing
-    Set objRootFolder = Nothing
-    Set objNamespace = Nothing
-    Exit Sub
-
-ErrorHandler:
-    MsgBox "An error occurred: " & Err.Description, vbExclamation
-    Resume ExitHandler
 End Sub
 
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
-    On Error Resume Next
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
@@ -97,6 +79,8 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     Dim nReplyDateDiff As Integer
     Dim nLastRow As Integer
     Dim Recipient As Outlook.Recipient
+    
+    On Error Resume Next
     
     For i = objCurrentfolder.Items.Count To 1 Step -1
         If objCurrentfolder.Items(i).Class = olMail Then
@@ -154,20 +138,14 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
 End Sub
 
 Sub RemoveDuplicatesFromWorkbook()
-    On Error Resume Next
     Dim lastRow As Long
     Dim lastCol As Long
     Dim ws As Worksheet
     Dim rng As Range
     
     Set ws = objExcelWorkbook.Worksheets(1)
-    If ws Is Nothing Then Exit Sub ' Exit the sub if the worksheet is not found
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
     lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
     Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
-    
-    ' Change the Columns parameter to only check duplicates in the "Subject" column (Column 1)
-    rng.RemoveDuplicates Columns:=Array(1), Header:=xlYes
-    
-    On Error GoTo 0
+    rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4, 5), Header:=xlYes
 End Sub
