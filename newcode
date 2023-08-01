@@ -234,7 +234,7 @@ Sub RemoveDuplicatesFromWorksheet(ByVal ws As Excel.Worksheet)
     Dim subjectDict As Object ' Dictionary to track duplicate subjects
 
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
-    Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, 1)) ' Only consider the "Subject" column (Column A)
+    Set rng = ws.Range(ws.Cells(2, 1), ws.Cells(lastRow, 1)) ' Start from the 2nd row to exclude header (Column A)
 
     ' Create a Dictionary to track duplicate subjects
     Set subjectDict = CreateObject("Scripting.Dictionary")
