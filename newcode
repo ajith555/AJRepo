@@ -155,3 +155,68 @@ Sub RemoveDuplicatesFromWorkbook()
     Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
     rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4, 5), Header:=xlYes
 End Sub
+
+Sub MoveRepliedEmails()
+    Dim targetEmail As String
+    targetEmail = "kushal-ajith.shetty@ubs.com"
+    Dim objNamespace As Outlook.Namespace
+    Dim objRootFolder As Outlook.Folder
+    Dim objAGEDFolder As Outlook.Folder
+    Dim objRepliedFolder As Outlook.Folder
+    
+    ' Get the specified email account and its Inbox folder
+    Set objNamespace = Outlook.GetNamespace("MAPI")
+    Set objRootFolder = objNamespace.Folders(targetEmail)
+    Set objAGEDFolder = objRootFolder.Folders("(1) AGED")
+    
+    ' Check if the "(1) AGED Replied" folder exists or create it if it doesn't
+    Dim foundReplied As Boolean
+    foundReplied = False
+    Dim objFolder As Outlook.Folder
+    For Each objFolder In objAGEDFolder.Folders
+        If objFolder.Name = "(1) AGED Replied" Then
+            foundReplied = True
+            Set objRepliedFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
+    
+    If Not foundReplied Then
+        Set objRepliedFolder = objAGEDFolder.Folders.Add("(1) AGED Replied", olFolderInbox)
+    End If
+    
+    ' Check and move replied emails
+    ProcessRepliedEmails objAGEDFolder, objRepliedFolder
+
+    MsgBox "Replied emails moved!", vbExclamation
+End Sub
+
+Sub ProcessRepliedEmails(ByVal objSourceFolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
+    Dim i As Long
+    Dim objMail As Outlook.MailItem
+    Dim strReplied As String
+    
+    On Error Resume Next
+    
+    For i = objSourceFolder.Items.Count To 1 Step -1
+        If objSourceFolder.Items(i).Class = olMail Then
+            Set objMail = objSourceFolder.Items(i)
+            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            
+            ' Check if email is replied
+            If strReplied = "102" Or strReplied = "103" Then
+                ' Move the replied email to the "(1) AGED Replied" folder
+                objMail.Move objDestinationFolder
+            End If
+        End If
+    Next i
+
+    On Error GoTo 0
+    
+    If objSourceFolder.Folders.Count > 0 Then
+        Dim objSubfolder As Outlook.Folder
+        For Each objSubfolder In objSourceFolder.Folders
+            ProcessRepliedEmails objSubfolder, objDestinationFolder
+        Next objSubfolder
+    End If
+End Sub
