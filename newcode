@@ -185,12 +185,26 @@ Sub RemoveDuplicatesFromWorkbook()
     Dim lastRow As Long
     Dim ws As Excel.Worksheet
     Dim rng As Excel.Range
+    Dim subjectDict As Object ' Dictionary to track duplicate subjects
     
     Set ws = objExcelWorkbook.Worksheets(1)
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
     Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, 1)) ' Only consider the "Subject" column (Column A)
+
+    ' Create a Dictionary to track duplicate subjects
+    Set subjectDict = CreateObject("Scripting.Dictionary")
     
-    ' Use Excel's built-in RemoveDuplicates method to remove duplicates based on the "Subject" column
-    rng.RemoveDuplicates Columns:=1, Header:=xlYes
+    Dim subjectCell As Range
+    For Each subjectCell In rng
+        If Not subjectCell.Value = "" Then
+            If Not subjectDict.Exists(subjectCell.Value) Then
+                ' Add subject to the dictionary if it doesn't exist
+                subjectDict.Add subjectCell.Value, subjectCell.Row
+            Else
+                ' If the subject is already in the dictionary, delete the entire row
+                ws.Rows(subjectCell.Row).Delete
+            End If
+        End If
+    Next subjectCell
 End Sub
 
