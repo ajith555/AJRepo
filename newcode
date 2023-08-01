@@ -4,16 +4,16 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objinbox As Outlook.Folder
+Dim objAgedRepliedFolder As Outlook.Folder ' Added variable for "(1) AGED Replied" folder
 
 Sub ExportEmailsNotReplied()
     On Error GoTo ErrorHandler
-    
+
     Dim targetEmail As String
     targetEmail = "kushal-ajith.shetty@ubs.com"
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
     Dim objABCFolder As Outlook.Folder
-    Dim objRepliedFolder As Outlook.Folder ' New variable to store "(1) AGED Replied" folder
     
     ' Create Excel objects
     Set objExcelApplication = New Excel.Application
@@ -58,24 +58,25 @@ Sub ExportEmailsNotReplied()
     If Not foundABC Then
         Set objABCFolder = objinbox.Folders.Add("(1) AGED", olFolderInbox)
     End If
-    
-    ' Check if the "AGED Replied" folder exists or create it if it doesn't
-    Dim foundReplied As Boolean
-    foundReplied = False
-    For Each objFolder In objinbox.Folders
-        If objFolder.Name = "(1) AGED Replied" Then
-            foundReplied = True
-            Set objRepliedFolder = objFolder
+
+    ' Check if the "(1) AGED Replied" folder exists or create it if it doesn't
+    Dim foundAgedReplied As Boolean
+    foundAgedReplied = False
+    Dim objAgedRepliedSubFolder As Outlook.Folder
+    For Each objAgedRepliedSubFolder In objinbox.Folders
+        If objAgedRepliedSubFolder.Name = "(1) AGED Replied" Then
+            foundAgedReplied = True
+            Set objAgedRepliedFolder = objAgedRepliedSubFolder
             Exit For
         End If
-    Next objFolder
-    
-    If Not foundReplied Then
-        Set objRepliedFolder = objinbox.Folders.Add("(1) AGED Replied", olFolderInbox)
+    Next objAgedRepliedSubFolder
+
+    If Not foundAgedReplied Then
+        Set objAgedRepliedFolder = objinbox.Folders.Add("(1) AGED Replied", olFolderInbox)
     End If
     
     ' Check and process the folders
-    ProcessFolders objinbox, objABCFolder, objRepliedFolder
+    ProcessFolders objinbox, objABCFolder, objAgedRepliedFolder ' Pass the "(1) AGED Replied" folder reference
 
     ' Format the Excel columns and rows
     With objExcelWorksheet
@@ -95,7 +96,7 @@ ExitHandler:
     Set objExcelApplication = Nothing
     Set objinbox = Nothing
     Set objABCFolder = Nothing
-    Set objRepliedFolder = Nothing
+    Set objAgedRepliedFolder = Nothing
     Set objRootFolder = Nothing
     Set objNamespace = Nothing
     Exit Sub
@@ -105,7 +106,7 @@ ErrorHandler:
     Resume ExitHandler
 End Sub
 
-Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder, ByVal objRepliedFolder As Outlook.Folder)
+Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder, ByVal objAgedRepliedFolder As Outlook.Folder) ' Added parameter for "(1) AGED Replied" folder
     On Error Resume Next
     Dim i As Long
     Dim objMail As Outlook.MailItem
@@ -150,15 +151,15 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                             .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
                         End With
 
-                        ' Check if the email is in the "(1) AGED Replied" folder and move it to the new folder
-                        If objCurrentfolder.Name = objRepliedFolder.Name Then
-                            objMail.Move objRepliedFolder
-                        End If
-
                         ' Move the retrieved email to the "(1) AGED" folder
                         If objCurrentfolder.Name <> objDestinationFolder.Name Then
                             objMail.Move objDestinationFolder
                         End If
+                    End If
+                Else
+                    ' Move the replied email to the "(1) AGED Replied" folder
+                    If objCurrentfolder.Name <> objAgedRepliedFolder.Name Then
+                        objMail.Move objAgedRepliedFolder
                     End If
                 End If
             End If
@@ -170,7 +171,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     If objCurrentfolder.Folders.Count > 0 Then
         Dim objSubfolder As Outlook.Folder
         For Each objSubfolder In objCurrentfolder.Folders
-            ProcessFolders objSubfolder, objDestinationFolder, objRepliedFolder
+            ProcessFolders objSubfolder, objDestinationFolder, objAgedRepliedFolder
         Next objSubfolder
     End If
 End Sub
