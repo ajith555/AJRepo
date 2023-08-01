@@ -103,7 +103,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     For i = objCurrentfolder.Items.Count To 1 Step -1
         If objCurrentfolder.Items(i).Class = olMail Then
             Set objMail = objCurrentfolder.Items(i)
-            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
 
             ' Add the condition to check if the sender name is to be excluded
             Dim excludedSenders As String
@@ -179,6 +179,7 @@ Sub MoveRepliedEmailsToRepliedFolder()
 
     Dim objRepliedFolder As Outlook.Folder
     Dim objRepliedItem As Outlook.MailItem
+    Dim strReplied As String
 
     ' Get or create the "(1) AGED Replied" folder within the "(1) AGED" folder
     Dim foundReplied As Boolean
@@ -200,7 +201,7 @@ Sub MoveRepliedEmailsToRepliedFolder()
     For i = objABCFolder.Items.Count To 1 Step -1
         If objABCFolder.Items(i).Class = olMail Then
             Set objRepliedItem = objABCFolder.Items(i)
-            strReplied = objRepliedItem.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            strReplied = objRepliedItem.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
             If strReplied = "102" Or strReplied = "103" Then
                 objRepliedItem.Move objRepliedFolder
             End If
