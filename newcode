@@ -4,6 +4,7 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objinbox As Outlook.Folder
+Dim objFolder As Outlook.Folder ' Declare objFolder at the module level
 
 Sub ExportEmailsNotReplied()
     On Error GoTo ErrorHandler
@@ -178,7 +179,6 @@ Sub MoveRepliedEmailsToRepliedFolder()
 
     Dim objRepliedFolder As Outlook.Folder
     Dim objRepliedItem As Outlook.MailItem
-    Dim objFolder As Outlook.Folder ' Declare the objFolder variable
 
     ' Get or create the "(1) AGED Replied" folder within the "(1) AGED" folder
     Dim foundReplied As Boolean
