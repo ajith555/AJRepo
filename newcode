@@ -194,7 +194,9 @@ Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
     Set subjectDict = CreateObject("Scripting.Dictionary")
     
     Dim subjectCell As Range
-    For Each subjectCell In rng
+    Dim rowIndex As Long
+    For rowIndex = lastRow To 2 Step -1 ' Start from the last row and loop backward
+        Set subjectCell = rng.Cells(rowIndex, 1)
         If Not subjectCell.Value = "" Then
             If Not subjectDict.Exists(subjectCell.Value) Then
                 ' Add subject to the dictionary if it doesn't exist
@@ -204,5 +206,5 @@ Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
                 ws.Rows(subjectCell.Row).Delete
             End If
         End If
-    Next subjectCell
+    Next rowIndex
 End Sub
