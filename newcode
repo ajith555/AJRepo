@@ -69,6 +69,12 @@ Sub ExportEmailsNotReplied()
     RemoveDuplicatesFromWorkbook
 
     MsgBox "Complete!", vbExclamation
+
+    ' Clean up
+    Set objExcelWorksheet = Nothing
+    Set objExcelWorkbook = Nothing
+    objExcelApplication.Quit
+    Set objExcelApplication = Nothing
 End Sub
 
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
@@ -96,7 +102,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                     nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                 
                     ' Check if email is from the last 3 days and not replied for more than 2 days
-                    If nDateDiff <= 3 And nReplyDateDiff > 2 Then
+                    If nDateDiff <= 3 And nReplyDateDiff > 2 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
                         nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
                     
                         With objExcelWorksheet
@@ -140,8 +146,8 @@ End Sub
 Sub RemoveDuplicatesFromWorkbook()
     Dim lastRow As Long
     Dim lastCol As Long
-    Dim ws As Worksheet
-    Dim rng As Range
+    Dim ws As Excel.Worksheet
+    Dim rng As Excel.Range
     
     Set ws = objExcelWorkbook.Worksheets(1)
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
