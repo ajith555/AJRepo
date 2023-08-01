@@ -183,13 +183,14 @@ End Sub
 
 Sub RemoveDuplicatesFromWorkbook()
     Dim lastRow As Long
-    Dim lastCol As Long
     Dim ws As Excel.Worksheet
     Dim rng As Excel.Range
     
     Set ws = objExcelWorkbook.Worksheets(1)
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
-    lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
-    Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
-    rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4, 5), Header:=xlYes
+    Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, 1)) ' Only consider the "Subject" column (Column A)
+    
+    ' Use Excel's built-in RemoveDuplicates method to remove duplicates based on the "Subject" column
+    rng.RemoveDuplicates Columns:=1, Header:=xlYes
 End Sub
+
