@@ -209,9 +209,9 @@ Sub MoveRepliedEmailsToRepliedFolder()
     Next i
 
     MsgBox "Replied emails moved to '(1) AGED Replied' folder.", vbExclamation
-    Exit Sub
+    Exit Sub ' Exit the subprocedure if no error occurs
 
 ErrorHandler:
     MsgBox "An error occurred: " & Err.Description, vbExclamation
-    Resume ExitHandler
+    Exit Sub ' Exit the subprocedure if an error occurs
 End Sub
