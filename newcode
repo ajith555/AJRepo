@@ -4,8 +4,6 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objinbox As Outlook.Folder
-Dim objAGEDRepliedFolder As Outlook.Folder
-Dim repliedFolderName As String
 
 Sub ExportEmailsNotReplied()
     On Error GoTo ErrorHandler
@@ -60,22 +58,6 @@ Sub ExportEmailsNotReplied()
         Set objABCFolder = objinbox.Folders.Add("(1) AGED", olFolderInbox)
     End If
     
-    ' Check if the "(1) AGED Replied" folder exists or create it if it doesn't
-    repliedFolderName = "(1) AGED Replied"
-    Dim foundRepliedFolder As Boolean
-    foundRepliedFolder = False
-    For Each objFolder In objinbox.Folders
-        If objFolder.Name = repliedFolderName Then
-            foundRepliedFolder = True
-            Set objAGEDRepliedFolder = objFolder
-            Exit For
-        End If
-    Next objFolder
-
-    If Not foundRepliedFolder Then
-        Set objAGEDRepliedFolder = objinbox.Folders.Add(repliedFolderName, olFolderInbox)
-    End If
-    
     ' Check and process the folders
     ProcessFolders objinbox, objABCFolder
 
@@ -97,7 +79,6 @@ ExitHandler:
     Set objExcelApplication = Nothing
     Set objinbox = Nothing
     Set objABCFolder = Nothing
-    Set objAGEDRepliedFolder = Nothing
     Set objRootFolder = Nothing
     Set objNamespace = Nothing
     Exit Sub
@@ -155,11 +136,6 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                         ' Move the retrieved email to the "(1) AGED" folder
                         If objCurrentfolder.Name <> objDestinationFolder.Name Then
                             objMail.Move objDestinationFolder
-                        End If
-
-                        ' Move replied emails to the "(1) AGED Replied" folder
-                        If (strReplied = "102" Or strReplied = "103") Then
-                            objMail.Move objAGEDRepliedFolder
                         End If
                     End If
                 End If
