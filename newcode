@@ -241,19 +241,43 @@ Sub RemoveDuplicatesFromWorksheet(ByVal ws As Excel.Worksheet)
 
     Dim subjectCell As Range
     Dim rowIndex As Long
+    Dim uniqueSubjects() As String
+    Dim uniqueCount As Long
 
-    ' Find and mark duplicate subjects to be removed
-    For rowIndex = lastRow To 2 Step -1 ' Start from the last row and loop backward
+    ' Find and store unique subjects in the dictionary
+    For rowIndex = 2 To lastRow ' Start from the 2nd row to exclude header (Column A)
         Set subjectCell = rng.Cells(rowIndex, 1)
         If Not subjectCell.Value = "" Then
             If Not subjectDict.Exists(subjectCell.Value) Then
                 ' Add subject to the dictionary if it doesn't exist
                 subjectDict.Add subjectCell.Value, subjectCell.Row
-            Else
-                ' If the subject is already in the dictionary, delete the entire row
-                ws.Rows(subjectCell.Row).Delete
+                uniqueCount = uniqueCount + 1
             End If
         End If
     Next rowIndex
+
+    ' Initialize the array with the correct size
+    ReDim uniqueSubjects(1 To uniqueCount)
+
+    ' Store unique subjects in the array
+    Dim dictKey As Variant
+    Dim arrayIndex As Long
+    arrayIndex = 1
+    For Each dictKey In subjectDict.Keys
+        uniqueSubjects(arrayIndex) = dictKey
+        arrayIndex = arrayIndex + 1
+    Next dictKey
+
+    ' Clear the current worksheet data
+    ws.Cells.Clear
+
+    ' Rewrite the worksheet with the unique subjects
+    With ws
+        .Cells(1, 1) = "Subject"
+        .Cells(1, 1).Font.Bold = True
+        For rowIndex = 2 To uniqueCount + 1 ' Rewrite from the 2nd row
+            .Cells(rowIndex, 1) = uniqueSubjects(rowIndex - 1)
+        Next rowIndex
+    End With
 End Sub
 
