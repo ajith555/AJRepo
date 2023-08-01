@@ -69,6 +69,9 @@ Sub ExportEmailsNotReplied()
     ' Move replied emails from "(1) AGED" to "(1) AGED Replied" folder
     MoveRepliedEmails objABCFolder
     
+    ' Check and move duplicate emails to "(1) AGED Duplicate" folder
+    CheckAndMoveDuplicateEmails
+
     ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
 
@@ -179,6 +182,52 @@ Sub MoveRepliedEmails(ByVal objSourceFolder As Outlook.Folder)
     Next i
 End Sub
 
+Sub CheckAndMoveDuplicateEmails()
+    Dim objNamespace As Outlook.Namespace
+    Dim objRootFolder As Outlook.Folder
+    Dim objAgedFolder As Outlook.Folder
+    Dim objAgedDuplicateFolder As Outlook.Folder
+    Dim dictEmails As Object ' Dictionary to track duplicate emails
+    Dim objMail As Outlook.MailItem
+    Dim i As Long
+    
+    Set dictEmails = CreateObject("Scripting.Dictionary")
+    
+    ' Get the specified email account and its "(1) AGED" and "(1) AGED Duplicate" folders
+    Set objNamespace = Outlook.GetNamespace("MAPI")
+    Set objRootFolder = objNamespace.Folders(targetEmail)
+    Set objAgedFolder = objRootFolder.Folders("Inbox").Folders("(1) AGED")
+    
+    ' Check if the "(1) AGED Duplicate" folder exists or create it if it doesn't
+    Dim foundAgedDuplicate As Boolean
+    foundAgedDuplicate = False
+    Dim objFolder As Outlook.Folder
+    For Each objFolder In objRootFolder.Folders("Inbox").Folders
+        If objFolder.Name = "(1) AGED Duplicate" Then
+            foundAgedDuplicate = True
+            Set objAgedDuplicateFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
+    
+    If Not foundAgedDuplicate Then
+        Set objAgedDuplicateFolder = objRootFolder.Folders("Inbox").Folders.Add("(1) AGED Duplicate", olFolderInbox)
+    End If
+    
+    ' Loop through the items in the "(1) AGED" folder and check for duplicates
+    For i = objAgedFolder.Items.Count To 1 Step -1
+        If objAgedFolder.Items(i).Class = olMail Then
+            Set objMail = objAgedFolder.Items(i)
+            If Not dictEmails.Exists(objMail.EntryID) Then
+                ' Add the email to the dictionary if it doesn't exist
+                dictEmails.Add objMail.EntryID, objMail.SenderEmailAddress
+            Else
+                ' If the email is already in the dictionary, move it to the "(1) AGED Duplicate" folder
+                objMail.Move objAgedDuplicateFolder
+            End If
+        End If
+    Next i
+End Sub
 
 Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
     Dim lastRow As Long
