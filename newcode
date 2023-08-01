@@ -69,6 +69,9 @@ Sub ExportEmailsNotReplied()
     ' Move replied emails from "(1) AGED" to "(1) AGED Replied" folder
     MoveRepliedEmails objABCFolder
     
+    ' Check for and move emails with duplicate subjects within the "(1) AGED" folder
+    MoveDuplicateEmails objABCFolder
+
     ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
 
@@ -178,7 +181,6 @@ Sub MoveRepliedEmails(ByVal objSourceFolder As Outlook.Folder)
         End If
     Next i
 End Sub
-
 
 Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
     Dim lastRow As Long
