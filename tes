@@ -1,28 +1,22 @@
-$url = "https://www.example.com/api/data"
-
-# create a new web request object
-$request = [System.Net.WebRequest]::Create($url)
-
-# set the authentication method to Kerberos
-$request.UseDefaultCredentials = $true
-$request.Credentials = [System.Net.CredentialCache]::DefaultCredentials
-$request.Headers.Add("Authorization", "Negotiate")
-
-# set the request method to GET
-$request.Method = "GET"
-
-# make the request and get the response
-$response = $request.GetResponse()
-
-# read the response data
-$dataStream = $response.GetResponseStream()
-$reader = New-Object System.IO.StreamReader($dataStream)
-$responseData = $reader.ReadToEnd()
-
-# cleanup
-$reader.Close()
-$dataStream.Close()
-$response.Close()
-
-# display the response data
-$responseData
+Sub InternalMail(olMail As MailItem)
+    Dim olApp As Outlook.Application
+    Set olApp = New Outlook.Application
+    
+    Dim internalDomain As String
+    internalDomain = "@abc.com"
+    
+    Dim inbox As Outlook.MAPIFolder
+    Set inbox = olApp.Session.GetDefaultFolder(olFolderInbox)
+    
+    Dim targetFolder As Outlook.MAPIFolder
+    
+    If olMail.SenderEmailAddress Like "*" & internalDomain Then
+        Set targetFolder = inbox.Folders("Internal Mail")
+        olMail.Categories = "Internal"
+    Else
+        Set targetFolder = inbox.Folders("External Mail")
+        olMail.Categories = "External"
+    End If
+    
+    olMail.Move targetFolder
+End Sub
