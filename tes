@@ -1,36 +1,47 @@
-Sub InternalMail(olMail As MailItem)
+Sub MoveExternalEmails()
     Dim myDomain As String
     myDomain = "@abc.com"
     
-    With olMail
-        If Right(.SenderEmailAddress, Len(myDomain)) = myDomain Then ' Sender is internal
-            If Not .CC = vbNullString Then ' There is a CC entry
-                Dim ccArray() As String
-                ccArray = Split(.CC, ";")
-                Dim isExternalCC As Boolean
-                isExternalCC = False
-                
-                For Each cc In ccArray
-                    If Right(Trim(cc), Len(myDomain)) <> myDomain Then
-                        isExternalCC = True
-                        Exit For
-                    End If
-                Next cc
-                
-                If isExternalCC Then ' At least one CC is external
-                    .Categories = "External"
-                    .Move Session.GetDefaultFolder(olFolderInbox).Folders("External Email")
-                Else ' All CCs are internal
-                    .Categories = "Internal"
-                    .Move Session.GetDefaultFolder(olFolderInbox).Folders("Internal Email")
-                End If
-            Else ' There is no CC - sender is internal
-                .Categories = "Internal"
-                .Move Session.GetDefaultFolder(olFolderInbox).Folders("Internal Email")
+    Dim olApp As Object
+    Set olApp = CreateObject("Outlook.Application")
+    
+    Dim olNamespace As Object
+    Set olNamespace = olApp.GetNamespace("MAPI")
+    
+    Dim inboxFolder As Object
+    Set inboxFolder = olNamespace.GetDefaultFolder(6) ' Inbox folder
+    
+    Dim externalEmailFolder As Object
+    On Error Resume Next
+    Set externalEmailFolder = inboxFolder.Folders("External Email")
+    On Error GoTo 0
+    
+    If externalEmailFolder Is Nothing Then
+        Set externalEmailFolder = inboxFolder.Folders.Add("External Email")
+    End If
+    
+    ProcessFolder inboxFolder, externalEmailFolder, myDomain
+    MsgBox "External emails moved to the 'External Email' folder.", vbInformation
+End Sub
+
+Sub ProcessFolder(currentFolder As Object, externalFolder As Object, myDomain As String)
+    Dim item As Object
+    Dim i As Integer
+    
+    For i = currentFolder.Items.Count To 1 Step -1
+        Set item = currentFolder.Items(i)
+        
+        If item.Class = olMail Then
+            If Right(item.SenderEmailAddress, Len(myDomain)) <> myDomain Then
+                item.Move externalFolder
             End If
-        Else ' Sender is external
-            .Categories = "External"
-            .Move Session.GetDefaultFolder(olFolderInbox).Folders("External Email")
         End If
-    End With
+    Next i
+    
+    If currentFolder.Folders.Count > 0 Then
+        Dim subFolder As Object
+        For Each subFolder In currentFolder.Folders
+            ProcessFolder subFolder, externalFolder, myDomain
+        Next subFolder
+    End If
 End Sub
