@@ -1,22 +1,36 @@
 Sub InternalMail(olMail As MailItem)
-    Dim olApp As Outlook.Application
-    Set olApp = New Outlook.Application
+    Dim myDomain As String
+    myDomain = "@abc.com"
     
-    Dim internalDomain As String
-    internalDomain = "@abc.com"
-    
-    Dim inbox As Outlook.MAPIFolder
-    Set inbox = olApp.Session.GetDefaultFolder(olFolderInbox)
-    
-    Dim targetFolder As Outlook.MAPIFolder
-    
-    If olMail.SenderEmailAddress Like "*" & internalDomain Then
-        Set targetFolder = inbox.Folders("Internal Mail")
-        olMail.Categories = "Internal"
-    Else
-        Set targetFolder = inbox.Folders("External Mail")
-        olMail.Categories = "External"
-    End If
-    
-    olMail.Move targetFolder
+    With olMail
+        If Right(.SenderEmailAddress, Len(myDomain)) = myDomain Then ' Sender is internal
+            If Not .CC = vbNullString Then ' There is a CC entry
+                Dim ccArray() As String
+                ccArray = Split(.CC, ";")
+                Dim isExternalCC As Boolean
+                isExternalCC = False
+                
+                For Each cc In ccArray
+                    If Right(Trim(cc), Len(myDomain)) <> myDomain Then
+                        isExternalCC = True
+                        Exit For
+                    End If
+                Next cc
+                
+                If isExternalCC Then ' At least one CC is external
+                    .Categories = "External"
+                    .Move Session.GetDefaultFolder(olFolderInbox).Folders("External Email")
+                Else ' All CCs are internal
+                    .Categories = "Internal"
+                    .Move Session.GetDefaultFolder(olFolderInbox).Folders("Internal Email")
+                End If
+            Else ' There is no CC - sender is internal
+                .Categories = "Internal"
+                .Move Session.GetDefaultFolder(olFolderInbox).Folders("Internal Email")
+            End If
+        Else ' Sender is external
+            .Categories = "External"
+            .Move Session.GetDefaultFolder(olFolderInbox).Folders("External Email")
+        End If
+    End With
 End Sub
