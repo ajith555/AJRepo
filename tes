@@ -22,8 +22,12 @@ End Sub
 Sub ProcessFolder(folder As Object, domainToCheck As String, targetFolder As Object)
     Dim olMail As Object
     For Each olMail In folder.Items
-        If olMail.Class = 43 And Not LCase(Right(olMail.SenderEmailAddress, Len(domainToCheck))) = LCase(domainToCheck) Then olMail.Move targetFolder
+        If olMail.Class = 43 And Not LCase(Right(olMail.SenderEmailAddress, Len(domainToCheck))) = LCase(domainToCheck) Then
+            olMail.Move targetFolder
+        End If
     Next olMail
     Dim SubFolder As Object
-    For Each SubFolder In folder.Folders: ProcessFolder SubFolder, domainToCheck, targetFolder: Next SubFolder
+    For Each SubFolder In folder.Folders
+        ProcessFolder SubFolder, domainToCheck, targetFolder
+    Next SubFolder
 End Sub
