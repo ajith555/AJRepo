@@ -31,6 +31,7 @@ End Sub
 
 Sub ProcessFolder(folder As Object, domainToCheck As String, targetFolder As Object)
     Dim olMail As Object, i As Long
+    Dim olSubFolder As Object
     
     For i = folder.Items.Count To 1 Step -1
         If folder.Items(i).Class = 43 Then ' MailItem
@@ -41,7 +42,7 @@ Sub ProcessFolder(folder As Object, domainToCheck As String, targetFolder As Obj
         End If
     Next i
     
-    For Each olFolder In folder.Folders
-        ProcessFolder olFolder, domainToCheck, targetFolder
-    Next olFolder
+    For Each olSubFolder In folder.Folders
+        ProcessFolder olSubFolder, domainToCheck, targetFolder
+    Next olSubFolder
 End Sub
