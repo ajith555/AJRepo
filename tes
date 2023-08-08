@@ -31,7 +31,7 @@ Sub ProcessFolder(folder As Object, targetFolder As Object)
     For i = folder.Items.Count To 1 Step -1
         If folder.Items(i).Class = 43 Then ' MailItem
             Set olMail = folder.Items(i)
-            If Not IsInternalAddress(olMail) Then
+            If IsExternalAddress(olMail) Then
                 olMail.Move targetFolder
             End If
         End If
@@ -43,12 +43,10 @@ Sub ProcessFolder(folder As Object, targetFolder As Object)
     Next subfolder
 End Sub
 
-Function IsInternalAddress(mail As Object) As Boolean
+Function IsExternalAddress(mail As Object) As Boolean
     Dim senderDomain As String
     senderDomain = Split(mail.SenderEmailAddress, "@")(UBound(Split(mail.SenderEmailAddress, "@")))
-    If mail.SenderEmailType = "EX" Or mail.SenderEmailType = "SMTP" Then
-        If LCase(senderDomain) = "abc.com" Then
-            IsInternalAddress = True
-        End If
+    If mail.SenderEmailType = "SMTP" And LCase(senderDomain) <> "abc.com" Then
+        IsExternalAddress = True
     End If
 End Function
