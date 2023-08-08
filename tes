@@ -1,6 +1,7 @@
 Sub MoveExternalEmails()
     Dim olApp As Object, olNs As Object, olInbox As Object
-    Dim targetFolder As Object, olMail As Object
+    Dim targetFolder As Object
+    Dim olMail As Object, olFolder As Object
     Dim domainToCheck As String, moveToFolderName As String
     
     domainToCheck = "@abc.com"
@@ -8,26 +9,39 @@ Sub MoveExternalEmails()
     
     Set olApp = CreateObject("Outlook.Application")
     Set olNs = olApp.GetNamespace("MAPI")
-    Set olInbox = olNs.GetDefaultFolder(6)
-    On Error Resume Next
-    Set targetFolder = olInbox.Folders(moveToFolderName): On Error GoTo 0
+    Set olInbox = olNs.GetDefaultFolder(6) ' Inbox folder
     
-    If targetFolder Is Nothing Then Set targetFolder = olInbox.Folders.Add(moveToFolderName)
+    On Error Resume Next
+    Set targetFolder = olInbox.Folders(moveToFolderName)
+    On Error GoTo 0
+    
+    If targetFolder Is Nothing Then
+        Set targetFolder = olInbox.Folders.Add(moveToFolderName)
+    End If
     
     ProcessFolder olInbox, domainToCheck, targetFolder
+    
     MsgBox "External emails have been moved."
-    Set olApp = Nothing: Set olNs = Nothing: Set olInbox = Nothing: Set targetFolder = Nothing
+    
+    Set olApp = Nothing
+    Set olNs = Nothing
+    Set olInbox = Nothing
+    Set targetFolder = Nothing
 End Sub
 
 Sub ProcessFolder(folder As Object, domainToCheck As String, targetFolder As Object)
-    Dim olMail As Object
-    For Each olMail In folder.Items
-        If olMail.Class = 43 And Not LCase(Right(olMail.SenderEmailAddress, Len(domainToCheck))) = LCase(domainToCheck) Then
-            olMail.Move targetFolder
+    Dim olMail As Object, i As Long
+    
+    For i = folder.Items.Count To 1 Step -1
+        If folder.Items(i).Class = 43 Then ' MailItem
+            Set olMail = folder.Items(i)
+            If LCase(Right(olMail.SenderEmailAddress, Len(domainToCheck))) <> LCase(domainToCheck) Then
+                olMail.Move targetFolder
+            End If
         End If
-    Next olMail
-    Dim SubFolder As Object
-    For Each SubFolder In folder.Folders
-        ProcessFolder SubFolder, domainToCheck, targetFolder
-    Next SubFolder
+    Next i
+    
+    For Each olFolder In folder.Folders
+        ProcessFolder olFolder, domainToCheck, targetFolder
+    Next olFolder
 End Sub
