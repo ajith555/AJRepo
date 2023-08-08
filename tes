@@ -2,6 +2,7 @@ Sub MoveExternalEmails()
     Dim olApp As Object, olNs As Object, olFolder As Object
     Dim olMail As Object
     Dim domainToCheck As String, moveToFolderName As String
+    Dim targetFolder As Object
     
     domainToCheck = "@abc.com"
     moveToFolderName = "External Email"
@@ -22,15 +23,8 @@ Sub MoveExternalEmails()
         Set targetFolder = olFolder.Folders.Add(moveToFolderName)
     End If
     
-    ' Loop through emails in the folder and its subfolders
-    For Each olMail In olFolder.Items
-        If olMail.Class = 43 And Not LCase(Right(olMail.SenderEmailAddress, Len(domainToCheck))) = LCase(domainToCheck) Then
-            olMail.Move targetFolder
-        End If
-    Next olMail
-    
-    ' Process subfolders
-    ProcessSubfolders olFolder, domainToCheck, targetFolder
+    ' Process the main folder
+    ProcessFolder olFolder, domainToCheck, targetFolder
     
     MsgBox "External emails have been moved to the designated folder."
     
@@ -40,16 +34,21 @@ Sub MoveExternalEmails()
     Set targetFolder = Nothing
 End Sub
 
-Sub ProcessSubfolders(parentFolder As Object, domainToCheck As String, targetFolder As Object)
-    Dim subfolder As Object
+Sub ProcessFolder(folder As Object, domainToCheck As String, targetFolder As Object)
     Dim olMail As Object
+    Dim i As Long
     
-    For Each subfolder In parentFolder.Folders
-        For Each olMail In subfolder.Items
-            If olMail.Class = 43 And Not LCase(Right(olMail.SenderEmailAddress, Len(domainToCheck))) = LCase(domainToCheck) Then
+    For i = folder.Items.Count To 1 Step -1
+        If folder.Items(i).Class = 43 Then ' MailItem
+            Set olMail = folder.Items(i)
+            If LCase(Right(olMail.SenderEmailAddress, Len(domainToCheck))) <> LCase(domainToCheck) Then
                 olMail.Move targetFolder
             End If
-        Next olMail
-        ProcessSubfolders subfolder, domainToCheck, targetFolder
+        End If
+    Next i
+    
+    Dim subfolder As Object
+    For Each subfolder In folder.Folders
+        ProcessFolder subfolder, domainToCheck, targetFolder
     Next subfolder
 End Sub
