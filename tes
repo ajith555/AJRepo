@@ -21,6 +21,7 @@ Sub MoveExternalEmails()
     End If
     
     ProcessFolder inboxFolder, externalEmailFolder, myDomain
+    
     MsgBox "External emails moved to the 'External Email' folder.", vbInformation
 End Sub
 
@@ -31,10 +32,8 @@ Sub ProcessFolder(currentFolder As Object, externalFolder As Object, myDomain As
     For i = currentFolder.Items.Count To 1 Step -1
         Set item = currentFolder.Items(i)
         
-        If item.Class = olMail Then
-            If Right(item.SenderEmailAddress, Len(myDomain)) <> myDomain Then
-                item.Move externalFolder
-            End If
+        If item.Class = olMail And Right(item.SenderEmailAddress, Len(myDomain)) <> myDomain Then
+            item.Move externalFolder
         End If
     Next i
     
