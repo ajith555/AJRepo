@@ -1,46 +1,29 @@
 Sub MoveExternalEmails()
-    Dim myDomain As String
-    myDomain = "@abc.com"
+    Dim olApp As Object, olNs As Object, olInbox As Object
+    Dim targetFolder As Object, olMail As Object
+    Dim domainToCheck As String, moveToFolderName As String
     
-    Dim olApp As Object
+    domainToCheck = "@abc.com"
+    moveToFolderName = "External Email"
+    
     Set olApp = CreateObject("Outlook.Application")
-    
-    Dim olNamespace As Object
-    Set olNamespace = olApp.GetNamespace("MAPI")
-    
-    Dim inboxFolder As Object
-    Set inboxFolder = olNamespace.GetDefaultFolder(6) ' Inbox folder
-    
-    Dim externalEmailFolder As Object
+    Set olNs = olApp.GetNamespace("MAPI")
+    Set olInbox = olNs.GetDefaultFolder(6)
     On Error Resume Next
-    Set externalEmailFolder = inboxFolder.Folders("External Email")
-    On Error GoTo 0
+    Set targetFolder = olInbox.Folders(moveToFolderName): On Error GoTo 0
     
-    If externalEmailFolder Is Nothing Then
-        Set externalEmailFolder = inboxFolder.Folders.Add("External Email")
-    End If
+    If targetFolder Is Nothing Then Set targetFolder = olInbox.Folders.Add(moveToFolderName)
     
-    ProcessFolder inboxFolder, externalEmailFolder, myDomain
-    
-    MsgBox "External emails moved to the 'External Email' folder.", vbInformation
+    ProcessFolder olInbox, domainToCheck, targetFolder
+    MsgBox "External emails have been moved."
+    Set olApp = Nothing: Set olNs = Nothing: Set olInbox = Nothing: Set targetFolder = Nothing
 End Sub
 
-Sub ProcessFolder(currentFolder As Object, externalFolder As Object, myDomain As String)
-    Dim item As Object
-    Dim i As Integer
-    
-    For i = currentFolder.Items.Count To 1 Step -1
-        Set item = currentFolder.Items(i)
-        
-        If item.Class = olMail And Right(item.SenderEmailAddress, Len(myDomain)) <> myDomain Then
-            item.Move externalFolder
-        End If
-    Next i
-    
-    If currentFolder.Folders.Count > 0 Then
-        Dim subFolder As Object
-        For Each subFolder In currentFolder.Folders
-            ProcessFolder subFolder, externalFolder, myDomain
-        Next subFolder
-    End If
+Sub ProcessFolder(folder As Object, domainToCheck As String, targetFolder As Object)
+    Dim olMail As Object
+    For Each olMail In folder.Items
+        If olMail.Class = 43 And Not LCase(Right(olMail.SenderEmailAddress, Len(domainToCheck))) = LCase(domainToCheck) Then olMail.Move targetFolder
+    Next olMail
+    Dim SubFolder As Object
+    For Each SubFolder In folder.Folders: ProcessFolder SubFolder, domainToCheck, targetFolder: Next SubFolder
 End Sub
