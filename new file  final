@@ -11,13 +11,7 @@ Sub ExportEmailsNotReplied()
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
     Dim objABCFolder As Outlook.Folder
-        ' Get the specified email account and its Inbox folder
-    Set objNamespace = Outlook.GetNamespace("MAPI")
-    Set objRootFolder = objNamespace.Folders(targetEmail)
-    Set objinbox = objRootFolder.Folders("Inbox")
-    
-    ' Call the CheckAndMoveExternalEmails subroutine
-    CheckAndMoveExternalEmails
+
     ' Create Excel objects
     Set objExcelApplication = New Excel.Application
     objExcelApplication.Visible = True ' Set Excel application visible before working with columns
@@ -80,7 +74,13 @@ Sub ExportEmailsNotReplied()
 
     ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
-
+        ' Get the specified email account and its Inbox folder
+    Set objNamespace = Outlook.GetNamespace("MAPI")
+    Set objRootFolder = objNamespace.Folders(targetEmail)
+    Set objinbox = objRootFolder.Folders("Inbox")
+    
+    ' Call the CheckAndMoveExternalEmails subroutine
+    CheckAndMoveExternalEmails
     MsgBox "Complete!", vbExclamation
 
     ' Clean up
