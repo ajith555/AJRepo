@@ -105,7 +105,7 @@ Sub ProcessFoldersExternal(ByVal objCurrentfolder As Outlook.Folder, ByVal objDe
                 ' Additional condition to filter non-@ubs.com senders
                 Dim senderEmailAddress As String
                 senderEmailAddress = objMail.SenderEmailAddress
-                If Not IsUbsSender(senderEmailAddress) Then
+                If IsUbsSender(senderEmailAddress) Then  ' Corrected this condition to IsUbsSender
                     If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
                         nDateDiff = DateDiff("d", objMail.SentOn, Now)
                         nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
