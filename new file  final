@@ -12,12 +12,14 @@ Sub ExportEmailsNotReplied()
     Dim objRootFolder As Outlook.Folder
     Dim objABCFolder As Outlook.Folder
     
+    ' Create Excel objects
     Set objExcelApplication = New Excel.Application
-    objExcelApplication.Visible = True
+    objExcelApplication.Visible = True ' Set Excel application visible before working with columns
 
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
     
+    ' Set fixed row height for all rows in the worksheet
     objExcelWorksheet.Rows.RowHeight = 20
 
     With objExcelWorksheet
@@ -33,10 +35,12 @@ Sub ExportEmailsNotReplied()
         .Cells(1, 5).Font.Bold = True
     End With
     
+    ' Get the specified email account and its Inbox folder
     Set objNamespace = Outlook.GetNamespace("MAPI")
     Set objRootFolder = objNamespace.Folders(targetEmail)
     Set objinbox = objRootFolder.Folders("Inbox")
     
+    ' Check if the "ABC" folder exists or create it if it doesn't
     Dim foundABC As Boolean
     foundABC = False
     Dim objFolder As Outlook.Folder
@@ -52,41 +56,33 @@ Sub ExportEmailsNotReplied()
         Set objABCFolder = objinbox.Folders.Add("(1) AGED", olFolderInbox)
     End If
     
-    Dim objABCDuplicateFolder As Outlook.Folder
-    Dim objABCDuplicateExternalFolder As Outlook.Folder
-    For Each objFolder In objinbox.Folders
-        If objFolder.Name = "(1) AGED Duplicate" Then
-            Set objABCDuplicateFolder = objFolder
-        ElseIf objFolder.Name = "(1) AGED External" Then
-            Set objABCDuplicateExternalFolder = objFolder
-        End If
-    Next objFolder
-    
-    If objABCDuplicateExternalFolder Is Nothing Then
-        Set objABCDuplicateExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
-    End If
-    
-    ProcessFolders objinbox, objABCFolder, objABCDuplicateFolder, objABCDuplicateExternalFolder
+    ' Check and process the folders to export unreplied emails
+    ProcessFolders objinbox, objABCFolder
 
+    ' Format the Excel columns and rows
     With objExcelWorksheet
         .Columns("A:D").AutoFit
         .Columns("E").ColumnWidth = 100
         .Columns("E").WrapText = False
     End With
 
+    ' Move replied emails from "(1) AGED" to "(1) AGED Replied" folder
     MoveRepliedEmails objABCFolder
-    MoveDuplicateEmails objABCFolder, objABCDuplicateFolder, objABCDuplicateExternalFolder
+    
+    ' Check for and move emails with duplicate subjects within the "(1) AGED" folder
+    MoveDuplicateEmails objABCFolder
+
+    ' Remove duplicates from the Excel workbook
+    RemoveDuplicatesFromWorkbook objExcelWorkbook
 
     MsgBox "Complete!", vbExclamation
 
+    ' Clean up
     Set objExcelWorksheet = Nothing
     Set objExcelWorkbook = Nothing
 End Sub
 
-Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, _
-                   ByVal objDestinationFolder As Outlook.Folder, _
-                   ByVal objDuplicateFolder As Outlook.Folder, _
-                   ByVal objDuplicateExternalFolder As Outlook.Folder)
+Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
@@ -102,13 +98,15 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, _
             Set objMail = objCurrentfolder.Items(i)
             strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
             
+            ' Add the condition to check if the sender name is to be excluded
             Dim excludedSenders As Variant
-            excludedSenders = Array("Sakaria, Pramod", "John Doe", "Jane Smith", "Mike Johnson")
+            excludedSenders = Array("Sakaria, Pramod", "John Doe", "Jane Smith", "Mike Johnson") ' Add other sender names as needed
             If Not IsExcludedSender(excludedSenders, objMail.SenderName) Then
                 If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
                     nDateDiff = DateDiff("d", objMail.SentOn, Now)
                     nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                 
+                    ' Check if email is from the last 3 days and not replied for more than 2 days
                     If nDateDiff <= 7 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
                         nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
                     
@@ -123,23 +121,16 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, _
                         For Each Recipient In objMail.Recipients
                             recipients = recipients & Recipient.Name & "; "
                         Next Recipient
-                        recipients = Left(recipients, Len(recipients) - 2)
+                        recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
                     
                         With objExcelWorksheet
-                            .Cells(nLastRow, 4) = recipients
-                            .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..."
+                            .Cells(nLastRow, 4) = recipients ' Add recipients' names to the new column
+                            .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
                         End With
 
-                        If objCurrentfolder.Name = "(1) AGED" Then
-                            If Not objMail.SenderEmailType = "EX" And Not objMail.SenderEmailType = "SMTP" Then
-                                objMail.Move objDuplicateExternalFolder
-                            ElseIf Not objMail.SenderEmailAddress Like "*@ubs.com" Then
-                                objMail.Move objDuplicateExternalFolder
-                            Else
-                                objMail.Move objDestinationFolder
-                            End If
-                        ElseIf objCurrentfolder.Name = "(1) AGED Duplicate" Then
-                            objMail.Move objDuplicateFolder
+                        ' Move the retrieved email to the "(1) AGED" folder
+                        If objCurrentfolder.Name <> objDestinationFolder.Name Then
+                            objMail.Move objDestinationFolder
                         End If
                     End If
                 End If
@@ -152,7 +143,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, _
     If objCurrentfolder.Folders.Count > 0 Then
         Dim objSubfolder As Outlook.Folder
         For Each objSubfolder In objCurrentfolder.Folders
-            ProcessFolders objSubfolder, objDestinationFolder, objDuplicateFolder, objDuplicateExternalFolder
+            ProcessFolders objSubfolder, objDestinationFolder
         Next objSubfolder
     End If
 End Sub
@@ -230,9 +221,7 @@ Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
     Next rowIndex
 End Sub
 
-Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder, _
-                        ByVal objDuplicateFolder As Outlook.Folder, _
-                        ByVal objDuplicateExternalFolder As Outlook.Folder)
+Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
     Dim objDuplicateFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
     Dim subjectDict As Object ' Dictionary to track duplicate subjects
@@ -274,4 +263,64 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder, _
             End If
         End If
     Next i
+End Sub
+
+Function IsInternalSender(ByVal senderEmailAddress As String) As Boolean
+    ' Implement this function to check if the sender's email address is internal (from @ubs.com)
+    ' Example:
+    IsInternalSender = InStr(senderEmailAddress, "@ubs.com") > 0
+End Function
+
+Sub CheckAndMoveExternalEmails()
+    Dim objABCFolder As Outlook.Folder
+    Dim objExternalFolder As Outlook.Folder
+    Dim objFolder As Outlook.Folder
+    Dim objMail As Outlook.MailItem
+    Dim strReplied As String
+    Dim i As Long
+    
+    ' Check if the "(1) AGED" folder exists or create it if it doesn't
+    Dim foundABC As Boolean
+    foundABC = False
+    For Each objFolder In objinbox.Folders
+        If objFolder.Name = "(1) AGED" Then
+            foundABC = True
+            Set objABCFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
+    
+    If Not foundABC Then
+        Set objABCFolder = objinbox.Folders.Add("(1) AGED", olFolderInbox)
+    End If
+    
+    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
+    Dim foundExternal As Boolean
+    foundExternal = False
+    For Each objFolder In objABCFolder.Folders
+        If objFolder.Name = "(1) AGED External" Then
+            foundExternal = True
+            Set objExternalFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
+    
+    If Not foundExternal Then
+        Set objExternalFolder = objABCFolder.Folders.Add("(1) AGED External", olFolderInbox)
+    End If
+    
+    For i = objABCFolder.Items.Count To 1 Step -1
+        If objABCFolder.Items(i).Class = olMail Then
+            Set objMail = objABCFolder.Items(i)
+            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            If (strReplied <> "102" And strReplied <> "103") Then ' Only consider unreplied emails
+                ' Check if the sender's email address is external (not from @ubs.com)
+                If Not IsInternalSender(objMail.SenderEmailAddress) Then
+                    objMail.Move objExternalFolder
+                End If
+            End If
+        End If
+    Next i
+    
+    MsgBox "External emails moved!", vbExclamation
 End Sub
