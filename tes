@@ -1,4 +1,6 @@
 Sub MoveExternalEmails()
+    On Error Resume Next ' Add this line to handle errors
+    
     Dim olApp As Object, olNs As Object
     Dim olFolder As Object, targetFolder As Object
     Dim olMail As Object
@@ -7,10 +9,7 @@ Sub MoveExternalEmails()
     Set olNs = olApp.GetNamespace("MAPI")
     Set olFolder = olNs.GetDefaultFolder(6) ' Inbox
     
-    On Error Resume Next
     Set targetFolder = olFolder.Folders("External Email")
-    On Error GoTo 0
-    
     If targetFolder Is Nothing Then
         Set targetFolder = olFolder.Folders.Add("External Email")
     End If
@@ -23,6 +22,8 @@ Sub MoveExternalEmails()
     Set olNs = Nothing
     Set olFolder = Nothing
     Set targetFolder = Nothing
+    
+    On Error GoTo 0 ' Restore normal error handling
 End Sub
 
 Sub ProcessFolder(folder As Object, targetFolder As Object)
@@ -32,7 +33,9 @@ Sub ProcessFolder(folder As Object, targetFolder As Object)
         If folder.Items(i).Class = 43 Then ' MailItem
             Set olMail = folder.Items(i)
             If IsExternalAddress(olMail) Then
+                On Error Resume Next ' Add this line to handle errors
                 olMail.Move targetFolder
+                On Error GoTo 0 ' Restore normal error handling
             End If
         End If
     Next i
