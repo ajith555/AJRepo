@@ -1,84 +1,308 @@
-<#
-.SYNOPSIS
-Send an email on behalf of a shared mailbox using the Outlook client without using the Outlook COM Interop assembly.
+Option Explicit
 
-.DESCRIPTION
-This function sends an email on behalf of a shared mailbox using the Outlook client without using the Outlook COM Interop assembly in PowerShell. It reads a CSV file containing recipient email addresses, and sends an email to each recipient on behalf of the specified shared mailbox. It uses late binding to interact with the Outlook COM Object, creates a new mail item for each recipient, sets the email properties such as recipient, subject, body, and SendOnBehalfOf property, and sends the email.
+Dim objExcelApplication As Excel.Application
+Dim objExcelWorkbook As Excel.Workbook
+Dim objExcelWorksheet As Excel.Worksheet
+Dim objinbox As Outlook.Folder
 
-.PARAMETER CsvFilePath
-File path of the CSV file containing recipient email addresses.
+Sub ExportEmailsNotReplied()
+    Dim targetEmail As String
+    targetEmail = "kushal-ajith.shetty@ubs.com"
+    Dim objNamespace As Outlook.Namespace
+    Dim objRootFolder As Outlook.Folder
+    Dim objABCFolder As Outlook.Folder
+    
+    ' Create Excel objects
+    Set objExcelApplication = New Excel.Application
+    objExcelApplication.Visible = True ' Set Excel application visible before working with columns
 
-.PARAMETER Subject
-Email subject.
+    Set objExcelWorkbook = objExcelApplication.Workbooks.Add
+    Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
+    
+    ' Set fixed row height for all rows in the worksheet
+    objExcelWorksheet.Rows.RowHeight = 20
 
-.PARAMETER Body
-Email body.
+    With objExcelWorksheet
+        .Cells(1, 1) = "Subject"
+        .Cells(1, 1).Font.Bold = True
+        .Cells(1, 2) = "Received"
+        .Cells(1, 2).Font.Bold = True
+        .Cells(1, 3) = "Sender"
+        .Cells(1, 3).Font.Bold = True
+        .Cells(1, 4) = "Recipients"
+        .Cells(1, 4).Font.Bold = True
+        .Cells(1, 5) = "Excerpts"
+        .Cells(1, 5).Font.Bold = True
+    End With
+    
+    ' Get the specified email account and its Inbox folder
+    Set objNamespace = Outlook.GetNamespace("MAPI")
+    Set objRootFolder = objNamespace.Folders(targetEmail)
+    Set objinbox = objRootFolder.Folders("Inbox")
+    
+    ' Check if the "ABC" folder exists or create it if it doesn't
+    Dim foundABC As Boolean
+    foundABC = False
+    Dim objFolder As Outlook.Folder
+    For Each objFolder In objinbox.Folders
+        If objFolder.Name = "(1) AGED" Then
+            foundABC = True
+            Set objABCFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
+    
+    If Not foundABC Then
+        Set objABCFolder = objinbox.Folders.Add("(1) AGED", olFolderInbox)
+    End If
+    
+    ' Check and process the folders to export unreplied emails for external emails
+    ProcessFolders objinbox, objABCFolder
+    
+    ' Check and process the folders to export unreplied emails for non-@abc.com emails
+    Dim objExternalsFolder As Outlook.Folder
+    Set objExternalsFolder = GetOrCreateFolder(objinbox, "AGED Externals")
+    ProcessFolders objinbox, objExternalsFolder, True
+    
+    ' Format the Excel columns and rows
+    With objExcelWorksheet
+        .Columns("A:D").AutoFit
+        .Columns("E").ColumnWidth = 100
+        .Columns("E").WrapText = False
+    End With
 
-.PARAMETER SharedMailbox
-Email address of the shared mailbox to send the email on behalf of.
+    ' Move replied emails from "(1) AGED" to "(1) AGED Replied" folder
+    MoveRepliedEmails objABCFolder
+    
+    ' Check for and move emails with duplicate subjects within the "(1) AGED" folder
+    MoveDuplicateEmails objABCFolder
 
-.EXAMPLE
-Send-EmailUsingOutlook -CsvFilePath "C:\path\to\recipients.csv" -Subject "Subject of the Email" -Body "Body of the Email" -SharedMailbox "shared_mailbox@example.com"
-Send an email on behalf of a shared mailbox using the Outlook client with email addresses from a CSV file, and a subject, body, and shared mailbox email address.
+    ' Remove duplicates from the Excel workbook
+    RemoveDuplicatesFromWorkbook objExcelWorkbook
+    
+    MsgBox "Complete!", vbExclamation
 
-.INPUTS
-None.
+    ' Clean up
+    Set objExcelWorksheet = Nothing
+    Set objExcelWorkbook = Nothing
+End Sub
 
-.OUTPUTS
-None.
+Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
+    Dim i As Long
+    Dim objMail As Outlook.MailItem
+    Dim strReplied As String
+    Dim nDateDiff As Integer
+    Dim nReplyDateDiff As Integer
+    Dim nLastRow As Integer
+    Dim Recipient As Outlook.Recipient
+    
+    On Error Resume Next
+    
+    For i = objCurrentfolder.Items.Count To 1 Step -1
+        If objCurrentfolder.Items(i).Class = olMail Then
+            Set objMail = objCurrentfolder.Items(i)
+            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            
+            ' Add the condition to check if the sender name is to be excluded
+            Dim excludedSenders As Variant
+            excludedSenders = Array("Sakaria, Pramod", "John Doe", "Jane Smith", "Mike Johnson") ' Add other sender names as needed
+    
+            ' Add condition to check if the email is external
+            Dim isExternalEmail As Boolean
+            If isExternal Then
+                isExternalEmail = Not StringInArray(objMail.SenderEmailAddress, "@abc.com")
+            End If
+    
+            If Not IsExcludedSender(excludedSenders, objMail.SenderName) Then
+                If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
+                    nDateDiff = DateDiff("d", objMail.SentOn, Now)
+                    nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
+                
+                    ' Check if email is from the last 3 days and not replied for more than 2 days
+                    If nDateDiff <= 4 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
+                        nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                    
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 1) = objMail.Subject
+                            .Cells(nLastRow, 2) = objMail.ReceivedTime
+                            .Cells(nLastRow, 3) = objMail.SenderName
+                        End With
+                    
+                        Dim recipients As String
+                        recipients = ""
+                        For Each Recipient In objMail.Recipients
+                            recipients = recipients & Recipient.Name & "; "
+                        Next Recipient
+                        recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
+                    
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 4) = recipients ' Add recipients' names to the new column
+                            .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
+                        End With
 
-.NOTES
-- This function requires Microsoft Outlook to be installed on the machine where the script is executed.
-- This function uses late binding to interact with the Outlook COM Object, which allows you to send an email without explicitly referencing the Outlook COM Interop assembly.
-- This function releases the Outlook COM Object using [System.Runtime.InteropServices.Marshal]::ReleaseComObject() method after sending the emails.
+                        ' Move the retrieved email to the "(1) AGED" folder
+                        If objCurrentfolder.Name <> objDestinationFolder.Name Then
+                            objMail.Move objDestinationFolder
+                        End If
+                    End If
+                End If
+            End If
+        End If
+    Next i
 
-#>
-function Send-EmailUsingOutlook {
-    Param(
-        [string]$CsvFilePath,
-        [string]$Subject,
-        [string]$Body,
-        [string]$SharedMailbox
-    )
+    On Error GoTo 0
+    
+    If objCurrentfolder.Folders.Count > 0 Then
+        Dim objSubfolder As Outlook.Folder
+        For Each objSubfolder In objCurrentfolder.Folders
+            ProcessFolders objSubfolder, objDestinationFolder
+        Next objSubfolder
+    End If
+End Sub
 
-    # Validate CSV file path
-    if (-not (Test-Path -Path $CsvFilePath -PathType Leaf)) {
-        Write-Error "CSV file does not exist or invalid file path: $CsvFilePath"
-        return
-    }
+Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
+    Dim objDuplicateFolder As Outlook.Folder
+    Dim objMail As Outlook.MailItem
+    Dim subjectDict As Object ' Dictionary to track duplicate subjects
+    Dim i As Long
 
-    # Load the Outlook COM Object using late binding
-    $outlook = New-Object -ComObject Outlook.Application
+    ' Check if the "(1) AGED Duplicate" folder exists or create it if it doesn't
+    Dim foundDuplicate As Boolean
+    foundDuplicate = False
+    Dim objSubfolder As Outlook.Folder
+    For Each objSubfolder In objinbox.Folders
+        If objSubfolder.Name = "(1) AGED Duplicate" Then
+            foundDuplicate = True
+            Set objDuplicateFolder = objSubfolder
+            Exit For
+        End If
+    Next objSubfolder
+    
+    If Not foundDuplicate Then
+        Set objDuplicateFolder = objinbox.Folders.Add("(1) AGED Duplicate", olFolderInbox)
+    End If
 
-    # Read the CSV file and get the email addresses
-    $recipients = Import-Csv -Path $CsvFilePath
+    ' Create a Dictionary to track duplicate subjects
+    Set subjectDict = CreateObject("Scripting.Dictionary")
+    
+    For i = objFolder.Items.Count To 1 Step -1
+        If objFolder.Items(i).Class = olMail Then
+            Set objMail = objFolder.Items(i)
+            Dim strReplied As String
+            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            If (strReplied <> "102" And strReplied <> "103") Then ' Only consider unreplied emails
+                Dim subject As String
+                subject = objMail.Subject
+                If Not subjectDict.Exists(subject) Then
+                    subjectDict.Add subject, objMail.EntryID ' Track the subject and its EntryID
+                Else
+                    ' If the subject is already in the dictionary, move the email to the "(1) AGED Duplicate" folder
+                    objMail.Move objDuplicateFolder
+                End If
+            End If
+        End If
+    Next i
+    
+    ' Check and process the folders to move duplicate emails for non-@abc.com emails
+    Dim objDuplicateExternalsFolder As Outlook.Folder
+    Set objDuplicateExternalsFolder = GetOrCreateFolder(objinbox, "AGED Duplicate Externals")
+    ProcessFolders objinbox, objDuplicateExternalsFolder, True
+End Sub
 
-    # Iterate through each recipient and send email
-    $recipients | ForEach-Object {
-        # Check for missing or incomplete entries in CSV
-        if (-not $_.EmailAddress) {
-            Write-Error "Incomplete entry in CSV file. Email address is missing: $_"
-            continue
-        }
+Sub MoveRepliedEmails(ByVal objSourceFolder As Outlook.Folder)
+    Dim objRepliedFolder As Outlook.Folder
+    Dim objMail As Outlook.MailItem
+    Dim i As Long
 
-        # Create a new mail item
-        $mail = $outlook.CreateItem(0)
+    ' Check if the "(1) AGED Replied" folder exists or create it if it doesn't
+    Dim foundReplied As Boolean
+    foundReplied = False
+    Dim objFolder As Outlook.Folder
+    For Each objFolder In objinbox.Folders
+        If objFolder.Name = "(1) AGED Replied" Then
+            foundReplied = True
+            Set objRepliedFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
+    
+    If Not foundReplied Then
+        Set objRepliedFolder = objinbox.Folders.Add("(1) AGED Replied", olFolderInbox)
+    End If
 
-        # Set the email properties
-        $mail.Subject = $Subject
-        $mail.Body = $Body
-        $mail.To = $_.EmailAddress
+    ' Move replied emails from "(1) AGED" to "(1) AGED Replied" folder
+    For i = objSourceFolder.Items.Count To 1 Step -1
+        If objSourceFolder.Items(i).Class = olMail Then
+            Set objMail = objSourceFolder.Items(i)
+            Dim strReplied As String
+            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            If (strReplied = "102" Or strReplied = "103") Then
+                objMail.Move objRepliedFolder
+            End If
+        End If
+    Next i
+    
+    ' Check and process the folders to move replied emails for non-@abc.com emails
+    Dim objRepliedExternalsFolder As Outlook.Folder
+    Set objRepliedExternalsFolder = GetOrCreateFolder(objinbox, "AGED Replied Externals")
+    ProcessFolders objinbox, objRepliedExternalsFolder, True
+End Sub
 
-        # Set the SendOnBehalfOf property to the shared mailbox
-        $mail.SendOnBehalfOfName = $SharedMailbox
+Function StringInArray(ByVal valueToFind As String, ByVal arr As String) As Boolean
+    Dim str As Variant
+    For Each str In Split(arr, ";")
+        If Trim(str) = Trim(valueToFind) Then
+            StringInArray = True
+            Exit Function
+        End If
+    Next str
+End Function
 
-        # Send the email
-        $mail.Send()
+Function GetOrCreateFolder(ByVal parentFolder As Outlook.Folder, ByVal folderName As String) As Outlook.Folder
+    Dim targetFolder As Outlook.Folder
+    Dim foundFolder As Boolean
+    
+    foundFolder = False
+    
+    For Each targetFolder In parentFolder.Folders
+        If targetFolder.Name = folderName Then
+            foundFolder = True
+            Exit For
+        End If
+    Next targetFolder
+    
+    If Not foundFolder Then
+        Set targetFolder = parentFolder.Folders.Add(folderName, olFolderInbox)
+    End If
+    
+    Set GetOrCreateFolder = targetFolder
+End Function
 
-        # Release the mail item object
-        [System.Runtime.InteropServices.Marshal]::ReleaseComObject($mail) | Out-Null
-    }
+Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
+    Dim lastRow As Long
+    Dim ws As Excel.Worksheet
+    Dim rng As Excel.Range
+    Dim subjectDict As Object ' Dictionary to track duplicate subjects
+    
+    Set ws = wb.Worksheets(1)
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, 1)) ' Only consider the "Subject" column (Column A)
 
-    # Release the Outlook COM Object
-    [System.Runtime.InteropServices.Marshal]::ReleaseComObject($outlook) | Out-Null
-}
+    ' Create a Dictionary to track duplicate subjects
+    Set subjectDict = CreateObject("Scripting.Dictionary")
+    
+    Dim subjectCell As Range
+    Dim rowIndex As Long
+    For rowIndex = lastRow To 2 Step -1 ' Start from the last row and loop backward
+        Set subjectCell = rng.Cells(rowIndex, 1)
+        If Not subjectCell.Value = "" Then
+            If Not subjectDict.Exists(subjectCell.Value) Then
+                ' Add subject to the dictionary if it doesn't exist
+                subjectDict.Add subjectCell.Value, subjectCell.Row
+            Else
+                ' If the subject is already in the dictionary, delete the entire row
+                ws.Rows(subjectCell.Row).Delete
+            End If
+        End If
+    Next rowIndex
+End Sub
