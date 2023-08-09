@@ -44,20 +44,14 @@ Sub ExportEmailsNotReplied()
     Set objRootFolder = objNamespace.Folders(targetEmail)
     Set objinbox = objRootFolder.Folders("Inbox")
     
-    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
-    Dim foundExternal As Boolean
-    foundExternal = False
-    Dim objFolder As Outlook.Folder
-    For Each objFolder In objinbox.Folders
-        If objFolder.Name = "(1) AGED External" Then
-            foundExternal = True
-            Set objExternalFolder = objFolder
-            Exit For
-        End If
-    Next objFolder
+    ' Set external email folder
+    On Error Resume Next
+    Set objExternalFolder = objinbox.Folders("(1) AGED External")
+    On Error GoTo 0
     
-    If Not foundExternal Then
-        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
+    If objExternalFolder Is Nothing Then
+        MsgBox "The '(1) AGED External' folder does not exist. Please create it manually and run the macro again.", vbExclamation
+        Exit Sub
     End If
     
     ' Process folders and export unreplied emails
