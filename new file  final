@@ -64,6 +64,9 @@ Sub ExportEmailsNotReplied()
     Set objABCFolder = objinbox.Folders.Add("(1) AGED", olFolderInbox)
     ProcessFolders objinbox, objABCFolder
 
+    ' Move external emails to the "(1) AGED External" folder
+    MoveExternalEmails objABCFolder
+
     ' Format the Excel columns and rows
     With objExcelWorksheet
         .Columns("A:D").AutoFit
@@ -271,37 +274,20 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
 End Sub
 
 Sub MoveExternalEmails(ByVal objFolder As Outlook.Folder)
-    Dim objExternalFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
     Dim i As Long
-
-    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
-    Dim foundExternal As Boolean
-    foundExternal = False
-    Dim objSubfolder As Outlook.Folder
-    For Each objSubfolder In objinbox.Folders
-        If objSubfolder.Name = "(1) AGED External" Then
-            foundExternal = True
-            Set objExternalFolder = objSubfolder
-            Exit For
-        End If
-    Next objSubfolder
-    
-    If Not foundExternal Then
-        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
-    End If
 
     ' Move external emails to the "(1) AGED External" folder
     For i = objFolder.Items.Count To 1 Step -1
         If objFolder.Items(i).Class = olMail Then
             Set objMail = objFolder.Items(i)
-            If Not IsInternalSender(objMail.SenderEmailAddress) Then
+            If IsExternalSender(objMail.SenderEmailAddress) Then
                 objMail.Move objExternalFolder
             End If
         End If
     Next i
 End Sub
 
-Function IsInternalSender(ByVal senderAddress As String) As Boolean
-    IsInternalSender = (InStr(senderAddress, ExternalSenderDomain) > 0)
+Function IsExternalSender(ByVal senderAddress As String) As Boolean
+    IsExternalSender = (InStr(senderAddress, ExternalSenderDomain) = 0)
 End Function
