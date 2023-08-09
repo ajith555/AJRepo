@@ -11,7 +11,7 @@ Sub ExportEmailsNotReplied()
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
     Dim objABCFolder As Outlook.Folder
-    Dim objExternalFolder As Outlook.Folder ' Add this line for the External folder
+    Dim objExternalFolder As Outlook.Folder
     
     ' Create Excel objects
     Set objExcelApplication = New Excel.Application
@@ -23,6 +23,7 @@ Sub ExportEmailsNotReplied()
     ' Set fixed row height for all rows in the worksheet
     objExcelWorksheet.Rows.RowHeight = 20
 
+    ' Initialize Excel column headers
     With objExcelWorksheet
         .Cells(1, 1) = "Subject"
         .Cells(1, 1).Font.Bold = True
@@ -41,10 +42,25 @@ Sub ExportEmailsNotReplied()
     Set objRootFolder = objNamespace.Folders(targetEmail)
     Set objinbox = objRootFolder.Folders("Inbox")
     
+    ' Check if the "ABC" folder exists or create it if it doesn't
+    Dim foundABC As Boolean
+    foundABC = False
+    Dim objFolder As Outlook.Folder
+    For Each objFolder In objinbox.Folders
+        If objFolder.Name = "(1) AGED" Then
+            foundABC = True
+            Set objABCFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
+    
+    If Not foundABC Then
+        Set objABCFolder = objinbox.Folders.Add("(1) AGED", olFolderInbox)
+    End If
+    
     ' Check if the "(1) AGED External" folder exists or create it if it doesn't
     Dim foundExternal As Boolean
     foundExternal = False
-    Dim objFolder As Outlook.Folder
     For Each objFolder In objinbox.Folders
         If objFolder.Name = "(1) AGED External" Then
             foundExternal = True
@@ -57,8 +73,8 @@ Sub ExportEmailsNotReplied()
         Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
     
-    ' Check and process the folders to export unreplied emails from external senders
-    ProcessFoldersExternal objinbox, objABCFolder
+    ' Check and process the folders to export unreplied emails
+    ProcessFolders objinbox, objABCFolder, objExternalFolder
 
     ' Format the Excel columns and rows
     With objExcelWorksheet
@@ -67,10 +83,10 @@ Sub ExportEmailsNotReplied()
         .Columns("E").WrapText = False
     End With
 
-    ' Move replied emails from "(1) AGED External" to "(1) AGED External Replied" folder
+    ' Move replied emails from "(1) AGED" to "(1) AGED Replied" folder
     MoveRepliedEmails objABCFolder
     
-    ' Check for and move emails with duplicate subjects within the "(1) AGED External" folder
+    ' Check for and move emails with duplicate subjects within the "(1) AGED" folder
     MoveDuplicateEmails objABCFolder
 
     ' Remove duplicates from the Excel workbook
@@ -83,7 +99,7 @@ Sub ExportEmailsNotReplied()
     Set objExcelWorkbook = Nothing
 End Sub
 
-Sub ProcessFoldersExternal(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
+Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder, ByVal objExternalFolder As Outlook.Folder)
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
@@ -103,75 +119,44 @@ Sub ProcessFoldersExternal(ByVal objCurrentfolder As Outlook.Folder, ByVal objDe
             Dim excludedSenders As Variant
             excludedSenders = Array("Sakaria, Pramod", "John Doe", "Jane Smith", "Mike Johnson") ' Add other sender names as needed
             If Not IsExcludedSender(excludedSenders, objMail.SenderName) Then
-                ' Additional condition to filter non-@ubs.com senders
-                Dim senderEmailAddress As String
-                senderEmailAddress = objMail.SenderEmailAddress
-                If Not IsUbsSender(senderEmailAddress) Then
-                    If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
-                        nDateDiff = DateDiff("d", objMail.SentOn, Now)
-                        nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
+                nDateDiff = DateDiff("d", objMail.SentOn, Now)
+                nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
+                
+                ' Check if email is from the last 3 days and not replied for more than 2 days
+                If nDateDiff <= 7 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
+                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
                     
-                        ' Check if email is from the last 3 days and not replied for more than 2 days
-                        If nDateDiff <= 4 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
-                            nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                            
-                            With objExcelWorksheet
-                                .Cells(nLastRow, 1) = objMail.Subject
-                                .Cells(nLastRow, 2) = objMail.ReceivedTime
-                                .Cells(nLastRow, 3) = objMail.SenderName
-                            End With
-                            
-                            Dim recipients As String
-                            recipients = ""
-                            For Each Recipient In objMail.Recipients
-                                recipients = recipients & Recipient.Name & "; "
-                            Next Recipient
-                            recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
-                            
-                            With objExcelWorksheet
-                                .Cells(nLastRow, 4) = recipients ' Add recipients' names to the new column
-                                .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
-                            End With
-
-                            ' Move the retrieved email to the "(1) AGED External" folder
-                            If objCurrentfolder.Name <> objDestinationFolder.Name Then
-                                objMail.Move objDestinationFolder
-                            End If
+                    With objExcelWorksheet
+                        .Cells(nLastRow, 1) = objMail.Subject
+                        .Cells(nLastRow, 2) = objMail.ReceivedTime
+                        .Cells(nLastRow, 3) = objMail.SenderName
+                    End With
+                    
+                    Dim recipients As String
+                    recipients = ""
+                    For Each Recipient In objMail.Recipients
+                        recipients = recipients & Recipient.Name & "; "
+                    Next Recipient
+                    recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
+                    
+                    With objExcelWorksheet
+                        .Cells(nLastRow, 4) = recipients ' Add recipients' names to the new column
+                        .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
+                    End With
+                    
+                    ' Add the condition to check if the sender email domain is "@ubs.com"
+                    Dim senderEmailDomain As String
+                    senderEmailDomain = Right(objMail.SenderEmailAddress, Len(objMail.SenderEmailAddress) - InStr(objMail.SenderEmailAddress, "@"))
+                    If senderEmailDomain <> "ubs.com" Then
+                        ' Move emails from senders other than "@ubs.com" to "(1) AGED External" folder
+                        objMail.Move objExternalFolder
+                    Else
+                        ' Move the retrieved email to the "(1) AGED" folder
+                        If objCurrentfolder.Name <> objDestinationFolder.Name Then
+                            objMail.Move objDestinationFolder
                         End If
                     End If
-                Else ' Existing UBS functionality
-                    If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
-                        nDateDiff = DateDiff("d", objMail.SentOn, Now)
-                        nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                     
-                        ' Check if email is from the last 3 days and not replied for more than 2 days
-                        If nDateDiff <= 4 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
-                            nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                            
-                            With objExcelWorksheet
-                                .Cells(nLastRow, 1) = objMail.Subject
-                                .Cells(nLastRow, 2) = objMail.ReceivedTime
-                                .Cells(nLastRow, 3) = objMail.SenderName
-                            End With
-                            
-                            Dim recipients As String
-                            recipients = ""
-                            For Each Recipient In objMail.Recipients
-                                recipients = recipients & Recipient.Name & "; "
-                            Next Recipient
-                            recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
-                            
-                            With objExcelWorksheet
-                                .Cells(nLastRow, 4) = recipients ' Add recipients' names to the new column
-                                .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
-                            End With
-
-                            ' Move the retrieved email to the "(1) AGED" folder
-                            If objCurrentfolder.Name <> objDestinationFolder.Name Then
-                                objMail.Move objDestinationFolder
-                            End If
-                        End If
-                    End If
                 End If
             End If
         End If
@@ -182,21 +167,10 @@ Sub ProcessFoldersExternal(ByVal objCurrentfolder As Outlook.Folder, ByVal objDe
     If objCurrentfolder.Folders.Count > 0 Then
         Dim objSubfolder As Outlook.Folder
         For Each objSubfolder In objCurrentfolder.Folders
-            ProcessFoldersExternal objSubfolder, objDestinationFolder
+            ProcessFolders objSubfolder, objDestinationFolder, objExternalFolder
         Next objSubfolder
     End If
 End Sub
-
-Function IsUbsSender(ByVal senderEmailAddress As String) As Boolean
-    If InStr(senderEmailAddress, "@ubs.com") > 0 Then
-        IsUbsSender = True
-    Else
-        IsUbsSender = False
-    End If
-End Function
-
-
-
 
 Function IsExcludedSender(ByVal excludedSenders As Variant, ByVal senderName As String) As Boolean
     Dim i As Long
