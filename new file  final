@@ -4,13 +4,21 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objinbox As Outlook.Folder
+Dim objExternalFolder As Outlook.Folder
+Dim objExternalRepliedFolder As Outlook.Folder
 
 Sub ExportEmailsNotReplied()
+    ' Declare variables
     Dim targetEmail As String
-    targetEmail = "kushal-ajith.shetty@ubs.com"
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
     Dim objABCFolder As Outlook.Folder
+    Dim excludedSenders As Variant
+    Dim i As Long
+    
+    ' Initialize variables
+    targetEmail = "kushal-ajith.shetty@ubs.com"
+    excludedSenders = Array("Sakaria, Pramod", "John Doe", "Jane Smith", "Mike Johnson", "Some External Sender")
     
     ' Create Excel objects
     Set objExcelApplication = New Excel.Application
@@ -22,7 +30,8 @@ Sub ExportEmailsNotReplied()
     ' Set fixed row height for all rows in the worksheet
     objExcelWorksheet.Rows.RowHeight = 20
 
-     With objExcelWorksheet
+    ' Set headers for Excel columns
+    With objExcelWorksheet
         .Cells(1, 1) = "Subject"
         .Cells(1, 1).Font.Bold = True
         .Cells(1, 2) = "Received"
@@ -43,23 +52,6 @@ Sub ExportEmailsNotReplied()
     Set objRootFolder = objNamespace.Folders(targetEmail)
     Set objinbox = objRootFolder.Folders("Inbox")
     
-    ' Check and process the folders to export unreplied emails for internal emails
-    ProcessFolders objinbox, objABCFolder
-
-    ' Format the Excel columns and rows
-    With objExcelWorksheet
-        .Columns("A:D").AutoFit
-        .Columns("E").ColumnWidth = 100
-        .Columns("E").WrapText = False
-    End With
-
-    ' Process external folders
-    ProcessFolders objinbox, objExternalFolder
-    MoveRepliedEmails objABCFolder
-    MoveRepliedEmails objExternalFolder
-    MoveDuplicateEmails objABCFolder
-    MoveDuplicateEmails objExternalFolder
-
     ' Check if the "ABC" folder exists or create it if it doesn't
     Dim foundABC As Boolean
     foundABC = False
@@ -75,13 +67,42 @@ Sub ExportEmailsNotReplied()
     If Not foundABC Then
         Set objABCFolder = objinbox.Folders.Add("(1) AGED", olFolderInbox)
     End If
+    
+    ' Check and process the folders to export unreplied emails for internal emails
+    ProcessFolders objinbox, objABCFolder
+
+    ' Process external folders
+    ProcessFolders objinbox, objExternalFolder
+    MoveRepliedEmails objABCFolder
+    MoveRepliedEmails objExternalFolder
+    MoveDuplicateEmails objABCFolder
+    MoveDuplicateEmails objExternalFolder
+
+    ' Format the Excel columns and rows
+    With objExcelWorksheet
+        .Columns("A:D").AutoFit
+        .Columns("E").ColumnWidth = 100
+        .Columns("E").WrapText = False
+    End With
+
+    ' Move replied emails from "(1) AGED" to "(1) AGED Replied" folder
+    MoveRepliedEmails objABCFolder
+    MoveRepliedEmails objExternalFolder
+    
+    ' Check for and move emails with duplicate subjects within the "(1) AGED" folder
+    MoveDuplicateEmails objABCFolder
+    MoveDuplicateEmails objExternalFolder
+
+    ' Remove duplicates from the Excel workbook
+    RemoveDuplicatesFromWorkbook objExcelWorkbook
 
     MsgBox "Complete!", vbExclamation
-    
-    Set objExternalFolder = Nothing
-    Set objExternalRepliedFolder = Nothing
+
+    ' Clean up
     Set objExcelWorksheet = Nothing
     Set objExcelWorkbook = Nothing
+    Set objExternalFolder = Nothing
+    Set objExternalRepliedFolder = Nothing
 End Sub
 
 
@@ -110,7 +131,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                     nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                 
                     ' Check if email is from the last 3 days and not replied for more than 2 days
-                    If nDateDiff <= 4 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
+                    If nDateDiff <= 7 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
                         nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
                     
                         With objExcelWorksheet
@@ -269,21 +290,39 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
 End Sub
 ' Add new folders for external emails
 Sub AddExternalFolders()
-    Dim objExternalFolder As Outlook.Folder
-    Dim objExternalRepliedFolder As Outlook.Folder
-
-    Dim foundABC As Boolean
-    foundABC = False
+    ' Declare variables
+    Dim foundExternals As Boolean
+    Dim foundExternalsReplied As Boolean
     Dim objFolder As Outlook.Folder
+    
+    ' Initialize variables
+    foundExternals = False
+    foundExternalsReplied = False
+
+    ' Check if the "(1) AGED Externals" folder exists or create it if it doesn't
     For Each objFolder In objinbox.Folders
-        If objFolder.Name = "(1) AGED External" Then
-            foundABC = True
-            Set objABCFolder = objFolder
+        If objFolder.Name = "(1) AGED Externals" Then
+            foundExternals = True
+            Set objExternalFolder = objFolder
             Exit For
         End If
     Next objFolder
-    
-    If Not foundABC Then
-        Set objABCFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
+
+    If Not foundExternals Then
+        Set objExternalFolder = objinbox.Folders.Add("(1) AGED Externals", olFolderInbox)
     End If
+
+    ' Check if the "(1) AGED Externals Replied" folder exists or create it if it doesn't
+    For Each objFolder In objinbox.Folders
+        If objFolder.Name = "(1) AGED Externals Replied" Then
+            foundExternalsReplied = True
+            Set objExternalRepliedFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
+
+    If Not foundExternalsReplied Then
+        Set objExternalRepliedFolder = objinbox.Folders.Add("(1) AGED Externals Replied", olFolderInbox)
+    End If
+End Sub
 End Sub
