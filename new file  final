@@ -11,6 +11,7 @@ Sub ExportEmailsNotReplied()
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
     Dim objABCFolder As Outlook.Folder
+    Dim objExternalFolder As Outlook.Folder ' Add this line for the External folder
     
     ' Create Excel objects
     Set objExcelApplication = New Excel.Application
@@ -47,13 +48,13 @@ Sub ExportEmailsNotReplied()
     For Each objFolder In objinbox.Folders
         If objFolder.Name = "(1) AGED External" Then
             foundExternal = True
-            Set objABCFolder = objFolder
+            Set objExternalFolder = objFolder
             Exit For
         End If
     Next objFolder
     
     If Not foundExternal Then
-        Set objABCFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
+        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
     
     ' Check and process the folders to export unreplied emails from external senders
