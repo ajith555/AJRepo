@@ -45,7 +45,7 @@ Sub ExportEmailsNotReplied()
     foundABC = False
     Dim objFolder As Outlook.Folder
     For Each objFolder In objinbox.Folders
-        If objFolder.Name = "(1) AGED" Then
+        If objFolder.Name = "(1) AGED Internal" Then
             foundABC = True
             Set objABCFolder = objFolder
             Exit For
@@ -53,7 +53,7 @@ Sub ExportEmailsNotReplied()
     Next objFolder
     
     If Not foundABC Then
-        Set objABCFolder = objinbox.Folders.Add("(1) AGED", olFolderInbox)
+        Set objABCFolder = objinbox.Folders.Add("(1) AGED Internal", olFolderInbox)
     End If
     
     ' Check and process the folders to export unreplied emails
@@ -66,10 +66,10 @@ Sub ExportEmailsNotReplied()
         .Columns("E").WrapText = False
     End With
 
-    ' Move replied emails from "(1) AGED" to "(1) AGED Replied" folder
+    ' Move replied emails from "(1) AGEDInternal" to "(1) AGED Replied" folder
     MoveRepliedEmails objABCFolder
     
-    ' Check for and move emails with duplicate subjects within the "(1) AGED" folder
+    ' Check for and move emails with duplicate subjects within the "(1) AGED Internal" folder
     MoveDuplicateEmails objABCFolder
 
     ' Remove duplicates from the Excel workbook
@@ -179,7 +179,7 @@ Sub MoveRepliedEmails(ByVal objSourceFolder As Outlook.Folder)
         Set objRepliedFolder = objinbox.Folders.Add("(1) AGED Replied", olFolderInbox)
     End If
 
-    ' Move replied emails from "(1) AGED" to "(1) AGED Replied" folder
+    ' Move replied emails from "(1) AGED Internal" to "(1) AGED Replied" folder
     For i = objSourceFolder.Items.Count To 1 Step -1
         If objSourceFolder.Items(i).Class = olMail Then
             Set objMail = objSourceFolder.Items(i)
