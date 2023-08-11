@@ -280,22 +280,26 @@ End Sub
 
 Sub CheckAndMoveExternalEmails()
     Dim objExternalFolder As Outlook.Folder
+    Dim objInternalFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
     Dim i As Long
 
-    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
-    Dim foundExternal As Boolean
-    foundExternal = False
-    Dim objSubfolder As Outlook.Folder
-    For Each objSubfolder In objinbox.Folders
-        If objSubfolder.Name = "(1) AGED External" Then
-            foundExternal = True
-            Set objExternalFolder = objSubfolder
-            Exit For
-        End If
-    Next objSubfolder
+    ' Get the "(1) AGED Internal" folder
+    On Error Resume Next
+    Set objInternalFolder = objinbox.Folders("(1) AGED Internal")
+    On Error GoTo 0
+
+    If objInternalFolder Is Nothing Then
+        MsgBox "(1) AGED Internal folder not found!", vbExclamation
+        Exit Sub
+    End If
     
-    If Not foundExternal Then
+    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
+    On Error Resume Next
+    Set objExternalFolder = objinbox.Folders("(1) AGED External")
+    On Error GoTo 0
+    
+    If objExternalFolder Is Nothing Then
         Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
     
@@ -303,9 +307,10 @@ Sub CheckAndMoveExternalEmails()
     Wait 5
     
     ' Check for external emails in "(1) AGED Internal" folder and move them to "(1) AGED External" folder
-    For i = objinbox.Folders("(1) AGED Internal").Items.Count To 1 Step -1
-        If objinbox.Folders("(1) AGED Internal").Items(i).Class = olMail Then
-            Set objMail = objinbox.Folders("(1) AGED Internal").Items(i)
+    On Error Resume Next
+    For i = objInternalFolder.Items.Count To 1 Step -1
+        If objInternalFolder.Items(i).Class = olMail Then
+            Set objMail = objInternalFolder.Items(i)
             Dim strReplied As String
             strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
             If (strReplied <> "102" And strReplied <> "103") Then ' Only consider unreplied emails
@@ -317,4 +322,6 @@ Sub CheckAndMoveExternalEmails()
             End If
         End If
     Next i
+    On Error GoTo 0
 End Sub
+
