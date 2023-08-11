@@ -295,8 +295,8 @@ Sub MoveExternalEmails(ByVal objFolder As Outlook.Folder)
             strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
             If (strReplied <> "102" And strReplied <> "103") Then ' Only consider unreplied emails
                 Dim isInternal As Boolean
-                ' Check if the sender's email domain is the same as the recipient's domain (assumption for internal emails)
-                ' You might need to modify this logic based on your organization's email setup
+                ' Check if the sender's email domain is different from the recipient's domain (assumption for external emails)
+                ' Modify this logic based on your organization's email setup
                 isInternal = InStr(objMail.SenderEmailAddress, "@ubs.com") > 0 ' Change to your organization's domain
 
                 If Not isInternal Then
