@@ -74,6 +74,7 @@ Sub ExportEmailsNotReplied()
 
     ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
+    MoveExternalEmails objABCFolder
 
     MsgBox "Complete!", vbExclamation
 
@@ -259,6 +260,50 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
                 Else
                     ' If the subject is already in the dictionary, move the email to the "(1) AGED Duplicate" folder
                     objMail.Move objDuplicateFolder
+                End If
+            End If
+        End If
+    Next i
+End Sub
+
+Sub MoveExternalEmails(ByVal objInternalFolder As Outlook.Folder)
+    Dim objExternalFolder As Outlook.Folder
+    Dim objMail As Outlook.MailItem
+    Dim i As Long
+
+    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
+    Dim foundExternal As Boolean
+    foundExternal = False
+    Dim objSubfolder As Outlook.Folder
+    For Each objSubfolder In objinbox.Folders
+        If objSubfolder.Name = "(1) AGED External" Then
+            foundExternal = True
+            Set objExternalFolder = objSubfolder
+            Exit For
+        End If
+    Next objSubfolder
+    
+    If Not foundExternal Then
+        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
+    End If
+
+    For i = objInternalFolder.Items.Count To 1 Step -1
+        If objInternalFolder.Items(i).Class = olMail Then
+            Set objMail = objInternalFolder.Items(i)
+            Dim strReplied As String
+            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            If (strReplied <> "102" And strReplied <> "103") Then ' Only consider unreplied emails
+                Dim recipients As String
+                recipients = ""
+                For Each Recipient In objMail.Recipients
+                    If Recipient.Address <> targetEmail Then ' Check if the recipient is not internal
+                        recipients = recipients & Recipient.Name & "; "
+                    End If
+                Next Recipient
+                recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
+                
+                If recipients <> "" Then ' If there are external recipients, move the email
+                    objMail.Move objExternalFolder
                 End If
             End If
         End If
