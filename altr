@@ -279,7 +279,7 @@ Sub MoveExternalEmails(ByVal objFolder As Outlook.Folder)
     Dim foundExternal As Boolean
     foundExternal = False
     Dim objSubfolder As Outlook.Folder
-    For Each objSubfolder In objinbox.Folders
+    For Each objSubfolder In objFolder.Folders
         If objSubfolder.Name = "(1) AGED External" Then
             foundExternal = True
             Set objExternalFolder = objSubfolder
@@ -288,7 +288,7 @@ Sub MoveExternalEmails(ByVal objFolder As Outlook.Folder)
     Next objSubfolder
     
     If Not foundExternal Then
-        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
+        Set objExternalFolder = objFolder.Folders.Add("(1) AGED External", olFolderInbox)
     End If
 
     For i = objFolder.Items.Count To 1 Step -1
@@ -305,4 +305,3 @@ Sub MoveExternalEmails(ByVal objFolder As Outlook.Folder)
         End If
     Next i
 End Sub
-
