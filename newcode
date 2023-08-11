@@ -66,7 +66,7 @@ Sub ExportEmailsNotReplied()
         .Columns("E").WrapText = False
     End With
 
-    ' Move replied emails from "(1) AGEDInternal" to "(1) AGED Replied" folder
+    ' Move replied emails from "(1) AGED Internal" to "(1) AGED Replied" folder
     MoveRepliedEmails objABCFolder
     
     ' Check for and move emails with duplicate subjects within the "(1) AGED Internal" folder
