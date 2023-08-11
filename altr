@@ -286,16 +286,22 @@ Sub MoveExternalEmails(ByVal objSourceFolder As Outlook.Folder)
         Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
 
+    Debug.Print "Total items in source folder: " & objSourceFolder.Items.Count
+
     ' Move emails from "(1) AGED Internal" where sender's email address is not ending with "@ubs.com" to "(1) AGED External" folder
     For i = objSourceFolder.Items.Count To 1 Step -1
         If objSourceFolder.Items(i).Class = olMail Then
             Set objMail = objSourceFolder.Items(i)
+            Debug.Print "Processing email from: " & objMail.SenderEmailAddress
             Dim strReplied As String
             strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            Debug.Print "Replied status: " & strReplied
             If (strReplied <> "102" And strReplied <> "103") Then ' Only consider unreplied emails
                 Dim senderEmailAddress As String
                 senderEmailAddress = objMail.SenderEmailAddress
+                Debug.Print "Sender email address: " & senderEmailAddress
                 If LCase(senderEmailAddress) <> "kushal-ajith.shetty@ubs.com" And Not LCase(Right(senderEmailAddress, 8)) = "@ubs.com" Then
+                    Debug.Print "Moving to External folder."
                     objMail.Move objExternalFolder
                 End If
             End If
