@@ -74,7 +74,8 @@ Sub ExportEmailsNotReplied()
 
     ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
-    MoveExternalEmails objABCFolder
+    MoveExternalEmails objABCFolder, objinbox, targetEmail
+
 
     MsgBox "Complete!", vbExclamation
 
@@ -266,7 +267,7 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
     Next i
 End Sub
 
-Sub MoveExternalEmails(ByVal objInternalFolder As Outlook.Folder)
+Sub MoveExternalEmails(ByVal objInternalFolder As Outlook.Folder, ByVal objinbox As Outlook.Folder, ByVal targetEmail As String)
     Dim objExternalFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
     Dim i As Long
