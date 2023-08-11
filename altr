@@ -43,14 +43,14 @@ Sub ExportEmailsNotReplied()
     ' Check if the "ABC" folder exists or create it if it doesn't
     Dim foundABC As Boolean
     foundABC = False
-    Dim objFolder As Outlook.Folder
-    For Each objFolder In objinbox.Folders
-        If objFolder.Name = "(1) AGED Internal" Then
+    Dim abcFolder As Outlook.Folder ' Rename the variable here
+    For Each abcFolder In objinbox.Folders
+        If abcFolder.Name = "(1) AGED Internal" Then
             foundABC = True
-            Set objABCFolder = objFolder
+            Set objABCFolder = abcFolder
             Exit For
         End If
-    Next objFolder
+    Next abcFolder
     
     If Not foundABC Then
         Set objABCFolder = objinbox.Folders.Add("(1) AGED Internal", olFolderInbox)
@@ -209,14 +209,14 @@ Sub MoveRepliedEmails(ByVal objSourceFolder As Outlook.Folder)
     ' Check if the "(1) AGED Replied" folder exists or create it if it doesn't
     Dim foundReplied As Boolean
     foundReplied = False
-    Dim objFolder As Outlook.Folder
-    For Each objFolder In objinbox.Folders
-        If objFolder.Name = "(1) AGED Replied" Then
+    Dim repliedFolder As Outlook.Folder ' Rename the variable here
+    For Each repliedFolder In objinbox.Folders
+        If repliedFolder.Name = "(1) AGED Replied" Then
             foundReplied = True
-            Set objRepliedFolder = objFolder
+            Set objRepliedFolder = repliedFolder
             Exit For
         End If
-    Next objFolder
+    Next repliedFolder
     
     If Not foundReplied Then
         Set objRepliedFolder = objinbox.Folders.Add("(1) AGED Replied", olFolderInbox)
@@ -273,14 +273,14 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
     ' Check if the "(1) AGED Duplicate" folder exists or create it if it doesn't
     Dim foundDuplicate As Boolean
     foundDuplicate = False
-    Dim objSubfolder As Outlook.Folder
-    For Each objSubfolder In objinbox.Folders
-        If objSubfolder.Name = "(1) AGED Duplicate" Then
+    Dim duplicateFolder As Outlook.Folder ' Rename the variable here
+    For Each duplicateFolder In objinbox.Folders
+        If duplicateFolder.Name = "(1) AGED Duplicate" Then
             foundDuplicate = True
-            Set objDuplicateFolder = objSubfolder
+            Set objDuplicateFolder = duplicateFolder
             Exit For
         End If
-    Next objSubfolder
+    Next duplicateFolder
     
     If Not foundDuplicate Then
         Set objDuplicateFolder = objinbox.Folders.Add("(1) AGED Duplicate", olFolderInbox)
