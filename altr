@@ -55,9 +55,27 @@ Sub ExportEmailsNotReplied()
     If Not foundABC Then
         Set objABCFolder = objinbox.Folders.Add("(1) AGED Internal", olFolderInbox)
     End If
+
+' Check if the "(1) AGED External" folder exists or create it if it doesn't
+    Dim foundExternal As Boolean
+    foundExternal = False
+    Dim objFolder As Outlook.Folder
+    For Each objFolder In objinbox.Folders
+        If objFolder.Name = "(1) AGED External" Then
+            foundExternal = True
+            Exit For
+        End If
+    Next objFolder
     
+    Dim objExternalFolder As Outlook.Folder
+    If Not foundExternal Then
+        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
+    Else
+        Set objExternalFolder = objFolder
+    End If
+
     ' Check and process the folders to export unreplied emails
-    ProcessFolders objinbox, objABCFolder
+    ProcessFolders objinbox, objABCFolder, objExternalFolder
 
     ' Format the Excel columns and rows
     With objExcelWorksheet
@@ -74,8 +92,6 @@ Sub ExportEmailsNotReplied()
 
     ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
-    MoveExternalEmails objABCFolder, objinbox, targetEmail
-
 
     MsgBox "Complete!", vbExclamation
 
@@ -84,7 +100,7 @@ Sub ExportEmailsNotReplied()
     Set objExcelWorkbook = Nothing
 End Sub
 
-Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
+Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objInternalFolder As Outlook.Folder, ByVal objExternalFolder As Outlook.Folder)
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
@@ -99,6 +115,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
         If objCurrentfolder.Items(i).Class = olMail Then
             Set objMail = objCurrentfolder.Items(i)
             strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+ 
             
             ' Add the condition to check if the sender name is to be excluded
             Dim excludedSenders As Variant
@@ -109,7 +126,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                     nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                 
                     ' Check if email is from the last 3 days and not replied for more than 2 days
-                    If nDateDiff <= 4 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
+                If nDateDiff <= 4 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
                         nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
                     
                         With objExcelWorksheet
@@ -133,6 +150,16 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                         ' Move the retrieved email to the "(1) AGED" folder
                         If objCurrentfolder.Name <> objDestinationFolder.Name Then
                             objMail.Move objDestinationFolder
+                        End If
+                        Dim targetFolder As Outlook.Folder
+                        If IsExternalEmail(objMail) Then
+                            Set targetFolder = objExternalFolder
+                        Else
+                            Set targetFolder = objInternalFolder
+                        End If
+                        
+                        If objCurrentfolder.Name <> targetFolder.Name Then
+                            objMail.Move targetFolder
                         End If
                     End If
                 End If
@@ -158,6 +185,20 @@ Function IsExcludedSender(ByVal excludedSenders As Variant, ByVal senderName As 
             Exit Function
         End If
     Next i
+End Function
+Function IsExternalEmail(ByVal mail As Outlook.MailItem) As Boolean
+    ' Extract the sender's email address
+    Dim senderEmailAddress As String
+    senderEmailAddress = mail.SenderEmailAddress
+    
+    ' Check if the sender's email address contains "@ubs.com"
+    If InStr(senderEmailAddress, "@ubs.com") > 0 Then
+        ' Emails from "@ubs.com" are considered internal
+        IsExternalEmail = False
+    Else
+        ' Emails from other domains are considered external
+        IsExternalEmail = True
+    End If
 End Function
 
 Sub MoveRepliedEmails(ByVal objSourceFolder As Outlook.Folder)
@@ -261,52 +302,6 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
                 Else
                     ' If the subject is already in the dictionary, move the email to the "(1) AGED Duplicate" folder
                     objMail.Move objDuplicateFolder
-                End If
-            End If
-        End If
-    Next i
-End Sub
-
-Sub MoveExternalEmails(ByVal objInternalFolder As Outlook.Folder, ByVal objinbox As Outlook.Folder, ByVal targetEmail As String)
-    Dim objExternalFolder As Outlook.Folder
-    Dim objMail As Outlook.MailItem
-    Dim i As Long
-
-    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
-    Dim foundExternal As Boolean
-    foundExternal = False
-    Dim objSubfolder As Outlook.Folder
-    For Each objSubfolder In objinbox.Folders
-        If objSubfolder.Name = "(1) AGED External" Then
-            foundExternal = True
-            Set objExternalFolder = objSubfolder
-            Exit For
-        End If
-    Next objSubfolder
-    
-    If Not foundExternal Then
-        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
-    End If
-
-    For i = objInternalFolder.Items.Count To 1 Step -1
-        If objInternalFolder.Items(i).Class = olMail Then
-            Set objMail = objInternalFolder.Items(i)
-            Dim strReplied As String
-            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
-            If (strReplied <> "102" And strReplied <> "103") Then ' Only consider unreplied emails
-                Dim hasExternalRecipient As Boolean
-                hasExternalRecipient = False
-                
-                Dim Recipient As Outlook.Recipient
-                For Each Recipient In objMail.Recipients
-                    If Recipient.Address <> targetEmail Then ' Check if the recipient is not internal
-                        hasExternalRecipient = True
-                        Exit For ' Exit the loop once an external recipient is found
-                    End If
-                Next Recipient
-                
-                If hasExternalRecipient Then ' If there are external recipients, move the email
-                    objMail.Move objExternalFolder
                 End If
             End If
         End If
