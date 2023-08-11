@@ -72,7 +72,7 @@ Sub ExportEmailsNotReplied()
     ' Check for and move emails with duplicate subjects within the "(1) AGED Internal" folder
     MoveDuplicateEmails objABCFolder
 
-    ' Move external emails to "(1) AGED External" folder
+    ' Move external emails from "(1) AGED Internal" to "(1) AGED External" folder
     MoveExternalEmails objABCFolder
 
     ' Remove duplicates from the Excel workbook
@@ -224,8 +224,6 @@ Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
     Next rowIndex
 End Sub
 
-
-
 Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
     Dim objDuplicateFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
@@ -270,6 +268,7 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
     Next i
 End Sub
 
+
 Sub MoveExternalEmails(ByVal objFolder As Outlook.Folder)
     Dim objExternalFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
@@ -279,7 +278,7 @@ Sub MoveExternalEmails(ByVal objFolder As Outlook.Folder)
     Dim foundExternal As Boolean
     foundExternal = False
     Dim objSubfolder As Outlook.Folder
-    For Each objSubfolder In objFolder.Folders
+    For Each objSubfolder In objinbox.Folders
         If objSubfolder.Name = "(1) AGED External" Then
             foundExternal = True
             Set objExternalFolder = objSubfolder
@@ -288,20 +287,23 @@ Sub MoveExternalEmails(ByVal objFolder As Outlook.Folder)
     Next objSubfolder
     
     If Not foundExternal Then
-        Set objExternalFolder = objFolder.Folders.Add("(1) AGED External", olFolderInbox)
+        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
 
     For i = objFolder.Items.Count To 1 Step -1
         If objFolder.Items(i).Class = olMail Then
             Set objMail = objFolder.Items(i)
-            
-            ' Check if the sender email address is not ending with "@ubs.com"
-            Dim senderEmail As String
-            senderEmail = objMail.SenderEmailAddress
-            If Right(senderEmail, 8) <> "@ubs.com" Then
-                ' Move the external email to the "(1) AGED External" folder
-                objMail.Move objExternalFolder
+            Dim strReplied As String
+            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            If (strReplied <> "102" And strReplied <> "103") Then ' Only consider unreplied emails
+                Dim senderEmailAddress As String
+                senderEmailAddress = objMail.SenderEmailAddress
+                If Not Right(senderEmailAddress, 8) = "@ubs.com" Then
+                    ' If the sender's email address doesn't end with "@ubs.com", move the email to the "(1) AGED External" folder
+                    objMail.Move objExternalFolder
+                End If
             End If
         End If
     Next i
 End Sub
+
