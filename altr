@@ -267,7 +267,7 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
     Next i
 End Sub
 
-Sub MoveExternalEmails(ByVal objInternalFolder As Outlook.Folder, ByVal objinbox As Outlook.Folder, ByVal targetEmail As String)
+Sub MoveExternalEmails(ByVal objInternalFolder As Outlook.Folder)
     Dim objExternalFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
     Dim i As Long
