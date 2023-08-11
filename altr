@@ -72,9 +72,6 @@ Sub ExportEmailsNotReplied()
     ' Check for and move emails with duplicate subjects within the "(1) AGED Internal" folder
     MoveDuplicateEmails objABCFolder
 
-    ' Add the call to the new function to check and move external emails
-    CheckAndMoveExternalEmails
-
     ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
 
@@ -269,59 +266,63 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
 End Sub
 
 
-' Add a new function to wait for a specified number of seconds
-Sub Wait(seconds As Integer)
-    Dim start_time As Double
-    start_time = Timer
-    Do While Timer < start_time + seconds
-        DoEvents
-    Loop
-End Sub
-
-Sub CheckAndMoveExternalEmails()
-    Dim objExternalFolder As Outlook.Folder
+Sub WaitForAndMoveExternalEmails()
     Dim objInternalFolder As Outlook.Folder
+    Dim objExternalFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
     Dim i As Long
-
-    ' Get the "(1) AGED Internal" folder
-    On Error Resume Next
-    Set objInternalFolder = objinbox.Folders("(1) AGED Internal")
-    On Error GoTo 0
-
-    If objInternalFolder Is Nothing Then
-        MsgBox "(1) AGED Internal folder not found!", vbExclamation
-        Exit Sub
-    End If
+    
+    ' Check if the "(1) AGED Internal" folder exists
+    Dim foundInternal As Boolean
+    foundInternal = False
+    For Each objFolder In objinbox.Folders
+        If objFolder.Name = "(1) AGED Internal" Then
+            foundInternal = True
+            Set objInternalFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
     
     ' Check if the "(1) AGED External" folder exists or create it if it doesn't
-    On Error Resume Next
-    Set objExternalFolder = objinbox.Folders("(1) AGED External")
-    On Error GoTo 0
+    Dim foundExternal As Boolean
+    foundExternal = False
+    For Each objFolder In objinbox.Folders
+        If objFolder.Name = "(1) AGED External" Then
+            foundExternal = True
+            Set objExternalFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
     
-    If objExternalFolder Is Nothing Then
+    If Not foundExternal Then
         Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
     
-    ' Wait for 5 seconds to allow new emails to arrive
-    Wait 5
-    
-    ' Check for external emails in "(1) AGED Internal" folder and move them to "(1) AGED External" folder
-    On Error Resume Next
-    For i = objInternalFolder.Items.Count To 1 Step -1
-        If objInternalFolder.Items(i).Class = olMail Then
-            Set objMail = objInternalFolder.Items(i)
-            Dim strReplied As String
-            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
-            If (strReplied <> "102" And strReplied <> "103") Then ' Only consider unreplied emails
+    If foundInternal Then
+        ' Wait for 5 seconds
+        Application.Wait (Now + TimeValue("0:00:05"))
+        
+        ' Check for external emails in "(1) AGED Internal" folder and move them to "(1) AGED External" folder
+        For i = objInternalFolder.Items.Count To 1 Step -1
+            If objInternalFolder.Items(i).Class = olMail Then
+                Set objMail = objInternalFolder.Items(i)
+                ' Add logic here to determine if the email is external (e.g., based on sender's domain)
                 Dim senderDomain As String
-                senderDomain = Split(objMail.SenderEmailAddress, "@")(1)
-                If senderDomain <> "ubs.com" Then ' Check if the sender domain is not "ubs.com"
+                senderDomain = GetSenderDomain(objMail.SenderEmailAddress)
+                If senderDomain <> "ubs.com" Then ' Replace "ubs.com" with the internal domain
                     objMail.Move objExternalFolder
                 End If
             End If
-        End If
-    Next i
-    On Error GoTo 0
+        Next i
+    End If
 End Sub
 
+Function GetSenderDomain(ByVal senderAddress As String) As String
+    Dim parts() As String
+    parts = Split(senderAddress, "@")
+    If UBound(parts) = 1 Then
+        GetSenderDomain = parts(1)
+    Else
+        GetSenderDomain = ""
+    End If
+End Function
