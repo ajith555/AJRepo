@@ -224,39 +224,7 @@ Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
     Next rowIndex
 End Sub
 
-Sub MoveExternalEmails(ByVal objFolder As Outlook.Folder)
-    Dim objExternalFolder As Outlook.Folder
-    Dim objMail As Outlook.MailItem
-    Dim i As Long
 
-    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
-    Dim foundExternal As Boolean
-    foundExternal = False
-    Dim objSubfolder As Outlook.Folder
-    For Each objSubfolder In objinbox.Folders
-        If objSubfolder.Name = "(1) AGED External" Then
-            foundExternal = True
-            Set objExternalFolder = objSubfolder
-            Exit For
-        End If
-    Next objSubfolder
-    
-    If Not foundExternal Then
-        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
-    End If
-
-    For i = objFolder.Items.Count To 1 Step -1
-        If objFolder.Items(i).Class = olMail Then
-            Set objMail = objFolder.Items(i)
-            
-            ' Check if the sender email address is not ending with "@ubs.com"
-            If Not LCase(Right(objMail.SenderEmailAddress, 8)) = "@ubs.com" Then
-                ' Move the external email to the "(1) AGED External" folder
-                objMail.Move objExternalFolder
-            End If
-        End If
-    Next i
-End Sub
 
 Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
     Dim objDuplicateFolder As Outlook.Folder
@@ -297,6 +265,40 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
                     ' If the subject is already in the dictionary, move the email to the "(1) AGED Duplicate" folder
                     objMail.Move objDuplicateFolder
                 End If
+            End If
+        End If
+    Next i
+End Sub
+
+Sub MoveExternalEmails(ByVal objFolder As Outlook.Folder)
+    Dim objExternalFolder As Outlook.Folder
+    Dim objMail As Outlook.MailItem
+    Dim i As Long
+
+    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
+    Dim foundExternal As Boolean
+    foundExternal = False
+    Dim objSubfolder As Outlook.Folder
+    For Each objSubfolder In objinbox.Folders
+        If objSubfolder.Name = "(1) AGED External" Then
+            foundExternal = True
+            Set objExternalFolder = objSubfolder
+            Exit For
+        End If
+    Next objSubfolder
+    
+    If Not foundExternal Then
+        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
+    End If
+
+    For i = objFolder.Items.Count To 1 Step -1
+        If objFolder.Items(i).Class = olMail Then
+            Set objMail = objFolder.Items(i)
+            
+            ' Check if the sender email address is not ending with "@ubs.com"
+            If Not LCase(Right(objMail.SenderEmailAddress, 8)) = "@ubs.com" Then
+                ' Move the external email to the "(1) AGED External" folder
+                objMail.Move objExternalFolder
             End If
         End If
     Next i
