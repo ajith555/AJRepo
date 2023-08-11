@@ -298,7 +298,7 @@ Sub MoveExternalEmails(ByVal objFolder As Outlook.Folder)
             If (strReplied <> "102" And strReplied <> "103") Then ' Only consider unreplied emails
                 Dim senderEmailAddress As String
                 senderEmailAddress = objMail.SenderEmailAddress
-                If Not Right(senderEmailAddress, 8) = "@ubs.com" Then
+                If Not LCase(Right(senderEmailAddress, 8)) = "@ubs.com" Then
                     ' If the sender's email address doesn't end with "@ubs.com", move the email to the "(1) AGED External" folder
                     objMail.Move objExternalFolder
                 End If
