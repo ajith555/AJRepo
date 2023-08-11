@@ -75,9 +75,6 @@ Sub ExportEmailsNotReplied()
     ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
 
-    MoveExternalEmails objABCFolder ' Call the function to move external emails
-
-
     MsgBox "Complete!", vbExclamation
 
     ' Clean up
@@ -262,45 +259,6 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
                 Else
                     ' If the subject is already in the dictionary, move the email to the "(1) AGED Duplicate" folder
                     objMail.Move objDuplicateFolder
-                End If
-            End If
-        End If
-    Next i
-End Sub
-Sub MoveExternalEmails(ByVal objFolder As Outlook.Folder)
-    Dim objExternalFolder As Outlook.Folder
-    Dim objMail As Outlook.MailItem
-    Dim i As Long
-
-    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
-    Dim foundExternal As Boolean
-    foundExternal = False
-    Dim objSubfolder As Outlook.Folder
-    For Each objSubfolder In objinbox.Folders
-        If objSubfolder.Name = "(1) AGED External" Then
-            foundExternal = True
-            Set objExternalFolder = objSubfolder
-            Exit For
-        End If
-    Next objSubfolder
-    
-    If Not foundExternal Then
-        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
-    End If
-
-    For i = objFolder.Items.Count To 1 Step -1
-        If objFolder.Items(i).Class = olMail Then
-            Set objMail = objFolder.Items(i)
-            Dim strReplied As String
-            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
-            If (strReplied <> "102" And strReplied <> "103") Then ' Only consider unreplied emails
-                Dim isInternal As Boolean
-                ' Check if the sender's email domain is different from the recipient's domain (assumption for external emails)
-                ' Modify this logic based on your organization's email setup
-                isInternal = InStr(objMail.SenderEmailAddress, "@ubs.com") > 0 ' Change to your organization's domain
-
-                If Not isInternal Then
-                    objMail.Move objExternalFolder ' Move external emails to "(1) AGED External" folder
                 End If
             End If
         End If
