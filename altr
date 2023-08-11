@@ -72,8 +72,8 @@ Sub ExportEmailsNotReplied()
     ' Check for and move emails with duplicate subjects within the "(1) AGED Internal" folder
     MoveDuplicateEmails objABCFolder
 
-    ' Move external emails from "(1) AGED Internal" to "(1) AGED External" folder
-    MoveExternalEmails objABCFolder
+    ' Add the call to the new function to check and move external emails
+    CheckAndMoveExternalEmails
 
     ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
@@ -269,7 +269,16 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
 End Sub
 
 
-Sub MoveExternalEmails(ByVal objFolder As Outlook.Folder)
+' Add a new function to wait for a specified number of seconds
+Sub Wait(seconds As Integer)
+    Dim start_time As Double
+    start_time = Timer
+    Do While Timer < start_time + seconds
+        DoEvents
+    Loop
+End Sub
+
+Sub CheckAndMoveExternalEmails()
     Dim objExternalFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
     Dim i As Long
@@ -289,22 +298,23 @@ Sub MoveExternalEmails(ByVal objFolder As Outlook.Folder)
     If Not foundExternal Then
         Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
-
-    For i = objFolder.Items.Count To 1 Step -1
-        If objFolder.Items(i).Class = olMail Then
-            Set objMail = objFolder.Items(i)
+    
+    ' Wait for 5 seconds to allow new emails to arrive
+    Wait 5
+    
+    ' Check for external emails in "(1) AGED Internal" folder and move them to "(1) AGED External" folder
+    For i = objinbox.Folders("(1) AGED Internal").Items.Count To 1 Step -1
+        If objinbox.Folders("(1) AGED Internal").Items(i).Class = olMail Then
+            Set objMail = objinbox.Folders("(1) AGED Internal").Items(i)
             Dim strReplied As String
             strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
             If (strReplied <> "102" And strReplied <> "103") Then ' Only consider unreplied emails
-                Dim senderEmailAddress As String
-                senderEmailAddress = objMail.SenderEmailAddress
-                If Not LCase(Right(senderEmailAddress, 8)) = "@ubs.com" Then
-                    ' If the sender's email address doesn't end with "@ubs.com", move the email to the "(1) AGED External" folder
+                Dim senderDomain As String
+                senderDomain = Split(objMail.SenderEmailAddress, "@")(1)
+                If senderDomain <> "ubs.com" Then ' Check if the sender domain is not "ubs.com"
                     objMail.Move objExternalFolder
                 End If
             End If
         End If
     Next i
 End Sub
-
-
