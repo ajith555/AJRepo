@@ -295,7 +295,7 @@ Sub MoveExternalEmails(ByVal objSourceFolder As Outlook.Folder)
             If (strReplied <> "102" And strReplied <> "103") Then ' Only consider unreplied emails
                 Dim senderEmailAddress As String
                 senderEmailAddress = objMail.SenderEmailAddress
-                If Not Right(senderEmailAddress, 8) = "@ubs.com" Then
+                If Not LCase(Right(senderEmailAddress, 8)) = "@ubs.com" Then
                     objMail.Move objExternalFolder
                 End If
             End If
