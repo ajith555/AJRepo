@@ -294,21 +294,21 @@ Sub MoveExternalEmails(ByVal objInternalFolder As Outlook.Folder, ByVal objinbox
             Dim strReplied As String
             strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
             If (strReplied <> "102" And strReplied <> "103") Then ' Only consider unreplied emails
-                Dim recipients As String
-                recipients = ""
-                Dim Recipient As Outlook.Recipient ' Declare the Recipient object here
+                Dim hasExternalRecipient As Boolean
+                hasExternalRecipient = False
+                
+                Dim Recipient As Outlook.Recipient
                 For Each Recipient In objMail.Recipients
                     If Recipient.Address <> targetEmail Then ' Check if the recipient is not internal
-                        recipients = recipients & Recipient.Name & "; "
+                        hasExternalRecipient = True
+                        Exit For ' Exit the loop once an external recipient is found
                     End If
                 Next Recipient
-                recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
                 
-                If recipients <> "" Then ' If there are external recipients, move the email
+                If hasExternalRecipient Then ' If there are external recipients, move the email
                     objMail.Move objExternalFolder
                 End If
             End If
         End If
     Next i
 End Sub
-
