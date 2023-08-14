@@ -4,7 +4,6 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objinbox As Outlook.Folder
-Dim ongoingTasks As Collection
 
 Sub ExportEmailsNotReplied()
     Dim targetEmail As String
@@ -12,7 +11,6 @@ Sub ExportEmailsNotReplied()
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
     Dim objABCFolder As Outlook.Folder
-    Set ongoingTasks = New Collection
     
     ' Create Excel objects
     Set objExcelApplication = New Excel.Application
@@ -76,26 +74,13 @@ Sub ExportEmailsNotReplied()
 
     ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
-
-        ' Add the ongoing tasks to the collection
-    ongoingTasks.Add objExcelApplication
-    ongoingTasks.Add objExcelWorkbook
-    ongoingTasks.Add objExcelWorksheet
-    
-    ' Call the new function here
     MoveExternalEmailsToFolder
-
     MsgBox "Complete!", vbExclamation
 
     ' Clean up
     Set objExcelWorksheet = Nothing
     Set objExcelWorkbook = Nothing
-    ' Clean up the ongoing tasks collection
-    Set ongoingTasks = Nothing
 End Sub
-
-
-
 
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
     Dim i As Long
@@ -161,48 +146,17 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
             ProcessFolders objSubfolder, objDestinationFolder
         Next objSubfolder
     End If
-End Sub
-
-Function IsExcludedSender(ByVal excludedSenders As Variant, ByVal senderName As String) As Boolean
-    Dim i As Long
-    For i = LBound(excludedSenders) To UBound(excludedSenders)
-        If StrComp(senderName, excludedSenders(i), vbTextCompare) = 0 Then
-            IsExcludedSender = True
-            Exit Function
-        End If
-    Next i
-End Function
-
-
-Function AllTasksCompleted() As Boolean
-    ' Check if all ongoing tasks are completed
-    Dim task As Object
-    Dim completed As Boolean
-    completed = True
-    
-    For Each task In ongoingTasks
-        If task.Status <> 0 Then ' Status 0 indicates a completed task
-            completed = False
-            Exit For
-        End If
-    Next task
-    
-    AllTasksCompleted = completed
-End Function
-
-Function IsInternalEmail(ByVal mailItem As Outlook.MailItem) As Boolean
-    ' Check if the email is from "@ubs.com" domain
-    Dim senderAddress As String
-    senderAddress = mailItem.SenderEmailAddress
-    IsInternalEmail = InStr(senderAddress, "@ubs.com") > 0
-End Function
 
 
 Sub MoveExternalEmailsToFolder()
+    Dim objSourceFolder As Outlook.Folder
     Dim objExternalFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
     Dim i As Long
 
+    ' Set the source folder "(1) AGED Internal"
+    Set objSourceFolder = objinbox.Folders("(1) AGED Internal")
+    
     ' Check if the "(1) AGED External" folder exists or create it if it doesn't
     Dim foundExternal As Boolean
     foundExternal = False
@@ -219,28 +173,41 @@ Sub MoveExternalEmailsToFolder()
         Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
 
-    ' Wait until all previous tasks/functions are completed
-    Dim startTime As Date
-    startTime = Now
-    Do While Not AllTasksCompleted()
-        DoEvents
-        If Now - startTime > TimeValue("00:01:00") Then ' Adjust the timeout as needed
-            Exit Do ' Exit loop if it's taking too long
-        End If
-    Loop
-
     ' Move external emails from "(1) AGED Internal" to "(1) AGED External" folder
-    For i = objinbox.Folders("(1) AGED Internal").Items.Count To 1 Step -1
-        If objinbox.Folders("(1) AGED Internal").Items(i).Class = olMail Then
-            Set objMail = objinbox.Folders("(1) AGED Internal").Items(i)
-            If Not IsInternalEmail(objMail) Then
+    For i = objSourceFolder.Items.Count To 1 Step -1
+        If objSourceFolder.Items(i).Class = olMail Then
+            Set objMail = objSourceFolder.Items(i)
+            ' Check if the email sender's domain is not "@ubs.com"
+            If Not IsSenderFromInternalDomain(objMail.SenderEmailAddress) Then
                 objMail.Move objExternalFolder
             End If
         End If
     Next i
 End Sub
 
+Function IsSenderFromInternalDomain(ByVal senderEmailAddress As String) As Boolean
+    ' Modify the internal domain as needed
+    Dim internalDomain As String
+    internalDomain = "@ubs.com"
+    
+    IsSenderFromInternalDomain = (InStr(senderEmailAddress, internalDomain) > 0)
+End Function
 
+
+
+
+
+End Sub
+
+Function IsExcludedSender(ByVal excludedSenders As Variant, ByVal senderName As String) As Boolean
+    Dim i As Long
+    For i = LBound(excludedSenders) To UBound(excludedSenders)
+        If StrComp(senderName, excludedSenders(i), vbTextCompare) = 0 Then
+            IsExcludedSender = True
+            Exit Function
+        End If
+    Next i
+End Function
 
 Sub MoveRepliedEmails(ByVal objSourceFolder As Outlook.Folder)
     Dim objRepliedFolder As Outlook.Folder
@@ -348,5 +315,3 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
         End If
     Next i
 End Sub
-
-
