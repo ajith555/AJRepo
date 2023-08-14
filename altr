@@ -85,7 +85,7 @@ Sub ExportEmailsNotReplied()
     Set objExcelWorksheet = Nothing
     Set objExcelWorkbook = Nothing
     ' Call the new subroutine to move non-UBS emails to "(1) AGED External" folder
-    MoveNonUBSEmailsToExternalFolder
+    MoveNonUBSEmailsToExternalFolder objABCFolder, targetEmail
 End Sub
 
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
