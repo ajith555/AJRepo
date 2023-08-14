@@ -4,6 +4,7 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objinbox As Outlook.Folder
+Dim ongoingTasks As Collection
 
 Sub ExportEmailsNotReplied()
     Dim targetEmail As String
@@ -11,6 +12,7 @@ Sub ExportEmailsNotReplied()
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
     Dim objABCFolder As Outlook.Folder
+    Set ongoingTasks = New Collection
     
     ' Create Excel objects
     Set objExcelApplication = New Excel.Application
@@ -74,13 +76,85 @@ Sub ExportEmailsNotReplied()
 
     ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
+
+        ' Add the ongoing tasks to the collection
+    ongoingTasks.Add objExcelApplication
+    ongoingTasks.Add objExcelWorkbook
+    ongoingTasks.Add objExcelWorksheet
+    
+    ' Call the new function here
     MoveExternalEmailsToFolder
+
     MsgBox "Complete!", vbExclamation
 
     ' Clean up
     Set objExcelWorksheet = Nothing
     Set objExcelWorkbook = Nothing
+    ' Clean up the ongoing tasks collection
+    Set ongoingTasks = Nothing
 End Sub
+
+Function AllTasksCompleted() As Boolean
+    ' Check if all ongoing tasks are completed
+    Dim task As Object
+    Dim completed As Boolean
+    completed = True
+    
+    For Each task In ongoingTasks
+        If task.Status <> 0 Then ' Status 0 indicates a completed task
+            completed = False
+            Exit For
+        End If
+    Next task
+    
+    AllTasksCompleted = completed
+End Function
+
+
+
+Sub MoveExternalEmailsToFolder()
+    Dim objExternalFolder As Outlook.Folder
+    Dim objMail As Outlook.MailItem
+    Dim i As Long
+
+    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
+    Dim foundExternal As Boolean
+    foundExternal = False
+    Dim objSubfolder As Outlook.Folder
+    For Each objSubfolder In objinbox.Folders
+        If objSubfolder.Name = "(1) AGED External" Then
+            foundExternal = True
+            Set objExternalFolder = objSubfolder
+            Exit For
+        End If
+    Next objSubfolder
+    
+    If Not foundExternal Then
+        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
+    End If
+
+    ' Wait until all previous tasks/functions are completed
+    Dim startTime As Date
+    startTime = Now
+    Do While Not AllTasksCompleted()
+        DoEvents
+        If Now - startTime > TimeValue("00:01:00") Then ' Adjust the timeout as needed
+            Exit Do ' Exit loop if it's taking too long
+        End If
+    Loop
+
+    ' Move external emails from "(1) AGED Internal" to "(1) AGED External" folder
+    For i = objinbox.Folders("(1) AGED Internal").Items.Count To 1 Step -1
+        If objinbox.Folders("(1) AGED Internal").Items(i).Class = olMail Then
+            Set objMail = objinbox.Folders("(1) AGED Internal").Items(i)
+            If Not IsInternalEmail(objMail) Then
+                objMail.Move objExternalFolder
+            End If
+        End If
+    Next i
+End Sub
+
+
 
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
     Dim i As Long
@@ -265,44 +339,4 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
     Next i
 End Sub
 
-Sub MoveExternalEmailsToFolder()
-    Dim objExternalFolder As Outlook.Folder
-    Dim objMail As Outlook.MailItem
-    Dim i As Long
 
-    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
-    Dim foundExternal As Boolean
-    foundExternal = False
-    Dim objSubfolder As Outlook.Folder
-    For Each objSubfolder In objinbox.Folders
-        If objSubfolder.Name = "(1) AGED External" Then
-            foundExternal = True
-            Set objExternalFolder = objSubfolder
-            Exit For
-        End If
-    Next objSubfolder
-    
-    If Not foundExternal Then
-        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
-    End If
-
-    ' Wait until all previous tasks/functions are completed
-    Dim startTime As Date
-    startTime = Now
-    Do While Not AllTasksCompleted()
-        DoEvents
-        If Now - startTime > TimeValue("00:01:00") Then ' Adjust the timeout as needed
-            Exit Do ' Exit loop if it's taking too long
-        End If
-    Loop
-
-    ' Move external emails from "(1) AGED Internal" to "(1) AGED External" folder
-    For i = objinbox.Folders("(1) AGED Internal").Items.Count To 1 Step -1
-        If objinbox.Folders("(1) AGED Internal").Items(i).Class = olMail Then
-            Set objMail = objinbox.Folders("(1) AGED Internal").Items(i)
-            If Not IsInternalEmail(objMail) Then
-                objMail.Move objExternalFolder
-            End If
-        End If
-    Next i
-End Sub
