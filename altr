@@ -225,7 +225,8 @@ Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
     Dim ws As Excel.Worksheet
     Dim rng As Excel.Range
     Dim subjectDict As Object ' Dictionary to track duplicate subjects
-    Dim duplicateRows As Collection ' Collection to store row indices of duplicate subjects
+    Dim rowsToDelete() As Long ' Array to store row indices of duplicate subjects
+    Dim numDuplicates As Long ' Number of duplicate rows
     
     Set ws = wb.Worksheets(1)
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
@@ -233,10 +234,11 @@ Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
 
     ' Create a Dictionary to track duplicate subjects
     Set subjectDict = CreateObject("Scripting.Dictionary")
-    Set duplicateRows = New Collection
     
     Dim subjectCell As Range
     Dim rowIndex As Long
+    numDuplicates = 0
+    
     For rowIndex = lastRow To 2 Step -1 ' Start from the last row and loop backward
         Set subjectCell = rng.Cells(rowIndex, 1)
         If Not subjectCell.Value = "" Then
@@ -244,18 +246,21 @@ Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
                 ' Add subject to the dictionary if it doesn't exist
                 subjectDict.Add subjectCell.Value, subjectCell.Row
             Else
-                ' If the subject is already in the dictionary, add the row index to the duplicateRows collection
-                duplicateRows.Add subjectCell.Row
+                ' If the subject is already in the dictionary, mark the row for deletion
+                numDuplicates = numDuplicates + 1
+                ReDim Preserve rowsToDelete(1 To numDuplicates)
+                rowsToDelete(numDuplicates) = rowIndex
             End If
         End If
     Next rowIndex
     
-    ' Loop through the duplicateRows collection and delete the corresponding rows
-    Dim deleteRow As Variant
-    For Each deleteRow In duplicateRows
-        ws.Rows(deleteRow).Delete
-    Next deleteRow
+    ' Loop through the rowsToDelete array and delete the corresponding rows
+    Dim i As Long
+    For i = numDuplicates To 1 Step -1
+        ws.Rows(rowsToDelete(i)).Delete
+    Next i
 End Sub
+
 
 
 
