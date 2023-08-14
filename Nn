@@ -20,31 +20,30 @@ Sub ExportEmailsNotReplied()
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
 
-    ' Set column headers in Excel
-    With objExcelWorksheet
-        .Cells(1, 1) = "Subject"
-        .Cells(1, 1).Font.Bold = True
-        .Cells(1, 2) = "Received"
-        .Cells(1, 2).Font.Bold = True
-        .Cells(1, 3) = "Sender"
-        .Cells(1, 3).Font.Bold = True
-        .Cells(1, 4) = "Recipients"
-        .Cells(1, 4).Font.Bold = True
-        .Cells(1, 5) = "Excerpts"
-        .Cells(1, 5).Font.Bold = True
-        .Cells(1, 6) = "Sender Email"
-        .Cells(1, 6).Font.Bold = True
-    End With
-
     ' Get the specified email account and its Inbox folder
     Set objNamespace = Outlook.GetNamespace("MAPI")
     Set objRootFolder = objNamespace.Folders(targetEmail)
     Set objinbox = objRootFolder.Folders("Inbox")
 
+    ' Check if the "AGED Internal" folder exists or create it if it doesn't
+    Dim foundABC As Boolean
+    foundABC = False
+    Dim objFolder As Outlook.Folder
+    For Each objFolder In objinbox.Folders
+        If objFolder.Name = "(1) AGED Internal" Then
+            foundABC = True
+            Set objABCFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
+
+    If Not foundABC Then
+        Set objABCFolder = objinbox.Folders.Add("(1) AGED Internal", olFolderInbox)
+    End If
+
     ' Check if the "AGED External" folder exists or create it if it doesn't
     Dim foundExternal As Boolean
     foundExternal = False
-    Dim objFolder As Outlook.Folder
     For Each objFolder In objinbox.Folders
         If objFolder.Name = "(1) AGED External" Then
             foundExternal = True
@@ -70,10 +69,11 @@ Sub ExportEmailsNotReplied()
     ' Move replied emails and external emails to respective folders
     MoveRepliedEmails objABCFolder
     MoveRepliedExternalEmails objExternalFolder
-    MoveExternalEmails objABCFolder
-
     ' Check for and move emails with duplicate subjects within the folder
     MoveDuplicateEmails objABCFolder
+    MoveExternalEmails objABCFolder
+
+
 
     ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
@@ -81,7 +81,6 @@ Sub ExportEmailsNotReplied()
     ' Clean up
     Set objExcelWorksheet = Nothing
     Set objExcelWorkbook = Nothing
-    MoveExternalEmails objABCFolder
     'MsgBox "Complete!", vbExclamation
 End Sub
 
