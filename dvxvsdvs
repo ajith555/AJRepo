@@ -119,14 +119,19 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                     
                         Dim recipients As String
                         recipients = ""
+                        Dim senderEmailAddress As String ' Variable to store sender email address
+                        senderEmailAddress = GetSenderEmailAddress(objMail) ' Get sender's email address
+                        
                         For Each Recipient In objMail.Recipients
                             recipients = recipients & Recipient.Name & "; "
                         Next Recipient
+                        
                         recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
-                    
+                        
                         With objExcelWorksheet
-                            .Cells(nLastRow, 4) = recipients ' Add recipients' names to the new column
+                            .Cells(nLastRow, 4) = recipients ' Add recipients' names to Column D
                             .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
+                            .Cells(nLastRow, 6) = senderEmailAddress ' Add sender's email address to Column F
                         End With
 
                         ' Move the retrieved email to the "(1) AGED" folder
@@ -158,6 +163,26 @@ Function IsExcludedSender(ByVal excludedSenders As Variant, ByVal senderName As 
         End If
     Next i
 End Function
+
+
+Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
+    Dim sender As Outlook.AddressEntry
+    Set sender = mail.Sender
+    
+    Dim senderEmailAddress As String
+    
+    If sender.AddressEntryUserType = olExchangeUserAddressEntry Then
+        senderEmailAddress = sender.GetExchangeUser.PrimarySmtpAddress
+    ElseIf sender.AddressEntryUserType = olSmtpAddressEntry Then
+        senderEmailAddress = sender.Address
+    Else
+        senderEmailAddress = mail.SenderEmailAddress ' Fallback to basic sender email address
+    End If
+    
+    GetSenderEmailAddress = senderEmailAddress
+End Function
+
+
 
 Sub MoveRepliedEmails(ByVal objSourceFolder As Outlook.Folder)
     Dim objRepliedFolder As Outlook.Folder
