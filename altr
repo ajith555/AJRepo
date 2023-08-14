@@ -233,7 +233,7 @@ Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
     ' Create a Dictionary to track duplicate subjects
     Set subjectDict = CreateObject("Scripting.Dictionary")
     
-    Dim subjectCell As Excel.Range
+    Dim subjectCell As Range
     Dim rowIndex As Long
     For rowIndex = lastRow To 2 Step -1 ' Start from the last row and loop backward
         Set subjectCell = rng.Cells(rowIndex, 1)
