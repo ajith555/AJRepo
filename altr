@@ -92,20 +92,12 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     Dim nReplyDateDiff As Integer
     Dim nLastRow As Integer
     Dim Recipient As Outlook.Recipient
+    Dim recipients As String
+    Dim recipientsEmail As String ' New variable for recipients' email addresses
     
     On Error Resume Next
-    For Each Recipient In objMail.Recipients
-        recipients = recipients & Recipient.Name & "; "
-        recipientsEmail = recipientsEmail & Recipient.Address & "; " ' Collect recipients' email addresses
-    Next Recipient
-    recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
-    recipientsEmail = Left(recipientsEmail, Len(recipientsEmail) - 2) ' Remove trailing "; "
 
-    With objExcelWorksheet
-        .Cells(nLastRow, 4) = recipients
-        .Cells(nLastRow, 5) = recipientsEmail ' Add recipients' email addresses to the new column
-        .Cells(nLastRow, 6) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
-    End With
+
     For i = objCurrentfolder.Items.Count To 1 Step -1
         If objCurrentfolder.Items(i).Class = olMail Then
             Set objMail = objCurrentfolder.Items(i)
@@ -120,8 +112,8 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                     nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                 
                     ' Check if email is from the last 3 days and not replied for more than 2 days
-                    If nDateDiff <= 4 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
-                        nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                If nDateDiff <= 4 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
+                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
                     
                         With objExcelWorksheet
                             .Cells(nLastRow, 1) = objMail.Subject
@@ -130,11 +122,15 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                         End With
                     
                         Dim recipients As String
+                        Dim recipientsEmail As String ' New variable for recipients' email addresses
                         recipients = ""
+                        recipientsEmail = "" ' Initialize the variable
                         For Each Recipient In objMail.Recipients
                             recipients = recipients & Recipient.Name & "; "
+                            recipientsEmail = recipientsEmail & Recipient.Address & "; " ' Collect recipients' email addresses
                         Next Recipient
                         recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
+                        recipientsEmail = Left(recipientsEmail, Len(recipientsEmail) - 2) ' Remove trailing "; "
                     
                         With objExcelWorksheet
                             .Cells(nLastRow, 4) = recipients ' Add recipients' names to the new column
