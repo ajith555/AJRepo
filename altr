@@ -74,7 +74,7 @@ Sub ExportEmailsNotReplied()
 
     ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
-
+    MoveExternalEmailsToFolder
     MsgBox "Complete!", vbExclamation
 
     ' Clean up
@@ -296,29 +296,13 @@ Sub MoveExternalEmailsToFolder()
         End If
     Loop
 
-    ' Move external emails to "(1) AGED External" folder
-    For i = objinbox.Items.Count To 1 Step -1
-        If objinbox.Items(i).Class = olMail Then
-            Set objMail = objinbox.Items(i)
+    ' Move external emails from "(1) AGED Internal" to "(1) AGED External" folder
+    For i = objinbox.Folders("(1) AGED Internal").Items.Count To 1 Step -1
+        If objinbox.Folders("(1) AGED Internal").Items(i).Class = olMail Then
+            Set objMail = objinbox.Folders("(1) AGED Internal").Items(i)
             If Not IsInternalEmail(objMail) Then
                 objMail.Move objExternalFolder
             End If
         End If
     Next i
 End Sub
-
-Function AllTasksCompleted() As Boolean
-    ' Check if all tasks/functions are completed
-    If objExcelApplication Is Nothing Or objExcelWorkbook Is Nothing Or objExcelWorksheet Is Nothing Then
-        AllTasksCompleted = True
-    Else
-        AllTasksCompleted = False
-    End If
-End Function
-
-Function IsInternalEmail(ByVal mailItem As Outlook.MailItem) As Boolean
-    ' Check if the email is from "@ubs.com" domain
-    Dim senderAddress As String
-    senderAddress = mailItem.SenderEmailAddress
-    IsInternalEmail = InStr(senderAddress, "@ubs.com") > 0
-End Function
