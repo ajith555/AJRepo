@@ -246,6 +246,21 @@ Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
                 ws.Rows(subjectCell.Row).Delete
             End If
         End If
+    For rowIndex = lastRow To 2 Step -1 ' Start from the last row and loop backward
+        Set subjectCell = rng.Cells(rowIndex, 1)
+        If Not subjectCell.Value = "" Then
+            Dim trimmedSubject As String
+            trimmedSubject = Trim(subjectCell.Value)
+            
+            If Not subjectDict.Exists(LCase(trimmedSubject)) Then
+                ' Add subject to the dictionary if it doesn't exist
+                subjectDict.Add LCase(trimmedSubject), subjectCell.Row
+            Else
+                ' If the subject is already in the dictionary, delete the entire row
+                ws.Rows(subjectCell.Row).Delete
+            End If
+        End If
+
     Next rowIndex
 End Sub
 
