@@ -233,7 +233,7 @@ Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
     ' Create a Dictionary to track duplicate subjects
     Set subjectDict = CreateObject("Scripting.Dictionary")
     
-    Dim subjectCell As Range
+    Dim subjectCell As Excel.Range
     Dim rowIndex As Long
     For rowIndex = lastRow To 2 Step -1 ' Start from the last row and loop backward
         Set subjectCell = rng.Cells(rowIndex, 1)
@@ -248,6 +248,7 @@ Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
         End If
     Next rowIndex
 End Sub
+
 
 
 Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
