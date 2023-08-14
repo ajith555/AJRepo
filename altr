@@ -119,12 +119,10 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                             .Cells(nLastRow, 2) = objMail.ReceivedTime
                             .Cells(nLastRow, 3) = objMail.SenderName
                         End With
-                    
-                        Dim recipientAddresses As String ' Variable to store recipient email addresses
-                        recipientAddresses = ""
-                        
+            
+                            
                         For Each Recipient In objMail.Recipients
-                            recipients = recipients & Recipient.Name & "; " ' This line should already exist in your original code
+                            strRecipients = strRecipients & Recipient.Name & "; "
                             
                             Dim recipientAddress As String
                             recipientAddress = ""
@@ -137,16 +135,18 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                                 recipientAddress = Recipient.Address
                             End If
                             
-                            recipientAddresses = recipientAddresses & recipientAddress & "; "
+                            strRecipientAddresses = strRecipientAddresses & recipientAddress & "; "
                         Next Recipient
                         
-                        recipientAddresses = Left(recipientAddresses, Len(recipientAddresses) - 2) ' Remove trailing "; "
+                        strRecipients = Left(strRecipients, Len(strRecipients) - 2) ' Remove trailing "; "
+                        strRecipientAddresses = Left(strRecipientAddresses, Len(strRecipientAddresses) - 2) ' Remove trailing "; "
                         
                         With objExcelWorksheet
-                            .Cells(nLastRow, 4) = recipients ' Add recipients' names to Column D
+                            .Cells(nLastRow, 4) = strRecipients ' Add recipients' names to Column D
                             .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
-                            .Cells(nLastRow, 6) = recipientAddresses ' Add recipients' email addresses to Column F
+                            .Cells(nLastRow, 6) = strRecipientAddresses ' Add recipients' email addresses to Column F
                         End With
+
 
                         ' Move the retrieved email to the "(1) AGED" folder
                         If objCurrentfolder.Name <> objDestinationFolder.Name Then
