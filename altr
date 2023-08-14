@@ -33,7 +33,7 @@ Sub ExportEmailsNotReplied()
         .Cells(1, 4).Font.Bold = True
         .Cells(1, 5) = "Excerpts"
         .Cells(1, 5).Font.Bold = True
-        .Cells(1, 6) = "Recipient Email Addresses" ' Add column header for email addresses
+        .Cells(1, 6) = "Sender Email Addresses" ' Add column header for email addresses
         .Cells(1, 6).Font.Bold = True
     End With
     
@@ -121,38 +121,20 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                         End With
             
                             
-                        Dim recipients As String ' Variable to store recipient names
-                        recipients = ""
-                        
-                        Dim recipientAddresses As String ' Variable to store recipient email addresses
-                        recipientAddresses = ""
-                        
                         For Each Recipient In objMail.Recipients
                             recipients = recipients & Recipient.Name & "; "
-                            
-                            Dim recipientAddress As String
-                            recipientAddress = ""
-                            
-                            If Recipient.AddressEntry.Type = "EX" Then
-                                ' Exchange user
-                                recipientAddress = Recipient.AddressEntry.GetExchangeUser.PrimarySmtpAddress
-                            Else
-                                ' SMTP address
-                                recipientAddress = Recipient.Address
-                            End If
-                            
-                            recipientAddresses = recipientAddresses & recipientAddress & "; "
                         Next Recipient
                         
                         recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
-                        recipientAddresses = Left(recipientAddresses, Len(recipientAddresses) - 2) ' Remove trailing "; "
+                        
+                        Dim senderEmailAddress As String ' Variable to store sender email address
+                        senderEmailAddress = objMail.SenderEmailAddress ' Get sender's email address
                         
                         With objExcelWorksheet
                             .Cells(nLastRow, 4) = recipients ' Add recipients' names to Column D
                             .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
-                            .Cells(nLastRow, 6) = recipientAddresses ' Add recipients' email addresses to Column F
+                            .Cells(nLastRow, 6) = senderEmailAddress ' Add sender's email address to Column F
                         End With
-
 
                         ' Move the retrieved email to the "(1) AGED" folder
                         If objCurrentfolder.Name <> objDestinationFolder.Name Then
