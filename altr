@@ -119,7 +119,8 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                             .Cells(nLastRow, 2) = objMail.ReceivedTime
                             .Cells(nLastRow, 3) = objMail.SenderName
                         End With
-            
+                        Dim recipients As String
+                        recipients = ""
                             
                         For Each Recipient In objMail.Recipients
                             recipients = recipients & Recipient.Name & "; "
