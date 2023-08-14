@@ -175,7 +175,7 @@ Sub MoveExternalEmails(ByVal objSourceFolder As Outlook.Folder)
             Dim senderAddress As String
             senderAddress = objMail.SenderEmailAddress
             ' Check if the sender's email address is not ending with "@ubs.com"
-            If Not LCase(Right(senderAddress, 8)) = "@ubs.com" Then
+            If LCase(Right(senderAddress, 8)) <> "@ubs.com" Then
                 objMail.Move objExternalFolder
             End If
         End If
