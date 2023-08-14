@@ -123,7 +123,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                         recipients = ""
                             
                         Dim senderEmailAddress As String ' Variable to store sender email address
-                        senderEmailAddress = objMail.SenderEmailAddress ' Get sender's email address
+                        senderEmailAddress = GetSenderEmailAddress(objMail) ' Get sender's email address
                         
                         For Each Recipient In objMail.Recipients
                             recipients = recipients & Recipient.Name & "; "
@@ -156,7 +156,22 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
         Next objSubfolder
     End If
 End Sub
-
+Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
+    Dim sender As Outlook.AddressEntry
+    Set sender = mail.Sender
+    
+    Dim senderEmailAddress As String
+    
+    If sender.AddressEntryUserType = olExchangeUserAddressEntry Then
+        senderEmailAddress = sender.GetExchangeUser.PrimarySmtpAddress
+    ElseIf sender.AddressEntryUserType = olSmtpAddressEntry Then
+        senderEmailAddress = sender.Address
+    Else
+        senderEmailAddress = mail.SenderEmailAddress ' Fallback to basic sender email address
+    End If
+    
+    GetSenderEmailAddress = senderEmailAddress
+End Function
 Function IsExcludedSender(ByVal excludedSenders As Variant, ByVal senderName As String) As Boolean
     Dim i As Long
     For i = LBound(excludedSenders) To UBound(excludedSenders)
