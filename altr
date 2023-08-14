@@ -85,7 +85,8 @@ Sub ExportEmailsNotReplied()
     Set objExcelWorksheet = Nothing
     Set objExcelWorkbook = Nothing
     ' Call the new subroutine to move non-UBS emails to "(1) AGED External" folder
-    MoveNonUBSEmailsToExternalFolder objABCFolder, targetEmail
+    MoveExternalEmails objABCFolder
+
 End Sub
 
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
@@ -291,41 +292,39 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
     Next i
 End Sub
 
-Sub MoveNonUBSEmailsToExternalFolder()
-    Dim objNamespace As Outlook.Namespace
-    Dim objRootFolder As Outlook.Folder
-    Dim objAGCInternalFolder As Outlook.Folder
-    Dim objAGCExternalFolder As Outlook.Folder
+Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
+    Dim objExternalFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
-    Dim senderEmailAddress As String
-
-    ' Get the specified email account and its "(1) AGED Internal" folder
-    Set objNamespace = Outlook.GetNamespace("MAPI")
-    Set objRootFolder = objNamespace.Folders(targetEmail)
-    Set objAGCInternalFolder = objRootFolder.Folders("(1) AGED Internal")
-
-    ' Get or create the "(1) AGED External" folder
+    Dim i As Long
+    
+    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
     Dim foundExternal As Boolean
     foundExternal = False
     Dim objFolder As Outlook.Folder
     For Each objFolder In objinbox.Folders
         If objFolder.Name = "(1) AGED External" Then
             foundExternal = True
-            Set objAGCExternalFolder = objFolder
+            Set objExternalFolder = objFolder
             Exit For
         End If
     Next objFolder
     
     If Not foundExternal Then
-        Set objAGCExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
+        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
     
-    ' Loop through emails in "(1) AGED Internal" folder and move non-UBS emails to "(1) AGED External"
-    For Each objMail In objAGCInternalFolder.Items
-        senderEmailAddress = GetSenderEmailAddress(objMail)
-        If Right(senderEmailAddress, 8) <> "@ubs.com" Then
-            objMail.Move objAGCExternalFolder
+    For i = objSourceFolder.Items.Count To 1 Step -1
+        If objSourceFolder.Items(i).Class = olMail Then
+            Set objMail = objSourceFolder.Items(i)
+            Dim strReplied As String
+            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            If (strReplied <> "102" And strReplied <> "103") Then ' Only consider unreplied emails
+                Dim senderEmailAddress As String
+                senderEmailAddress = GetSenderEmailAddress(objMail)
+                If Not LCase(senderEmailAddress Like "*@ubs.com") Then ' Check if sender's email doesn't end with @ubs.com
+                    objMail.Move objExternalFolder
+                End If
+            End If
         End If
-    Next objMail
+    Next i
 End Sub
-
