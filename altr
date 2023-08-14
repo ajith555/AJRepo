@@ -74,7 +74,7 @@ Sub ExportEmailsNotReplied()
 
     ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
-    MoveExternalEmails objABCFolder
+
     MsgBox "Complete!", vbExclamation
 
     ' Clean up
@@ -146,40 +146,6 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
             ProcessFolders objSubfolder, objDestinationFolder
         Next objSubfolder
     End If
-End Sub
-Sub MoveExternalEmails(ByVal objSourceFolder As Outlook.Folder)
-    Dim objExternalFolder As Outlook.Folder
-    Dim objMail As Outlook.MailItem
-    Dim i As Long
-
-    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
-    Dim foundExternal As Boolean
-    foundExternal = False
-    Dim objSubfolder As Outlook.Folder
-    For Each objSubfolder In objinbox.Folders
-        If objSubfolder.Name = "(1) AGED External" Then
-            foundExternal = True
-            Set objExternalFolder = objSubfolder
-            Exit For
-        End If
-    Next objSubfolder
-    
-    If Not foundExternal Then
-        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
-    End If
-
-    ' Move external emails from "(1) AGED Internal" to "(1) AGED External" folder
-    For i = objSourceFolder.Items.Count To 1 Step -1
-        If objSourceFolder.Items(i).Class = olMail Then
-            Set objMail = objSourceFolder.Items(i)
-            Dim senderAddress As String
-            senderAddress = objMail.SenderEmailAddress
-            ' Check if the sender's email address is not ending with "@ubs.com"
-            If LCase(Right(senderAddress, 8)) <> "@ubs.com" Then
-                objMail.Move objExternalFolder
-            End If
-        End If
-    Next i
 End Sub
 
 Function IsExcludedSender(ByVal excludedSenders As Variant, ByVal senderName As String) As Boolean
