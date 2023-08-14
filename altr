@@ -78,16 +78,16 @@ Sub ExportEmailsNotReplied()
 
     ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
-
+    WaitFiveSeconds
+    
+    ' Call the new subroutine to move non-UBS emails to "(1) AGED External" folder
+    MoveExternalEmails objABCFolder
     MsgBox "Complete!", vbExclamation
-
+    
     ' Clean up
     Set objExcelWorksheet = Nothing
     Set objExcelWorkbook = Nothing
-    WaitFiveSeconds
-    ' Call the new subroutine to move non-UBS emails to "(1) AGED External" folder
-    MoveExternalEmails objABCFolder
-
+    
 End Sub
 
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
