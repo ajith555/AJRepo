@@ -84,6 +84,8 @@ Sub ExportEmailsNotReplied()
     ' Clean up
     Set objExcelWorksheet = Nothing
     Set objExcelWorkbook = Nothing
+    ' Call the new subroutine to move non-UBS emails to "(1) AGED External" folder
+    MoveNonUBSEmailsToExternalFolder
 End Sub
 
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
@@ -289,4 +291,41 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
     Next i
 End Sub
 
-' ... (Rest of the code remains unchanged)
+Sub MoveNonUBSEmailsToExternalFolder()
+    Dim objNamespace As Outlook.Namespace
+    Dim objRootFolder As Outlook.Folder
+    Dim objAGCInternalFolder As Outlook.Folder
+    Dim objAGCExternalFolder As Outlook.Folder
+    Dim objMail As Outlook.MailItem
+    Dim senderEmailAddress As String
+
+    ' Get the specified email account and its "(1) AGED Internal" folder
+    Set objNamespace = Outlook.GetNamespace("MAPI")
+    Set objRootFolder = objNamespace.Folders(targetEmail)
+    Set objAGCInternalFolder = objRootFolder.Folders("(1) AGED Internal")
+
+    ' Get or create the "(1) AGED External" folder
+    Dim foundExternal As Boolean
+    foundExternal = False
+    Dim objFolder As Outlook.Folder
+    For Each objFolder In objinbox.Folders
+        If objFolder.Name = "(1) AGED External" Then
+            foundExternal = True
+            Set objAGCExternalFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
+    
+    If Not foundExternal Then
+        Set objAGCExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
+    End If
+    
+    ' Loop through emails in "(1) AGED Internal" folder and move non-UBS emails to "(1) AGED External"
+    For Each objMail In objAGCInternalFolder.Items
+        senderEmailAddress = GetSenderEmailAddress(objMail)
+        If Right(senderEmailAddress, 8) <> "@ubs.com" Then
+            objMail.Move objAGCExternalFolder
+        End If
+    Next objMail
+End Sub
+
