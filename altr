@@ -221,33 +221,40 @@ Sub MoveRepliedEmails(ByVal objSourceFolder As Outlook.Folder)
 End Sub
 
 Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
-    Dim lastRow As Long
     Dim ws As Excel.Worksheet
     Dim rng As Excel.Range
     Dim subjectDict As Object ' Dictionary to track duplicate subjects
+    Dim rowIndex As Long
+    Dim rowsToDelete As Range
     
     Set ws = wb.Worksheets(1)
-    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
-    Set rng = ws.Range(ws.Cells(2, 1), ws.Cells(lastRow, 1)) ' Only consider the "Subject" column (Column A)
+    Set rng = ws.Range("A2:A" & ws.Cells(ws.Rows.Count, 1).End(xlUp).Row) ' Only consider the "Subject" column (Column A)
 
     ' Create a Dictionary to track duplicate subjects
     Set subjectDict = CreateObject("Scripting.Dictionary")
     
-    Dim subjectCell As Range
-    Dim rowIndex As Long
-    For rowIndex = lastRow To 2 Step -1 ' Start from the last row and loop backward
-        Set subjectCell = rng.Cells(rowIndex, 1)
-        If Not subjectCell.Value = "" Then
-            If Not subjectDict.Exists(subjectCell.Value) Then
-                ' Add subject to the dictionary if it doesn't exist
-                subjectDict.Add subjectCell.Value, subjectCell.Row
+    ' Identify the rows to be deleted
+    For rowIndex = rng.Rows.Count To 1 Step -1
+        Dim subject As String
+        subject = rng.Cells(rowIndex, 1).Value
+        If Not subjectDict.Exists(subject) Then
+            subjectDict.Add subject, rowIndex ' Track the subject and its row index
+        Else
+            ' Mark the row for deletion
+            If rowsToDelete Is Nothing Then
+                Set rowsToDelete = rng.Cells(rowIndex, 1)
             Else
-                ' If the subject is already in the dictionary, delete the entire row
-                ws.Rows(subjectCell.Row).Delete
+                Set rowsToDelete = Union(rowsToDelete, rng.Cells(rowIndex, 1))
             End If
         End If
     Next rowIndex
+    
+    ' Delete the marked rows
+    If Not rowsToDelete Is Nothing Then
+        rowsToDelete.EntireRow.Delete
+    End If
 End Sub
+
 
 Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
     Dim objDuplicateFolder As Outlook.Folder
