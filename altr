@@ -29,9 +29,9 @@ Sub ExportEmailsNotReplied()
         .Cells(1, 2).Font.Bold = True
         .Cells(1, 3) = "Sender"
         .Cells(1, 3).Font.Bold = True
-        .Cells(1, 4) = "Sender Email" ' New column for sender email
+        .Cells(1, 4) = "Recipients"
         .Cells(1, 4).Font.Bold = True
-        .Cells(1, 5) = "Recipients"
+        .Cells(1, 5) = "Recipients' Email" ' New column for recipients' email
         .Cells(1, 5).Font.Bold = True
         .Cells(1, 6) = "Excerpts"
         .Cells(1, 6).Font.Bold = True
@@ -94,7 +94,18 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     Dim Recipient As Outlook.Recipient
     
     On Error Resume Next
-    
+    For Each Recipient In objMail.Recipients
+        recipients = recipients & Recipient.Name & "; "
+        recipientsEmail = recipientsEmail & Recipient.Address & "; " ' Collect recipients' email addresses
+    Next Recipient
+    recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
+    recipientsEmail = Left(recipientsEmail, Len(recipientsEmail) - 2) ' Remove trailing "; "
+
+    With objExcelWorksheet
+        .Cells(nLastRow, 4) = recipients
+        .Cells(nLastRow, 5) = recipientsEmail ' Add recipients' email addresses to the new column
+        .Cells(nLastRow, 6) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
+    End With
     For i = objCurrentfolder.Items.Count To 1 Step -1
         If objCurrentfolder.Items(i).Class = olMail Then
             Set objMail = objCurrentfolder.Items(i)
