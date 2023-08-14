@@ -225,6 +225,7 @@ Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
     Dim ws As Excel.Worksheet
     Dim rng As Excel.Range
     Dim subjectDict As Object ' Dictionary to track duplicate subjects
+    Dim duplicateRows As Collection ' Collection to store row indices of duplicate subjects
     
     Set ws = wb.Worksheets(1)
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
@@ -232,6 +233,7 @@ Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
 
     ' Create a Dictionary to track duplicate subjects
     Set subjectDict = CreateObject("Scripting.Dictionary")
+    Set duplicateRows = New Collection
     
     Dim subjectCell As Range
     Dim rowIndex As Long
@@ -242,11 +244,17 @@ Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
                 ' Add subject to the dictionary if it doesn't exist
                 subjectDict.Add subjectCell.Value, subjectCell.Row
             Else
-                ' If the subject is already in the dictionary, delete the entire row
-                ws.Rows(subjectCell.Row).Delete
+                ' If the subject is already in the dictionary, add the row index to the duplicateRows collection
+                duplicateRows.Add subjectCell.Row
             End If
         End If
     Next rowIndex
+    
+    ' Loop through the duplicateRows collection and delete the corresponding rows
+    Dim deleteRow As Variant
+    For Each deleteRow In duplicateRows
+        ws.Rows(deleteRow).Delete
+    Next deleteRow
 End Sub
 
 
