@@ -84,6 +84,7 @@ Sub ExportEmailsNotReplied()
     ' Clean up
     Set objExcelWorksheet = Nothing
     Set objExcelWorkbook = Nothing
+    WaitFiveSeconds
     ' Call the new subroutine to move non-UBS emails to "(1) AGED External" folder
     MoveExternalEmails objABCFolder
 
@@ -290,6 +291,13 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
             End If
         End If
     Next i
+End Sub
+Sub WaitFiveSeconds()
+    Dim StartTime As Double
+    StartTime = Timer
+    Do While Timer < StartTime + 5
+        DoEvents
+    Loop
 End Sub
 
 Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
