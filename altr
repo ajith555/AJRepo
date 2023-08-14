@@ -181,6 +181,7 @@ Sub MoveExternalEmails(ByVal objSourceFolder As Outlook.Folder)
         End If
     Next i
 End Sub
+
 Function IsExcludedSender(ByVal excludedSenders As Variant, ByVal senderName As String) As Boolean
     Dim i As Long
     For i = LBound(excludedSenders) To UBound(excludedSenders)
