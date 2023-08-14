@@ -74,7 +74,7 @@ Sub ExportEmailsNotReplied()
 
     ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
-    MoveExternalEmailsToFolder
+    MoveExternalEmails objABCFolder
     MsgBox "Complete!", vbExclamation
 
     ' Clean up
@@ -146,17 +146,12 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
             ProcessFolders objSubfolder, objDestinationFolder
         Next objSubfolder
     End If
-
-
-Sub MoveExternalEmailsToFolder()
-    Dim objSourceFolder As Outlook.Folder
+End Sub
+Sub MoveExternalEmails(ByVal objSourceFolder As Outlook.Folder)
     Dim objExternalFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
     Dim i As Long
 
-    ' Set the source folder "(1) AGED Internal"
-    Set objSourceFolder = objinbox.Folders("(1) AGED Internal")
-    
     ' Check if the "(1) AGED External" folder exists or create it if it doesn't
     Dim foundExternal As Boolean
     foundExternal = False
@@ -177,28 +172,15 @@ Sub MoveExternalEmailsToFolder()
     For i = objSourceFolder.Items.Count To 1 Step -1
         If objSourceFolder.Items(i).Class = olMail Then
             Set objMail = objSourceFolder.Items(i)
-            ' Check if the email sender's domain is not "@ubs.com"
-            If Not IsSenderFromInternalDomain(objMail.SenderEmailAddress) Then
+            Dim senderAddress As String
+            senderAddress = objMail.SenderEmailAddress
+            ' Check if the sender's email address is not ending with "@ubs.com"
+            If Not LCase(Right(senderAddress, 8)) = "@ubs.com" Then
                 objMail.Move objExternalFolder
             End If
         End If
     Next i
 End Sub
-
-Function IsSenderFromInternalDomain(ByVal senderEmailAddress As String) As Boolean
-    ' Modify the internal domain as needed
-    Dim internalDomain As String
-    internalDomain = "@ubs.com"
-    
-    IsSenderFromInternalDomain = (InStr(senderEmailAddress, internalDomain) > 0)
-End Function
-
-
-
-
-
-End Sub
-
 Function IsExcludedSender(ByVal excludedSenders As Variant, ByVal senderName As String) As Boolean
     Dim i As Long
     For i = LBound(excludedSenders) To UBound(excludedSenders)
