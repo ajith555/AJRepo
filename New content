@@ -108,6 +108,10 @@ Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
         Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
     
+    ' Create a collection to hold emails for internal moving
+    Dim emailsToMoveInternally As Collection
+    Set emailsToMoveInternally = New Collection
+    
     ' Loop through emails in the source folder
     For i = objSourceFolder.Items.Count To 1 Step -1
         If TypeOf objSourceFolder.Items(i) Is Outlook.MailItem Then
@@ -119,17 +123,23 @@ Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
             
             ' Check if the sender's email address is internal
             If LCase(senderEmailAddress) Like "*@ubs.com" Or LCase(senderEmailAddress) = "ap-globalsn-prod@ubs.com" Then
-                ' Move objMail to internal folder
-                Dim internalFolder As Outlook.Folder
-                ' Replace "Internal Folder Name" with the actual name of your internal folder
-                Set internalFolder = objinbox.Folders("(1) AGED Internal")
-                objMail.Move internalFolder
+                ' Add email to the collection for internal moving
+                emailsToMoveInternally.Add objMail
             Else
                 ' Move to external folder
                 objMail.Move objExternalFolder
             End If
         End If
     Next i
+    
+    ' Move the collected emails to the internal folder
+    Dim internalFolder As Outlook.Folder
+    ' Replace "Internal Folder Name" with the actual name of your internal folder
+    Set internalFolder = objinbox.Folders("(1) AGED Internal")
+    
+    For Each objMail In emailsToMoveInternally
+        objMail.Move internalFolder
+    Next objMail
 End Sub
 
 Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
