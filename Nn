@@ -101,14 +101,10 @@ Sub ExportEmailsNotReplied()
     Set objExcelWorkbook = Nothing
 
     MoveExternalEmails objABCFolder
-    ShowMessageBox
     'MsgBox "Complete!", vbExclamation
     'MsgBox "Complete!", vbExclamation, "Processing Complete"
 End Sub
-Sub ShowMessageBox()
-    MsgBox "Complete!", vbExclamation, "Processing Complete"
-    AppActivate "Microsoft Excel"
-End Sub
+
 
 
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
