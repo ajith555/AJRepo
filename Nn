@@ -106,9 +106,10 @@ Sub ExportEmailsNotReplied()
     'MsgBox "Complete!", vbExclamation, "Processing Complete"
 End Sub
 Sub ShowMessageBox()
-    Dim result As VbMsgBoxResult
-    result = Application.Dialogs(xlDialogMessageBox).Show("Complete!", vbExclamation, "Processing Complete")
+    MsgBox "Complete!", vbExclamation, "Processing Complete"
+    AppActivate "Microsoft Excel"
 End Sub
+
 
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
     Dim i As Long
@@ -131,7 +132,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                     nDateDiff = DateDiff("d", objMail.SentOn, Now)
                     nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                 
-                    If nDateDiff <= 4 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
+                    If nDateDiff <= 6 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
                         nLastRow = objExcelWorksheet.Cells(objExcelWorksheet.Rows.Count, 1).End(xlUp).Row + 1
                         
                         With objExcelWorksheet
