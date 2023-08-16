@@ -97,9 +97,14 @@ Sub MoveExternalEmails()
     Dim i As Long
     Dim itemsProcessed As Long
     
-    ' Set objSourceFolder and objExternalFolder
-    Set objSourceFolder = "(1) AGED Internal"' ... (set your source folder)
-    Set objExternalFolder = "(1) AGED External"' ... (set your external folder)
+    ' Get a reference to the source and external folders
+    Set objSourceFolder = GetFolderByName("Inbox", "(1) AGED Internal")
+    Set objExternalFolder = GetFolderByName("Inbox", "(1) AGED External")
+    
+    If objSourceFolder Is Nothing Or objExternalFolder Is Nothing Then
+        MsgBox "Folders not found!"
+        Exit Sub
+    End If
     
     itemsProcessed = 0
     
@@ -151,6 +156,22 @@ Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
     GetSenderEmailAddress = senderEmailAddress
 End Function
 
+Function GetFolderByName(parentFolderName As String, folderName As String) As Outlook.Folder
+    Dim outlookApp As Outlook.Application
+    Dim namespace As Outlook.Namespace
+    Dim parentFolder As Outlook.Folder
+    Dim subFolder As Outlook.Folder
+    
+    Set outlookApp = Outlook.Application
+    Set namespace = outlookApp.GetNamespace("MAPI")
+    Set parentFolder = namespace.GetDefaultFolder(olFolderInbox).Folders(parentFolderName)
+    
+    On Error Resume Next
+    Set subFolder = parentFolder.Folders(folderName)
+    On Error GoTo 0
+    
+    Set GetFolderByName = subFolder
+End Function
 
 
 
