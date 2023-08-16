@@ -34,8 +34,6 @@ Sub ExportEmailsNotReplied()
         .Cells(1, 4).Font.Bold = True
         .Cells(1, 5) = "Excerpts"
         .Cells(1, 5).Font.Bold = True
-        .Cells(1, 6) = "Sender Email"
-        .Cells(1, 6).Font.Bold = True
     End With
 
     ' Get the specified email account and its Inbox folder
@@ -90,9 +88,6 @@ Sub ExportEmailsNotReplied()
     ' Check for and move emails with duplicate subjects within the folder
     MoveDuplicateEmails objABCFolder
     
-
-
-
     ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
 
@@ -101,8 +96,8 @@ Sub ExportEmailsNotReplied()
     Set objExcelWorkbook = Nothing
 
     MoveExternalEmails objABCFolder
-    'MsgBox "Complete!", vbExclamation
-    'MsgBox "Complete!", vbExclamation, "Processing Complete"
+    ' MsgBox "Complete!", vbExclamation
+    ' MsgBox "Complete!", vbExclamation, "Processing Complete"
 End Sub
 
 
