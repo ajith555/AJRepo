@@ -113,12 +113,15 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     Dim strReplied As String
     Dim nDateDiff As Integer
     Dim nReplyDateDiff As Integer
+    Dim nLastRow As Long
     Dim Recipient As Outlook.Recipient
-    Dim excelData As Variant
-    Dim excelRow As Long
     
     Dim excludedSenders As Variant
     excludedSenders = Array("Sakaria, Pramod", "John Doe", "Jane Smith", "Mike Johnson")
+    
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+    Application.EnableEvents = False
     
     For i = objCurrentfolder.Items.Count To 1 Step -1
         If TypeOf objCurrentfolder.Items(i) Is Outlook.MailItem Then
@@ -131,15 +134,22 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                     nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                 
                     If nDateDiff <= 6 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
-                        excelRow = excelRow + 1
-                        ReDim Preserve excelData(1 To 6, 1 To excelRow)
+                        nLastRow = objExcelWorksheet.Cells(objExcelWorksheet.Rows.Count, 1).End(xlUp).Row + 1
                         
-                        excelData(1, excelRow) = objMail.Subject
-                        excelData(2, excelRow) = objMail.ReceivedTime
-                        excelData(3, excelRow) = objMail.SenderName
+                        Application.ScreenUpdating = False
+                        Application.Calculation = xlCalculationManual
+                        Application.EnableEvents = False
+                        
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 1).Value = objMail.Subject
+                            .Cells(nLastRow, 2).Value = objMail.ReceivedTime
+                            .Cells(nLastRow, 3).Value = objMail.SenderName
+                        End With
                         
                         Dim recipients As String
                         recipients = ""
+                        Dim senderEmailAddress As String
+                        senderEmailAddress = GetSenderEmailAddress(objMail)
                         
                         For Each Recipient In objMail.Recipients
                             recipients = recipients & Recipient.Name & "; "
@@ -149,24 +159,24 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                             recipients = Left(recipients, Len(recipients) - 2)
                         End If    
                         
-                        excelData(4, excelRow) = recipients
-                        excelData(5, excelRow) = Left(Trim(objMail.Body), 100) & "..."
-                        excelData(6, excelRow) = GetSenderEmailAddress(objMail)
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 4).Value = recipients
+                            .Cells(nLastRow, 5).Value = Left(Trim(objMail.Body), 100) & "..."
+                            .Cells(nLastRow, 6).Value = senderEmailAddress
+                        End With
                         
                         If objCurrentfolder.Name <> objDestinationFolder.Name Then
                             objMail.Move objDestinationFolder
                         End If
+                        
+                        Application.ScreenUpdating = True
+                        Application.Calculation = xlCalculationAutomatic
+                        Application.EnableEvents = True
                     End If
                 End If
             End If
         End If
     Next i
-    
-    If excelRow > 0 Then
-        With objExcelWorksheet
-            .Range(.Cells(objExcelWorksheet.Rows.Count, 1).End(xlUp).Offset(1, 0), .Cells(objExcelWorksheet.Rows.Count, 1).End(xlUp).Offset(excelRow, 5)) = excelData
-        End With
-    End If
     
     If objCurrentfolder.Folders.Count > 0 Then
         Dim objSubfolder As Outlook.Folder
