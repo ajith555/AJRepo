@@ -89,20 +89,30 @@ End Sub
 Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
     Dim objExternalFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
-    Dim senderEmailAddress As String
+    Dim i As Long
     
-    ' Find or create the "Aged External" folder
-    On Error Resume Next
-    Set objExternalFolder = objSourceFolder.Parent.Folders("(1) AGED External")
-    On Error GoTo 0
+    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
+    Dim foundExternal As Boolean
+    foundExternal = False
+    Dim objFolder As Outlook.Folder
+    For Each objFolder In objinbox.Folders
+        If objFolder.Name = "(1) AGED External" Then
+            foundExternal = True
+            Set objExternalFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
     
-    If objExternalFolder Is Nothing Then
-        Set objExternalFolder = objSourceFolder.Parent.Folders.Add("(1) AGED External", olFolderInbox)
+    If Not foundExternal Then
+        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
     
-    ' Process emails in the source folder
-    For Each objMail In objSourceFolder.Items
-        If TypeOf objMail Is Outlook.MailItem Then
+    For i = objSourceFolder.Items.Count To 1 Step -1
+        If TypeOf objSourceFolder.Items(i) Is Outlook.MailItem Then
+            Set objMail = objSourceFolder.Items(i)
+            
+            ' Get sender's email address
+            Dim senderEmailAddress As String
             senderEmailAddress = GetSenderEmailAddress(objMail)
             
             ' Check if the sender's email address is external
@@ -110,7 +120,7 @@ Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
                 objMail.Move objExternalFolder
             End If
         End If
-    Next objMail
+    Next i
 End Sub
 
 Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
@@ -119,18 +129,16 @@ Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
     
     Dim senderEmailAddress As String
     
-    Select Case sender.AddressEntryUserType
-        Case olExchangeUserAddressEntry
-            senderEmailAddress = sender.GetExchangeUser.PrimarySmtpAddress
-        Case olSmtpAddressEntry
-            senderEmailAddress = sender.Address
-        Case Else
-            senderEmailAddress = mail.SenderEmailAddress
-    End Select
+    If sender.AddressEntryUserType = olExchangeUserAddressEntry Then
+        senderEmailAddress = sender.GetExchangeUser.PrimarySmtpAddress
+    ElseIf sender.AddressEntryUserType = olSmtpAddressEntry Then
+        senderEmailAddress = sender.Address
+    Else
+        senderEmailAddress = mail.SenderEmailAddress
+    End If
     
     GetSenderEmailAddress = senderEmailAddress
 End Function
-
 
 
 
