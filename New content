@@ -86,57 +86,51 @@ Sub ExportEmailsNotReplied()
     MsgBox "Complete!", vbExclamation
 End Sub
 
-Sub ScheduleMoveExternalEmails()
-    Application.OnTime Now + TimeValue("00:00:05"), "MoveExternalEmails"
-End Sub
-
-Sub MoveExternalEmails()
-    Dim objSourceFolder As Outlook.Folder
+Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
     Dim objExternalFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
-    Dim i As Long
-    Dim itemsProcessed As Long
+    Dim senderEmailAddress As String
     
-    ' Get a reference to the source and external folders
-    Set objSourceFolder = GetFolderByName("Inbox", "(1) AGED Internal")
-    Set objExternalFolder = GetFolderByName("Inbox", "(1) AGED External")
+    ' Find or create the "(1) AGED External" folder under Inbox
+    Set objExternalFolder = FindOrCreateExternalFolder(objSourceFolder.Parent)
     
-    If objSourceFolder Is Nothing Or objExternalFolder Is Nothing Then
-        MsgBox "Folders not found!"
-        Exit Sub
-    End If
-    
-    itemsProcessed = 0
-    
-    For i = objSourceFolder.Items.Count To 1 Step -1
-        If TypeOf objSourceFolder.Items(i) Is Outlook.MailItem Then
-            Set objMail = objSourceFolder.Items(i)
-            
+    ' Loop through the emails in the source folder
+    For Each objMail In objSourceFolder.Items
+        If TypeOf objMail Is Outlook.MailItem Then
             ' Get sender's email address
-            Dim senderEmailAddress As String
             senderEmailAddress = GetSenderEmailAddress(objMail)
             
             ' Check if the sender's email address is external
-            If Not LCase(senderEmailAddress) Like "*@ubs.com" Then
+            If Not IsInternalEmailAddress(senderEmailAddress) Then
                 objMail.Move objExternalFolder
             End If
-            
-            itemsProcessed = itemsProcessed + 1
-            
-            ' Limit the number of items processed in each iteration
-            If itemsProcessed >= 20 Then
-                Exit For
-            End If
-            
-            DoEvents  ' Allow processing of other events
         End If
-    Next i
-    
-    ' Reschedule the background processing if there are more items to process
-    If objSourceFolder.Items.Count > 0 Then
-        ScheduleMoveExternalEmails
-    End If
+    Next objMail
 End Sub
+
+Function FindOrCreateExternalFolder(parentFolder As Outlook.Folder) As Outlook.Folder
+    Dim externalFolderName As String
+    externalFolderName = "(1) AGED External"
+    
+    On Error Resume Next
+    Set FindOrCreateExternalFolder = parentFolder.Folders(externalFolderName)
+    On Error GoTo 0
+    
+    If FindOrCreateExternalFolder Is Nothing Then
+        Set FindOrCreateExternalFolder = parentFolder.Folders.Add(externalFolderName, olFolderInbox)
+    End If
+End Function
+
+Function IsInternalEmailAddress(emailAddress As String) As Boolean
+    ' Define a list of internal email domains
+    Dim internalDomains As String
+    internalDomains = "@ubs.com" ' Add more domains if needed
+    
+    IsInternalEmailAddress = False
+    If LCase(emailAddress) Like internalDomains Then
+        IsInternalEmailAddress = True
+    End If
+End Function
 
 Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
     Dim sender As Outlook.AddressEntry
@@ -144,33 +138,15 @@ Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
     
     Dim senderEmailAddress As String
     
-    Select Case sender.AddressEntryUserType
-        Case olExchangeUserAddressEntry
-            senderEmailAddress = sender.GetExchangeUser.PrimarySmtpAddress
-        Case olSmtpAddressEntry
-            senderEmailAddress = sender.Address
-        Case Else
-            senderEmailAddress = mail.SenderEmailAddress
-    End Select
+    If sender.AddressEntryUserType = olExchangeUserAddressEntry Then
+        senderEmailAddress = sender.GetExchangeUser.PrimarySmtpAddress
+    ElseIf sender.AddressEntryUserType = olSmtpAddressEntry Then
+        senderEmailAddress = sender.Address
+    Else
+        senderEmailAddress = mail.SenderEmailAddress
+    End If
     
     GetSenderEmailAddress = senderEmailAddress
-End Function
-
-Function GetFolderByName(parentFolderName As String, folderName As String) As Outlook.Folder
-    Dim outlookApp As Outlook.Application
-    Dim namespace As Outlook.Namespace
-    Dim parentFolder As Outlook.Folder
-    Dim subFolder As Outlook.Folder
-    
-    Set outlookApp = Outlook.Application
-    Set namespace = outlookApp.GetNamespace("MAPI")
-    Set parentFolder = namespace.GetDefaultFolder(olFolderInbox).Folders(parentFolderName)
-    
-    On Error Resume Next
-    Set subFolder = parentFolder.Folders(folderName)
-    On Error GoTo 0
-    
-    Set GetFolderByName = subFolder
 End Function
 
 
