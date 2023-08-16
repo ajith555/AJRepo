@@ -86,29 +86,22 @@ Sub ExportEmailsNotReplied()
     MsgBox "Complete!", vbExclamation
 End Sub
 
-Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
+Sub ScheduleMoveExternalEmails()
+    Application.OnTime Now + TimeValue("00:00:05"), "MoveExternalEmails"
+End Sub
+
+Sub MoveExternalEmails()
+    Dim objSourceFolder As Outlook.Folder
     Dim objExternalFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
     Dim i As Long
+    Dim itemsProcessed As Long
     
-    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
-    Dim foundExternal As Boolean
-    foundExternal = False
-    Dim objFolder As Outlook.Folder
-    For Each objFolder In objinbox.Folders
-        If objFolder.Name = "(1) AGED External" Then
-            foundExternal = True
-            Set objExternalFolder = objFolder
-            Exit For
-        End If
-    Next objFolder
+    ' Set objSourceFolder and objExternalFolder
+    Set objSourceFolder = "(1) AGED Internal"' ... (set your source folder)
+    Set objExternalFolder = "(1) AGED External"' ... (set your external folder)
     
-    If Not foundExternal Then
-        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
-    End If
-    
-    Dim emailsToMove As Collection
-    Set emailsToMove = New Collection
+    itemsProcessed = 0
     
     For i = objSourceFolder.Items.Count To 1 Step -1
         If TypeOf objSourceFolder.Items(i) Is Outlook.MailItem Then
@@ -120,14 +113,24 @@ Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
             
             ' Check if the sender's email address is external
             If Not LCase(senderEmailAddress) Like "*@ubs.com" Then
-                emailsToMove.Add objMail
+                objMail.Move objExternalFolder
             End If
+            
+            itemsProcessed = itemsProcessed + 1
+            
+            ' Limit the number of items processed in each iteration
+            If itemsProcessed >= 20 Then
+                Exit For
+            End If
+            
+            DoEvents  ' Allow processing of other events
         End If
     Next i
     
-    For Each objMail In emailsToMove
-        objMail.Move objExternalFolder
-    Next objMail
+    ' Reschedule the background processing if there are more items to process
+    If objSourceFolder.Items.Count > 0 Then
+        ScheduleMoveExternalEmails
+    End If
 End Sub
 
 Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
@@ -147,6 +150,7 @@ Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
     
     GetSenderEmailAddress = senderEmailAddress
 End Function
+
 
 
 
