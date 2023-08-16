@@ -115,6 +115,8 @@ Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
             Dim senderEmailAddress As String
             senderEmailAddress = GetSenderEmailAddress(objMail)
             
+            Debug.Print "Sender Email Address: " & senderEmailAddress ' Debug output
+            
             ' Check if the sender's email address is external
             If (Not LCase(senderEmailAddress) Like "*@ubs.com") Then
                 objMail.Move objExternalFolder
