@@ -106,17 +106,16 @@ Sub MoveExternalEmails(ByVal objFolder As Outlook.Folder)
     End If
     
     For i = objFolder.Items.Count To 1 Step -1
-        If objFolder.Items(i).Class = olMail Then
+        If TypeOf objFolder.Items(i) Is Outlook.MailItem Then
             Set objMail = objFolder.Items(i)
             Dim senderEmailAddress As String
             senderEmailAddress = objMail.SenderEmailAddress
-            If InStr(senderEmailAddress, "@ubs.com", vbTextCompare) = 0 Then
+            If InStr(LCase(senderEmailAddress), "@ubs.com") = 0 Then
                 objMail.Move objExternalFolder
             End If
         End If
     Next i
 End Sub
-
 
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
     Dim i As Long
