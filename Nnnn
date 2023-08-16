@@ -337,7 +337,15 @@ Sub MoveExternalEmails()
     Set olNamespace = olApp.GetNamespace("MAPI")
     Set olInbox = olNamespace.GetDefaultFolder(6) ' Inbox Folder (6)
     Set olAgedInternalFolder = olInbox.Folders("(1) AGED Internal")
+    
+    ' Check if "(1) AGED External" folder already exists or create it
+    On Error Resume Next
     Set olAgedExternalFolder = olInbox.Folders("(1) AGED External")
+    On Error GoTo 0
+    
+    If olAgedExternalFolder Is Nothing Then
+        Set olAgedExternalFolder = olInbox.Folders.Add("(1) AGED External", olFolderInbox)
+    End If
     
     For i = olAgedInternalFolder.Items.Count To 1 Step -1
         Set olItem = olAgedInternalFolder.Items(i)
