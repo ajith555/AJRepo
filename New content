@@ -103,16 +103,10 @@ Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
         End If
     Next objFolder
     
-    ' If "(1) AGED External" folder doesn't exist, create it
     If Not foundExternal Then
         Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
     
-    ' Create a collection to hold emails for internal moving
-    Dim emailsToMoveInternally As Collection
-    Set emailsToMoveInternally = New Collection
-    
-    ' Loop through emails in the source folder
     For i = objSourceFolder.Items.Count To 1 Step -1
         If TypeOf objSourceFolder.Items(i) Is Outlook.MailItem Then
             Set objMail = objSourceFolder.Items(i)
@@ -121,26 +115,35 @@ Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
             Dim senderEmailAddress As String
             senderEmailAddress = GetSenderEmailAddress(objMail)
             
-            ' Check if the sender's email address is internal
-            If LCase(senderEmailAddress) Like "*@ubs.com" Or LCase(senderEmailAddress) = "ap-globalsn-prod@ubs.com" Then
-                ' Add email to the collection for internal moving
-                emailsToMoveInternally.Add objMail
-            Else
-                ' Move to external folder
+            ' Check if the sender's email address is external
+            If Not IsInternalEmail(senderEmailAddress) Then
                 objMail.Move objExternalFolder
             End If
         End If
     Next i
-    
-    ' Move the collected emails to the internal folder
-    Dim internalFolder As Outlook.Folder
-    ' Replace "Internal Folder Name" with the actual name of your internal folder
-    Set internalFolder = objinbox.Folders("(1) AGED Internal")
-    
-    For Each objMail In emailsToMoveInternally
-        objMail.Move internalFolder
-    Next objMail
+
 End Sub
+Function IsInternalEmail(emailAddress As String) As Boolean
+    Dim domain As String
+    domain = Right(emailAddress, Len(emailAddress) - InStr(emailAddress, "@"))
+    
+    ' List of internal domains
+    Dim internalDomains As String
+    internalDomains = "ubs.com,anotherinternaldomain.com,yetanotherinternaldomain.com" ' Add other internal domains here
+    
+    Dim domainArray() As String
+    domainArray = Split(internalDomains, ",")
+    
+    Dim i As Long
+    For i = LBound(domainArray) To UBound(domainArray)
+        If LCase(domain) = LCase(Trim(domainArray(i))) Then
+            IsInternalEmail = True
+            Exit Function
+        End If
+    Next i
+    
+    IsInternalEmail = False
+End Function
 
 Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
     Dim sender As Outlook.AddressEntry
@@ -148,7 +151,6 @@ Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
     
     Dim senderEmailAddress As String
     
-    ' Determine sender's email address based on AddressEntryUserType
     If sender.AddressEntryUserType = olExchangeUserAddressEntry Then
         senderEmailAddress = sender.GetExchangeUser.PrimarySmtpAddress
     ElseIf sender.AddressEntryUserType = olSmtpAddressEntry Then
@@ -157,7 +159,6 @@ Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
         senderEmailAddress = mail.SenderEmailAddress
     End If
     
-    ' Return the sender's email address
     GetSenderEmailAddress = senderEmailAddress
 End Function
 
