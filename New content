@@ -4,6 +4,7 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objinbox As Outlook.Folder
+Dim objExternalFolder As Outlook.Folder
 
 Sub ExportEmailsNotReplied()
     Dim targetEmail As String
