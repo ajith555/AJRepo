@@ -21,7 +21,7 @@ Sub ExportEmailsNotReplied()
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
 
     ' Set fixed row height for all rows in the worksheet
-    objExcelWorksheet.Rows.RowHeight = 20
+    ' objExcelWorksheet.Rows.RowHeight = 20
 
     With objExcelWorksheet
         .Cells(1, 1) = "Subject"
