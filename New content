@@ -4,12 +4,8 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objinbox As Outlook.Folder
-Dim objExternalFolder As Outlook.Folder
 
-    ' Retrieve the "(1) AGED External" folder if it exists
-    On Error Resume Next
-    Set objExternalFolder = objinbox.Folders("(1) AGED External")
-    On Error GoTo 0
+
 
 Sub ExportEmailsNotReplied()
     Dim targetEmail As String
@@ -17,7 +13,8 @@ Sub ExportEmailsNotReplied()
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
     Dim objABCFolder As Outlook.Folder
-    
+    Dim objExternalFolder As Outlook.Folder
+
     ' Create Excel objects
     Set objExcelApplication = New Excel.Application
     objExcelApplication.Visible = True ' Set Excel application visible before working with columns
