@@ -82,12 +82,11 @@ Sub ExportEmailsNotReplied()
     ' Clean up
     Set objExcelWorksheet = Nothing
     Set objExcelWorkbook = Nothing
-    MoveExternalEmails objABCFolder, objExternalFolder
-
+    MoveExternalEmails objABCFolder
     MsgBox "Complete!", vbExclamation
 End Sub
 
-Sub MoveExternalEmails(objSourceFolder As Outlook.Folder, objABCFolder As Outlook.Folder)
+Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
     Dim objExternalFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
     Dim i As Long
@@ -116,19 +115,17 @@ Sub MoveExternalEmails(objSourceFolder As Outlook.Folder, objABCFolder As Outloo
             Dim senderEmailAddress As String
             senderEmailAddress = GetSenderEmailAddress(objMail)
             
-            ' Check if the sender's email address is external
-            Dim specificEmail As String
-            specificEmail = "ap-globalsn-prod@ubs.com" ' The problematic email address
-            If LCase(senderEmailAddress) = LCase(specificEmail) Then
-                ' Move the specific email to the internal folder
-                objMail.Move objABCFolder
-            ElseIf Not LCase(senderEmailAddress) Like "*@ubs.com" Then
+            ' Check if the sender's email address is internal
+            If LCase(senderEmailAddress) Like "*@ubs.com" Then
+                ' Move objMail to internal folder
+                ' Implement your internal folder moving logic here
+            Else
+                ' Move to external folder
                 objMail.Move objExternalFolder
             End If
         End If
     Next i
 End Sub
-
 
 Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
     Dim sender As Outlook.AddressEntry
