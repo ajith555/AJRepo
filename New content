@@ -129,7 +129,7 @@ Sub MoveRepliedExternalEmails(objSourceFolder As Outlook.Folder)
     Dim objRepliedFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
     Dim i As Long
-
+    
     ' Check if the "(1) AGED Replied" folder exists or create it if it doesn't
     Dim foundReplied As Boolean
     foundReplied = False
@@ -158,6 +158,7 @@ Sub MoveRepliedExternalEmails(objSourceFolder As Outlook.Folder)
         End If
     Next i
 End Sub
+
 
 Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
     Dim sender As Outlook.AddressEntry
