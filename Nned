@@ -115,43 +115,46 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     Dim nReplyDateDiff As Integer
     Dim nLastRow As Long
     Dim Recipient As Outlook.Recipient
-    Dim dataArr() As Variant
-    Dim excludedSenders As Variant
-    Dim recipients As String
-    Dim senderEmailAddress As String
-    
-    excludedSenders = Array("Sakaria, Pramod", "John Doe", "Jane Smith", "Mike Johnson")
     
     For i = objCurrentfolder.Items.Count To 1 Step -1
         If TypeOf objCurrentfolder.Items(i) Is Outlook.MailItem Then
             Set objMail = objCurrentfolder.Items(i)
-            strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
             
+            Dim excludedSenders As Variant
+            excludedSenders = Array("Sakaria, Pramod", "John Doe", "Jane Smith", "Mike Johnson")
             If Not IsExcludedSender(excludedSenders, objMail.SenderName) Then
                 If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
                     nDateDiff = DateDiff("d", objMail.SentOn, Now)
                     nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                 
                     If nDateDiff <= 6 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
+                        nLastRow = objExcelWorksheet.Cells(objExcelWorksheet.Rows.Count, 1).End(xlUp).Row + 1
+                        
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 1) = objMail.Subject
+                            .Cells(nLastRow, 2) = objMail.ReceivedTime
+                            .Cells(nLastRow, 3) = objMail.SenderName
+                        End With
+                        
+                        Dim recipients As String
+                        recipients = ""
+                        Dim senderEmailAddress As String
                         senderEmailAddress = GetSenderEmailAddress(objMail)
                         
-                        recipients = ""
                         For Each Recipient In objMail.Recipients
                             recipients = recipients & Recipient.Name & "; "
                         Next Recipient
+                        
                         If Len(recipients) >= 2 Then
                             recipients = Left(recipients, Len(recipients) - 2)
-                        End If
+                        End If    
                         
-                        nLastRow = nLastRow + 1
-                        ReDim Preserve dataArr(1 To 6, 1 To nLastRow)
-                        
-                        dataArr(1, nLastRow) = objMail.Subject
-                        dataArr(2, nLastRow) = objMail.ReceivedTime
-                        dataArr(3, nLastRow) = objMail.SenderName
-                        dataArr(4, nLastRow) = recipients
-                        dataArr(5, nLastRow) = Left(Trim(objMail.Body), 100) & "..."
-                        dataArr(6, nLastRow) = senderEmailAddress
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 4) = recipients
+                            .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..."
+                            .Cells(nLastRow, 6) = senderEmailAddress
+                        End With
                         
                         If objCurrentfolder.Name <> objDestinationFolder.Name Then
                             objMail.Move objDestinationFolder
@@ -162,10 +165,6 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
         End If
     Next i
     
-    If nLastRow > 0 Then
-        objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Offset(1).Resize(nLastRow, 6).Value = dataArr
-    End If
-    
     If objCurrentfolder.Folders.Count > 0 Then
         Dim objSubfolder As Outlook.Folder
         For Each objSubfolder In objCurrentfolder.Folders
@@ -173,7 +172,6 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
         Next objSubfolder
     End If
 End Sub
-
 
 Function IsExcludedSender(ByVal excludedSenders As Variant, ByVal senderName As String) As Boolean
     Dim i As Long
