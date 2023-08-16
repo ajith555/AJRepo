@@ -147,7 +147,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objInternalFo
                         End With
 
                         ' Move the retrieved email to the appropriate folder
-                        If objMail.SenderEmailAddress = "kushal-ajith.shetty@ubs.com" Then
+                        If GetSenderEmailAddress(objMail) = "kushal-ajith.shetty@ubs.com" Then
                             objMail.Move objInternalFolder
                         Else
                             objMail.Move objExternalFolder
@@ -167,6 +167,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objInternalFo
         Next objSubfolder
     End If
 End Sub
+
 
 
 Function IsExcludedSender(ByVal excludedSenders As Variant, ByVal senderName As String) As Boolean
