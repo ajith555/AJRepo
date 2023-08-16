@@ -6,6 +6,11 @@ Dim objExcelWorksheet As Excel.Worksheet
 Dim objinbox As Outlook.Folder
 Dim objExternalFolder As Outlook.Folder
 
+    ' Retrieve the "(1) AGED External" folder if it exists
+    On Error Resume Next
+    Set objExternalFolder = objinbox.Folders("(1) AGED External")
+    On Error GoTo 0
+
 Sub ExportEmailsNotReplied()
     Dim targetEmail As String
     targetEmail = "kushal-ajith.shetty@ubs.com"
@@ -69,7 +74,12 @@ Sub ExportEmailsNotReplied()
 
     ' Move replied emails from "(1) AGED Internal" to "(1) AGED Replied" folder
     MoveRepliedEmails objABCFolder
+
     MoveRepliedExternalEmails objExternalFolder
+
+    If Not objExternalFolder Is Nothing Then
+        MoveRepliedExternalEmails objExternalFolder
+    End If
 
     ' Check for and move emails with duplicate subjects within the "(1) AGED Internal" folder
     MoveDuplicateEmails objABCFolder
