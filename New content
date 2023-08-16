@@ -88,54 +88,49 @@ End Sub
 
 Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
     Dim objExternalFolder As Outlook.Folder
-    Dim filter As String
-    Dim searchScope As Outlook.Folder
-    Dim searchResults As Outlook.Results
-    Dim searchQuery As String
+    Dim objMail As Outlook.MailItem
+    Dim senderEmailAddress As String
     
-    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
-    Dim foundExternal As Boolean
-    foundExternal = False
-    Dim objFolder As Outlook.Folder
-    For Each objFolder In objinbox.Folders
-        If objFolder.Name = "(1) AGED External" Then
-            foundExternal = True
-            Set objExternalFolder = objFolder
-            Exit For
-        End If
-    Next objFolder
+    ' Find or create the "Aged External" folder
+    On Error Resume Next
+    Set objExternalFolder = objSourceFolder.Parent.Folders("(1) AGED External")
+    On Error GoTo 0
     
-    If Not foundExternal Then
-        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
+    If objExternalFolder Is Nothing Then
+        Set objExternalFolder = objSourceFolder.Parent.Folders.Add("(1) AGED External", olFolderInbox)
     End If
     
-    ' Define the filter to exclude internal emails
-    filter = "NOT " & Chr(34) & "@ubs.com" & Chr(34) & " LIKE '%SenderEmailAddress%'"
-    
-    ' Define the search scope
-    Set searchScope = objSourceFolder
-    
-    ' Define the search query
-    searchQuery = "'" & searchScope.FolderPath & "' AND (" & filter & ")"
-    
-    ' Perform the search
-    Set searchResults = Application.AdvancedSearch(searchScope.FolderPath, filter)
-    
-    ' Move the search results to the external folder
-    MoveSearchResultsToFolder searchResults, objExternalFolder
+    ' Process emails in the source folder
+    For Each objMail In objSourceFolder.Items
+        If TypeOf objMail Is Outlook.MailItem Then
+            senderEmailAddress = GetSenderEmailAddress(objMail)
+            
+            ' Check if the sender's email address is external
+            If (Not LCase(senderEmailAddress) Like "*@ubs.com") Then
+                objMail.Move objExternalFolder
+            End If
+        End If
+    Next objMail
 End Sub
 
-Sub MoveSearchResultsToFolder(results As Outlook.Results, targetFolder As Outlook.Folder)
-    Dim i As Long
-    Dim objMail As Outlook.MailItem
+Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
+    Dim sender As Outlook.AddressEntry
+    Set sender = mail.Sender
     
-    For i = results.Count To 1 Step -1
-        If TypeOf results.Item(i) Is Outlook.MailItem Then
-            Set objMail = results.Item(i)
-            objMail.Move targetFolder
-        End If
-    Next i
-End Sub
+    Dim senderEmailAddress As String
+    
+    Select Case sender.AddressEntryUserType
+        Case olExchangeUserAddressEntry
+            senderEmailAddress = sender.GetExchangeUser.PrimarySmtpAddress
+        Case olSmtpAddressEntry
+            senderEmailAddress = sender.Address
+        Case Else
+            senderEmailAddress = mail.SenderEmailAddress
+    End Select
+    
+    GetSenderEmailAddress = senderEmailAddress
+End Function
+
 
 
 
