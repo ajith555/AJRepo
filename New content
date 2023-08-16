@@ -118,12 +118,6 @@ Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
 End Sub
 
 
-Function IsValidEmailAddress(ByVal email As String) As Boolean
-    On Error Resume Next
-    IsValidEmailAddress = (CreateObject("Outlook.Application").Session.CreateRecipient(email).Resolved)
-    On Error GoTo 0
-End Function
-
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
     Dim i As Long
     Dim objMail As Outlook.MailItem
