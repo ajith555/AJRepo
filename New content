@@ -102,8 +102,8 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
             If Not IsInternalSender(objMail.SenderEmailAddress) Then
                 ' Move external emails to the "AGED External" folder
                 objMail.Move GetOrCreateFolder(objinbox, "(1) AGED External")
-                Continue For ' Skip processing further for this email
-            End If
+            Else
+
 
             ' Add the condition to check if the sender name is to be excluded
             Dim excludedSenders As Variant
@@ -140,6 +140,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                             objMail.Move objDestinationFolder
                         End If
                     End If
+                End If
                 End If
             End If
         End If
