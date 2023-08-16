@@ -68,7 +68,8 @@ Sub ExportEmailsNotReplied()
 
     ' Move replied emails from "(1) AGED Internal" to "(1) AGED Replied" folder
     MoveRepliedEmails objABCFolder
-    
+    MoveRepliedExternalEmails objExternalFolder
+
     ' Check for and move emails with duplicate subjects within the "(1) AGED Internal" folder
     MoveDuplicateEmails objABCFolder
 
@@ -81,7 +82,9 @@ Sub ExportEmailsNotReplied()
     Set objExcelWorksheet = Nothing
     Set objExcelWorkbook = Nothing
     MoveExternalEmails objABCFolder
-    MsgBox "Complete!", vbExclamation
+    'MsgBox "Complete!", vbExclamation
+    MsgBox "Complete!", vbExclamation + vbApplicationModal
+
 End Sub
 
 Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
@@ -116,6 +119,40 @@ Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
             ' Check if the sender's email address is external
             If (Not LCase(senderEmailAddress) Like "*@ubs.com") Then
                 objMail.Move objExternalFolder
+            End If
+        End If
+    Next i
+End Sub
+
+Sub MoveRepliedExternalEmails(objSourceFolder As Outlook.Folder)
+    Dim objRepliedFolder As Outlook.Folder
+    Dim objMail As Outlook.MailItem
+    Dim i As Long
+
+    ' Check if the "(1) AGED Replied" folder exists or create it if it doesn't
+    Dim foundReplied As Boolean
+    foundReplied = False
+    Dim objFolder As Outlook.Folder
+    For Each objFolder In objinbox.Folders
+        If objFolder.Name = "(1) AGED Replied" Then
+            foundReplied = True
+            Set objRepliedFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
+    
+    If Not foundReplied Then
+        Set objRepliedFolder = objinbox.Folders.Add("(1) AGED Replied", olFolderInbox)
+    End If
+
+    ' Move replied emails from "(1) AGED External" to "(1) AGED Replied" folder
+    For i = objSourceFolder.Items.Count To 1 Step -1
+        If objSourceFolder.Items(i).Class = olMail Then
+            Set objMail = objSourceFolder.Items(i)
+            Dim strReplied As String
+            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            If (strReplied = "102" Or strReplied = "103") Then
+                objMail.Move objRepliedFolder
             End If
         End If
     Next i
