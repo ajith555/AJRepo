@@ -187,9 +187,10 @@ Function IsExternalSender(ByVal senderEmailAddress As String) As Boolean
     Dim internalDomain As String
     internalDomain = "ubs.com" ' Replace with your internal domain
     Dim senderDomain As String
-    senderDomain = Right(senderEmailAddress, Len(senderEmailAddress) - InStr(senderEmailAddress, "@"))
-    IsExternalSender = (StrComp(senderDomain, internalDomain, vbTextCompare) <> 0)
+    senderDomain = Right(senderEmailAddress, Len(senderEmailAddress) - InStr(senderEmailAddress, "@") + 1)
+    IsExternalSender = (StrComp(senderDomain, "@" & internalDomain, vbTextCompare) <> 0)
 End Function
+
 
 Function GetSenderEmailAddress(mailItem As Outlook.MailItem) As String
     Dim senderAddress As String
