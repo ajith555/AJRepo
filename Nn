@@ -89,7 +89,7 @@ Sub ExportEmailsNotReplied()
     MoveRepliedExternalEmails objExternalFolder
     ' Check for and move emails with duplicate subjects within the folder
     MoveDuplicateEmails objABCFolder
-    MoveExternalEmails objABCFolder
+    
 
 
 
@@ -99,8 +99,15 @@ Sub ExportEmailsNotReplied()
     ' Clean up
     Set objExcelWorksheet = Nothing
     Set objExcelWorkbook = Nothing
+
+    MoveExternalEmails objABCFolder
+    ShowMessageBox
     'MsgBox "Complete!", vbExclamation
-    MsgBox "Complete!", vbExclamation, "Processing Complete"
+    'MsgBox "Complete!", vbExclamation, "Processing Complete"
+End Sub
+Sub ShowMessageBox()
+    Dim result As VbMsgBoxResult
+    result = Application.Dialogs(xlDialogMessageBox).Show("Complete!", vbExclamation, "Processing Complete")
 End Sub
 
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
