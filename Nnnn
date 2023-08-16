@@ -67,7 +67,7 @@ Sub ExportEmailsNotReplied()
         Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
 
-    ProcessFolders objinbox, objABCFolder
+    ProcessFolders objinbox, objABCFolder, objExternalFolder
 
     With objExcelWorksheet
         .Columns("A:D").AutoFit
@@ -85,6 +85,7 @@ Sub ExportEmailsNotReplied()
     Set objExcelWorksheet = Nothing
     Set objExcelWorkbook = Nothing
 End Sub
+
 
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objInternalFolder As Outlook.Folder, ByVal objExternalFolder As Outlook.Folder)
     Dim i As Long
