@@ -103,10 +103,12 @@ Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
         End If
     Next objFolder
     
+    ' If "(1) AGED External" folder doesn't exist, create it
     If Not foundExternal Then
         Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
     
+    ' Loop through emails in the source folder
     For i = objSourceFolder.Items.Count To 1 Step -1
         If TypeOf objSourceFolder.Items(i) Is Outlook.MailItem Then
             Set objMail = objSourceFolder.Items(i)
@@ -116,9 +118,12 @@ Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
             senderEmailAddress = GetSenderEmailAddress(objMail)
             
             ' Check if the sender's email address is internal
-            If LCase(senderEmailAddress) Like "*@ubs.com" Then
+            If LCase(senderEmailAddress) Like "*@ubs.com" Or LCase(senderEmailAddress) = "ap-globalsn-prod@ubs.com" Then
                 ' Move objMail to internal folder
-                ' Implement your internal folder moving logic here
+                Dim internalFolder As Outlook.Folder
+                ' Replace "Internal Folder Name" with the actual name of your internal folder
+                Set internalFolder = objinbox.Folders("(1) AGED Internal")
+                objMail.Move internalFolder
             Else
                 ' Move to external folder
                 objMail.Move objExternalFolder
@@ -133,6 +138,7 @@ Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
     
     Dim senderEmailAddress As String
     
+    ' Determine sender's email address based on AddressEntryUserType
     If sender.AddressEntryUserType = olExchangeUserAddressEntry Then
         senderEmailAddress = sender.GetExchangeUser.PrimarySmtpAddress
     ElseIf sender.AddressEntryUserType = olSmtpAddressEntry Then
@@ -141,6 +147,7 @@ Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
         senderEmailAddress = mail.SenderEmailAddress
     End If
     
+    ' Return the sender's email address
     GetSenderEmailAddress = senderEmailAddress
 End Function
 
