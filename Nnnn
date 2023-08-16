@@ -86,7 +86,7 @@ Sub ExportEmailsNotReplied()
     Set objExcelWorkbook = Nothing
 End Sub
 
-Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
+Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objInternalFolder As Outlook.Folder, ByVal objExternalFolder As Outlook.Folder)
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim senderEmailAddress As String
@@ -130,8 +130,13 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                             .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..."
                         End With
 
-                        If objCurrentfolder.Name <> objDestinationFolder.Name Then
-                            objMail.Move objDestinationFolder
+                        If objCurrentfolder.Name <> objInternalFolder.Name Then
+                            ' Check if the sender's domain is not the UBS domain and move to "AGED External" folder
+                            If Not IsUBSDomain(senderEmailAddress) Then
+                                objMail.Move objExternalFolder
+                            Else
+                                objMail.Move objInternalFolder
+                            End If
                         End If
                     End If
                 End If
@@ -144,7 +149,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
     If objCurrentfolder.Folders.Count > 0 Then
         Dim objSubfolder As Outlook.Folder
         For Each objSubfolder In objCurrentfolder.Folders
-            ProcessFolders objSubfolder, objDestinationFolder
+            ProcessFolders objSubfolder, objInternalFolder, objExternalFolder
         Next objSubfolder
     End If
 End Sub
