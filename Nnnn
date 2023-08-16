@@ -1,46 +1,36 @@
 Sub MoveExternalEmails()
+
     Dim olApp As Object
     Dim olNamespace As Object
     Dim olInbox As Object
-    Dim internalFolder As Object
-    Dim externalFolder As Object
-    Dim item As Object
-    Dim recipient As Object
-    Dim isExternal As Boolean
+    Dim olAgedInternalFolder As Object
+    Dim olAgedExternalFolder As Object
+    Dim olItem As Object
+    Dim i As Integer
     
-    ' Set up Outlook objects
     Set olApp = CreateObject("Outlook.Application")
     Set olNamespace = olApp.GetNamespace("MAPI")
-    Set olInbox = olNamespace.GetDefaultFolder(6) ' Inbox folder
+    Set olInbox = olNamespace.GetDefaultFolder(6) ' Inbox Folder (6)
+    Set olAgedInternalFolder = olInbox.Folders("(1) AGED Internal")
+    Set olAgedExternalFolder = olInbox.Folders("(1) AGED External")
     
-    ' Set internal and external folders
-    Set internalFolder = olInbox.Folders("(1) AGED Internal")
-    Set externalFolder = olInbox.Folders("(1) AGED External")
-    
-    ' Loop through emails in internal folder
-    For Each item In internalFolder.Items
-        isExternal = True ' Assume email is external
-        
-        ' Check recipients' email addresses
-        For Each recipient In item.Recipients
-            If InStr(recipient.Address, "@ubs.com") > 0 Then
-                isExternal = False ' Found an internal recipient
-                Exit For
+    For i = olAgedInternalFolder.Items.Count To 1 Step -1
+        Set olItem = olAgedInternalFolder.Items(i)
+        If olItem.Class = 43 Then ' MailItem Class
+            If Not olItem.SenderEmailType = "EX" Then
+                ' Check if sender's domain is ubs.com (internal)
+                If Right(olItem.SenderEmailAddress, 7) <> "ubs.com" Then
+                    olItem.Move olAgedExternalFolder
+                End If
             End If
-        Next recipient
-        
-        ' Move external emails to external folder
-        If isExternal Then
-            item.Move externalFolder
         End If
-    Next item
+    Next i
     
-    ' Clean up
-    Set recipient = Nothing
-    Set item = Nothing
-    Set internalFolder = Nothing
-    Set externalFolder = Nothing
+    Set olItem = Nothing
+    Set olAgedExternalFolder = Nothing
+    Set olAgedInternalFolder = Nothing
     Set olInbox = Nothing
     Set olNamespace = Nothing
     Set olApp = Nothing
+    
 End Sub
