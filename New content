@@ -82,7 +82,8 @@ Sub ExportEmailsNotReplied()
     ' Clean up
     Set objExcelWorksheet = Nothing
     Set objExcelWorkbook = Nothing
-    MoveExternalEmails objABCFolder
+    MoveExternalEmails objABCFolder, objExternalFolder
+
     MsgBox "Complete!", vbExclamation
 End Sub
 
