@@ -147,6 +147,23 @@ Sub MoveEmailsToFolder(emails As Collection, targetFolder As Outlook.Folder)
     On Error GoTo 0
 End Sub
 
+Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
+    Dim sender As Outlook.AddressEntry
+    Set sender = mail.Sender
+    
+    Dim senderEmailAddress As String
+    
+    If sender.AddressEntryUserType = olExchangeUserAddressEntry Then
+        senderEmailAddress = sender.GetExchangeUser.PrimarySmtpAddress
+    ElseIf sender.AddressEntryUserType = olSmtpAddressEntry Then
+        senderEmailAddress = sender.Address
+    Else
+        senderEmailAddress = mail.SenderEmailAddress
+    End If
+    
+    GetSenderEmailAddress = senderEmailAddress
+End Function
+
 
 
 
