@@ -192,17 +192,13 @@ Function IsExternalSender(ByVal senderEmailAddress As String) As Boolean
 End Function
 
 Function GetSenderEmailAddress(mailItem As Outlook.MailItem) As String
-    Dim sender As Outlook.AddressEntry
+    Dim senderAddress As String
     On Error Resume Next
-    Set sender = mailItem.Sender
+    senderAddress = mailItem.SenderEmailAddress
     On Error GoTo 0
-
-    If Not sender Is Nothing Then
-        GetSenderEmailAddress = sender.Address
-    Else
-        GetSenderEmailAddress = ""
-    End If
+    GetSenderEmailAddress = senderAddress
 End Function
+
 
 Sub MoveRepliedEmails(ByVal objSourceFolder As Outlook.Folder)
     Dim objRepliedFolder As Outlook.Folder
