@@ -141,7 +141,9 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinatio
                             recipients = recipients & Recipient.Name & "; "
                         Next Recipient
                         
-                        recipients = Left(recipients, Len(recipients) - 2)
+                        If Len(recipients) >= 2 Then
+                            recipients = Left(recipients, Len(recipients) - 2)
+                        End If    
                         
                         With objExcelWorksheet
                             .Cells(nLastRow, 4) = recipients
