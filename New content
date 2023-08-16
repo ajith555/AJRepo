@@ -88,10 +88,10 @@ End Sub
 
 Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
     Dim objExternalFolder As Outlook.Folder
-    Dim objMail As Outlook.MailItem
-    Dim i As Long
-    Dim batchSize As Long
-    Dim emailsToMove As Collection
+    Dim filter As String
+    Dim searchScope As Outlook.Folder
+    Dim searchResults As Outlook.Results
+    Dim searchQuery As String
     
     ' Check if the "(1) AGED External" folder exists or create it if it doesn't
     Dim foundExternal As Boolean
@@ -109,61 +109,33 @@ Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
         Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
     
-    batchSize = 50 ' Set your desired batch size
-    Set emailsToMove = New Collection
+    ' Define the filter to exclude internal emails
+    filter = "NOT " & Chr(34) & "@ubs.com" & Chr(34) & " LIKE '%SenderEmailAddress%'"
     
-    For i = objSourceFolder.Items.Count To 1 Step -1
-        If TypeOf objSourceFolder.Items(i) Is Outlook.MailItem Then
-            Set objMail = objSourceFolder.Items(i)
-            
-            ' Get sender's email address
-            Dim senderEmailAddress As String
-            senderEmailAddress = GetSenderEmailAddress(objMail)
-            
-            ' Check if the sender's email address is external
-            If (Not LCase(senderEmailAddress) Like "*@ubs.com") Then
-                emailsToMove.Add objMail
-            End If
-            
-            If emailsToMove.Count >= batchSize Then
-                MoveEmailsToFolder emailsToMove, objExternalFolder
-                Set emailsToMove = New Collection
-            End If
+    ' Define the search scope
+    Set searchScope = objSourceFolder
+    
+    ' Define the search query
+    searchQuery = "'" & searchScope.FolderPath & "' AND (" & filter & ")"
+    
+    ' Perform the search
+    Set searchResults = Application.AdvancedSearch(searchScope.FolderPath, filter)
+    
+    ' Move the search results to the external folder
+    MoveSearchResultsToFolder searchResults, objExternalFolder
+End Sub
+
+Sub MoveSearchResultsToFolder(results As Outlook.Results, targetFolder As Outlook.Folder)
+    Dim i As Long
+    Dim objMail As Outlook.MailItem
+    
+    For i = results.Count To 1 Step -1
+        If TypeOf results.Item(i) Is Outlook.MailItem Then
+            Set objMail = results.Item(i)
+            objMail.Move targetFolder
         End If
     Next i
-    
-    ' Move any remaining emails in the collection
-    If emailsToMove.Count > 0 Then
-        MoveEmailsToFolder emailsToMove, objExternalFolder
-    End If
 End Sub
-
-Sub MoveEmailsToFolder(emails As Collection, targetFolder As Outlook.Folder)
-    Dim objMail As Outlook.MailItem
-    On Error Resume Next
-    For Each objMail In emails
-        objMail.Move targetFolder
-    Next objMail
-    On Error GoTo 0
-End Sub
-
-Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
-    Dim sender As Outlook.AddressEntry
-    Set sender = mail.Sender
-    
-    Dim senderEmailAddress As String
-    
-    If sender.AddressEntryUserType = olExchangeUserAddressEntry Then
-        senderEmailAddress = sender.GetExchangeUser.PrimarySmtpAddress
-    ElseIf sender.AddressEntryUserType = olSmtpAddressEntry Then
-        senderEmailAddress = sender.Address
-    Else
-        senderEmailAddress = mail.SenderEmailAddress
-    End If
-    
-    GetSenderEmailAddress = senderEmailAddress
-End Function
-
 
 
 
