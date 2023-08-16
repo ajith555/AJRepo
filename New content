@@ -89,48 +89,39 @@ End Sub
 Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
     Dim objExternalFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
-    Dim senderEmailAddress As String
+    Dim i As Long
     
-    ' Find or create the "(1) AGED External" folder under Inbox
-    Set objExternalFolder = FindOrCreateExternalFolder(objSourceFolder.Parent)
+    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
+    Dim foundExternal As Boolean
+    foundExternal = False
+    Dim objFolder As Outlook.Folder
+    For Each objFolder In objinbox.Folders
+        If objFolder.Name = "(1) AGED External" Then
+            foundExternal = True
+            Set objExternalFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
     
-    ' Loop through the emails in the source folder
-    For Each objMail In objSourceFolder.Items
-        If TypeOf objMail Is Outlook.MailItem Then
+    If Not foundExternal Then
+        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
+    End If
+    
+    For i = objSourceFolder.Items.Count To 1 Step -1
+        If TypeOf objSourceFolder.Items(i) Is Outlook.MailItem Then
+            Set objMail = objSourceFolder.Items(i)
+            
             ' Get sender's email address
+            Dim senderEmailAddress As String
             senderEmailAddress = GetSenderEmailAddress(objMail)
             
             ' Check if the sender's email address is external
-            If Not IsInternalEmailAddress(senderEmailAddress) Then
+            If (Not LCase(senderEmailAddress) Like "*@ubs.com") Then
                 objMail.Move objExternalFolder
             End If
         End If
-    Next objMail
+    Next i
 End Sub
-
-Function FindOrCreateExternalFolder(parentFolder As Outlook.Folder) As Outlook.Folder
-    Dim externalFolderName As String
-    externalFolderName = "(1) AGED External"
-    
-    On Error Resume Next
-    Set FindOrCreateExternalFolder = parentFolder.Folders(externalFolderName)
-    On Error GoTo 0
-    
-    If FindOrCreateExternalFolder Is Nothing Then
-        Set FindOrCreateExternalFolder = parentFolder.Folders.Add(externalFolderName, olFolderInbox)
-    End If
-End Function
-
-Function IsInternalEmailAddress(emailAddress As String) As Boolean
-    ' Define a list of internal email domains
-    Dim internalDomains As String
-    internalDomains = "@ubs.com" ' Add more domains if needed
-    
-    IsInternalEmailAddress = False
-    If LCase(emailAddress) Like internalDomains Then
-        IsInternalEmailAddress = True
-    End If
-End Function
 
 Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
     Dim sender As Outlook.AddressEntry
@@ -148,7 +139,6 @@ Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
     
     GetSenderEmailAddress = senderEmailAddress
 End Function
-
 
 
 
