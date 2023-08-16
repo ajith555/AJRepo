@@ -107,6 +107,9 @@ Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
         Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
     
+    Dim emailsToMove As Collection
+    Set emailsToMove = New Collection
+    
     For i = objSourceFolder.Items.Count To 1 Step -1
         If TypeOf objSourceFolder.Items(i) Is Outlook.MailItem Then
             Set objMail = objSourceFolder.Items(i)
@@ -116,11 +119,15 @@ Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
             senderEmailAddress = GetSenderEmailAddress(objMail)
             
             ' Check if the sender's email address is external
-            If (Not LCase(senderEmailAddress) Like "*@ubs.com") Then
-                objMail.Move objExternalFolder
+            If Not LCase(senderEmailAddress) Like "*@ubs.com" Then
+                emailsToMove.Add objMail
             End If
         End If
     Next i
+    
+    For Each objMail In emailsToMove
+        objMail.Move objExternalFolder
+    Next objMail
 End Sub
 
 Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
@@ -129,16 +136,18 @@ Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
     
     Dim senderEmailAddress As String
     
-    If sender.AddressEntryUserType = olExchangeUserAddressEntry Then
-        senderEmailAddress = sender.GetExchangeUser.PrimarySmtpAddress
-    ElseIf sender.AddressEntryUserType = olSmtpAddressEntry Then
-        senderEmailAddress = sender.Address
-    Else
-        senderEmailAddress = mail.SenderEmailAddress
-    End If
+    Select Case sender.AddressEntryUserType
+        Case olExchangeUserAddressEntry
+            senderEmailAddress = sender.GetExchangeUser.PrimarySmtpAddress
+        Case olSmtpAddressEntry
+            senderEmailAddress = sender.Address
+        Case Else
+            senderEmailAddress = mail.SenderEmailAddress
+    End Select
     
     GetSenderEmailAddress = senderEmailAddress
 End Function
+
 
 
 
