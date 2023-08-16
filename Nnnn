@@ -11,15 +11,19 @@ Sub ExportEmailsNotReplied()
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
     Dim objABCFolder As Outlook.Folder
+    Dim objExternalFolder As Outlook.Folder
 
+    ' Create Excel objects
     Set objExcelApplication = New Excel.Application
     objExcelApplication.Visible = True
 
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
 
+    ' Set fixed row height for all rows in the worksheet
     objExcelWorksheet.Rows.RowHeight = 20
 
+    ' Set headers for the Excel columns
     objExcelWorksheet.Cells(1, 1) = "Subject"
     objExcelWorksheet.Cells(1, 1).Font.Bold = True
     objExcelWorksheet.Cells(1, 2) = "Received"
@@ -31,10 +35,12 @@ Sub ExportEmailsNotReplied()
     objExcelWorksheet.Cells(1, 5) = "Excerpts"
     objExcelWorksheet.Cells(1, 5).Font.Bold = True
 
+    ' Get the specified email account and its Inbox folder
     Set objNamespace = Outlook.GetNamespace("MAPI")
     Set objRootFolder = objNamespace.Folders(targetEmail)
     Set objinbox = objRootFolder.Folders("Inbox")
 
+    ' Check if the "(1) AGED Internal" folder exists or create it if it doesn't
     Dim foundABC As Boolean
     foundABC = False
     Dim objFolder As Outlook.Folder
@@ -50,9 +56,9 @@ Sub ExportEmailsNotReplied()
         Set objABCFolder = objinbox.Folders.Add("(1) AGED Internal", olFolderInbox)
     End If
 
+    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
     Dim foundExternal As Boolean
     foundExternal = False
-    Dim objExternalFolder As Outlook.Folder
     For Each objFolder In objinbox.Folders
         If objFolder.Name = "(1) AGED External" Then
             foundExternal = True
@@ -65,21 +71,29 @@ Sub ExportEmailsNotReplied()
         Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
 
+    ' Process folders to export unreplied emails
     ProcessFolders objinbox, objABCFolder, objExternalFolder
 
+    ' Format the Excel columns and rows
     With objExcelWorksheet
         .Columns("A:D").AutoFit
         .Columns("E").ColumnWidth = 100
         .Columns("E").WrapText = False
     End With
 
+    ' Move replied emails from "(1) AGED Internal" to "(1) AGED Replied" folder
     MoveRepliedEmails objABCFolder
+
+    ' Check for and move emails with duplicate subjects within the "(1) AGED Internal" folder
     MoveDuplicateEmails objABCFolder
 
+    ' Remove duplicates from the Excel workbook
     RemoveDuplicatesFromWorkbook objExcelWorkbook
 
+    ' Display completion message
     MsgBox "Complete!", vbExclamation
 
+    ' Clean up Excel objects
     Set objExcelWorksheet = Nothing
     Set objExcelWorkbook = Nothing
 End Sub
@@ -95,27 +109,34 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objInternalFo
 
     On Error Resume Next
 
+    ' Loop through each email in the folder
     For i = objCurrentfolder.Items.Count To 1 Step -1
         If objCurrentfolder.Items(i).Class = olMail Then
             Set objMail = objCurrentfolder.Items(i)
             strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
 
+            ' Define excluded senders
             Dim excludedSenders As Variant
             excludedSenders = Array("Sakaria, Pramod", "John Doe", "Jane Smith", "Mike Johnson")
+
+            ' Check if sender is not excluded and email is not replied
             If Not IsExcludedSender(excludedSenders, objMail.SenderName) Then
                 If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
                     nDateDiff = DateDiff("d", objMail.SentOn, Now)
                     nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
 
-                    If nDateDiff <= 6 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
+                    ' Check conditions for unreplied emails
+                    If nDateDiff <= 4 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
                         nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
 
+                        ' Populate Excel worksheet with email details
                         With objExcelWorksheet
                             .Cells(nLastRow, 1) = objMail.Subject
                             .Cells(nLastRow, 2) = objMail.ReceivedTime
                             .Cells(nLastRow, 3) = objMail.SenderName
                         End With
 
+                        ' Build recipients list
                         Dim recipients As String
                         recipients = ""
                         For Each Recipient In objMail.Recipients
@@ -123,12 +144,14 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objInternalFo
                         Next Recipient
                         recipients = Left(recipients, Len(recipients) - 2)
 
+                        ' Populate Excel worksheet with recipients and excerpts
                         With objExcelWorksheet
                             .Cells(nLastRow, 4) = recipients
                             .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..."
                         End With
 
-                        If IsExternalSender(objMail.SenderEmailAddress) Then
+                        ' Determine if sender is external and move to appropriate folder
+                        If IsExternalSender(GetSenderEmailAddress(objMail)) Then
                             objMail.Move objExternalFolder
                         Else
                             objMail.Move objInternalFolder
@@ -141,6 +164,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objInternalFo
 
     On Error GoTo 0
 
+    ' Recursively process subfolders
     If objCurrentfolder.Folders.Count > 0 Then
         Dim objSubfolder As Outlook.Folder
         For Each objSubfolder In objCurrentfolder.Folders
@@ -161,10 +185,23 @@ End Function
 
 Function IsExternalSender(ByVal senderEmailAddress As String) As Boolean
     Dim internalDomain As String
-    internalDomain = "ubs.com"
+    internalDomain = "ubs.com" ' Replace with your internal domain
     Dim senderDomain As String
     senderDomain = Right(senderEmailAddress, Len(senderEmailAddress) - InStr(senderEmailAddress, "@"))
     IsExternalSender = (StrComp(senderDomain, internalDomain, vbTextCompare) <> 0)
+End Function
+
+Function GetSenderEmailAddress(mailItem As Outlook.MailItem) As String
+    Dim sender As Outlook.AddressEntry
+    On Error Resume Next
+    Set sender = mailItem.Sender
+    On Error GoTo 0
+
+    If Not sender Is Nothing Then
+        GetSenderEmailAddress = sender.Address
+    Else
+        GetSenderEmailAddress = ""
+    End If
 End Function
 
 Sub MoveRepliedEmails(ByVal objSourceFolder As Outlook.Folder)
