@@ -86,7 +86,7 @@ Sub ExportEmailsNotReplied()
     MsgBox "Complete!", vbExclamation
 End Sub
 
-Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
+Sub MoveExternalEmails(objSourceFolder As Outlook.Folder, objABCFolder As Outlook.Folder)
     Dim objExternalFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
     Dim i As Long
@@ -127,6 +127,7 @@ Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
         End If
     Next i
 End Sub
+
 
 Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
     Dim sender As Outlook.AddressEntry
