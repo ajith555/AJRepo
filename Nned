@@ -7,40 +7,22 @@ Dim objinbox As Outlook.Folder
 Dim objExternalFolder As Outlook.Folder ' Declare objExternalFolder
 
 Sub ExportEmailsNotReplied()
+    ' Set target email and create Excel objects
     Dim targetEmail As String
     targetEmail = "kushal-ajith.shetty@ubs.com"
-    
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
     Dim objABCFolder As Outlook.Folder
-    
+
     ' Create Excel application and workbook
     Set objExcelApplication = New Excel.Application
     objExcelApplication.Visible = True
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
-    
-    ' Set target email and create Excel objects
-    Set objNamespace = Outlook.GetNamespace("MAPI")
-    Set objRootFolder = objNamespace.Folders(targetEmail)
-    Set objinbox = objRootFolder.Folders("Inbox")
-    
-    Dim excludedSenders As Object
-    Set excludedSenders = CreateObject("Scripting.Dictionary")
-    excludedSenders.Add "Sakaria, Pramod", 1
-    excludedSenders.Add "John Doe", 1
-    excludedSenders.Add "Jane Smith", 1
-    excludedSenders.Add "Mike Johnson", 1
-    
-    Dim dataArr() As Variant
-    Dim nLastRow As Long
-    Dim senderEmailDict As Object
-    Set senderEmailDict = CreateObject("Scripting.Dictionary")
-    
-    ' Process the folders to export unreplied emails
-    ProcessFolders objinbox, objABCFolder, dataArr, nLastRow, excludedSenders, senderEmailDict
-    
-    ' Format the Excel columns and rows
+
+    ' Set fixed row height for all rows in the worksheet
+    ' objExcelWorksheet.Rows.RowHeight = 20
+
     With objExcelWorksheet
         .Cells(1, 1) = "Subject"
         .Cells(1, 1).Font.Bold = True
@@ -55,10 +37,6 @@ Sub ExportEmailsNotReplied()
         .Cells(1, 6) = "Sender Email"
         .Cells(1, 6).Font.Bold = True
     End With
-    
-    ' Write dataArr to Excel worksheet
-    objExcelWorksheet.Range("A2").Resize(UBound(dataArr, 1), UBound(dataArr, 2)).Value = dataArr
-    
 
     ' Get the specified email account and its Inbox folder
     Set objNamespace = Outlook.GetNamespace("MAPI")
@@ -129,7 +107,7 @@ End Sub
 
 
 
-Sub ProcessFolders(objCurrentfolder As Outlook.Folder, objDestinationFolder As Outlook.Folder, ByRef dataArr() As Variant, ByRef nLastRow As Long, ByVal excludedSenders As Object, ByVal senderEmailDict As Object)
+Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
