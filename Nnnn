@@ -107,7 +107,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objInternalFo
                     nDateDiff = DateDiff("d", objMail.SentOn, Now)
                     nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
 
-                    If nDateDiff <= 4 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
+                    If nDateDiff <= 6 And nReplyDateDiff > 3 And nDateDiff >= 0 And nReplyDateDiff >= 0 Then
                         nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
 
                         With objExcelWorksheet
