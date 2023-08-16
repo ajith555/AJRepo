@@ -110,12 +110,22 @@ Sub MoveExternalEmails(ByVal objFolder As Outlook.Folder)
             Set objMail = objFolder.Items(i)
             Dim senderEmailAddress As String
             senderEmailAddress = objMail.SenderEmailAddress
-            If InStr(LCase(senderEmailAddress), "@ubs.com") = 0 Then
-                objMail.Move objExternalFolder
+            
+            ' Check if senderEmailAddress is a valid email address
+            If IsValidEmailAddress(senderEmailAddress) Then
+                If InStr(LCase(senderEmailAddress), "@ubs.com") = 0 Then
+                    objMail.Move objExternalFolder
+                End If
             End If
         End If
     Next i
 End Sub
+
+Function IsValidEmailAddress(ByVal email As String) As Boolean
+    On Error Resume Next
+    IsValidEmailAddress = (CreateObject("Outlook.Application").Session.CreateRecipient(email).Resolved)
+    On Error GoTo 0
+End Function
 
 Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal objDestinationFolder As Outlook.Folder)
     Dim i As Long
