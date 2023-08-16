@@ -90,12 +90,12 @@ Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
     Dim objExternalFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
     Dim i As Long
+    
+    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
     Dim foundExternal As Boolean
-    Dim objFolder As Outlook.Folder
-    
     foundExternal = False
-    
-    For Each objFolder In objSourceFolder.Folders
+    Dim objFolder As Outlook.Folder
+    For Each objFolder In objinbox.Folders
         If objFolder.Name = "(1) AGED External" Then
             foundExternal = True
             Set objExternalFolder = objFolder
@@ -104,17 +104,19 @@ Sub MoveExternalEmails(objSourceFolder As Outlook.Folder)
     Next objFolder
     
     If Not foundExternal Then
-        Set objExternalFolder = objSourceFolder.Folders.Add("(1) AGED External", olFolderInbox)
+        Set objExternalFolder = objinbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
     
     For i = objSourceFolder.Items.Count To 1 Step -1
         If TypeOf objSourceFolder.Items(i) Is Outlook.MailItem Then
             Set objMail = objSourceFolder.Items(i)
             
+            ' Get sender's email address
             Dim senderEmailAddress As String
             senderEmailAddress = GetSenderEmailAddress(objMail)
             
-            If IsExternalSender(senderEmailAddress) Then
+            ' Check if the sender's email address is external
+            If (Not LCase(senderEmailAddress) Like "*@ubs.com") Then
                 objMail.Move objExternalFolder
             End If
         End If
@@ -136,12 +138,6 @@ Function GetSenderEmailAddress(mail As Outlook.MailItem) As String
     End If
     
     GetSenderEmailAddress = senderEmailAddress
-End Function
-
-Function IsExternalSender(emailAddress As String) As Boolean
-    If Not LCase(emailAddress) Like "*@ubs.com" And LCase(emailAddress) <> "ap-globalsn-prod@ubs.com" Then
-        IsExternalSender = True
-    End If
 End Function
 
 
