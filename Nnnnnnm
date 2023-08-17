@@ -1,5 +1,4 @@
-Sub MoveExternalEmails()
-
+Sub MoveExternalEmails(targetEmail As String)
     Dim olApp As Object
     Dim olNamespace As Object
     Dim olInbox As Object
@@ -8,39 +7,40 @@ Sub MoveExternalEmails()
     Dim olItem As Object
     Dim i As Integer
     
+    ' Create Outlook Application instance
     Set olApp = CreateObject("Outlook.Application")
+    ' Get MAPI Namespace
     Set olNamespace = olApp.GetNamespace("MAPI")
     
-    ' Find the inbox folder
+    ' Get the target email account inbox folder
+    Set olInbox = olNamespace.Folders(targetEmail).Folders("Inbox")
+    
+    ' Check if "(1) AGED Internal" folder already exists or create it
     On Error Resume Next
-    Set olInbox = olNamespace.GetDefaultFolder(6) ' Inbox Folder (6)
+    Set olAgedInternalFolder = olInbox.Folders("(1) AGED Internal")
     On Error GoTo 0
     
-    If olInbox Is Nothing Then
-        MsgBox "Inbox folder not found!", vbExclamation
-        Exit Sub
-    End If
-    
-    ' Find the "(1) AGED Internal" folder
-    Set olAgedInternalFolder = FindSubFolder(olInbox, "(1) AGED Internal")
-    
     If olAgedInternalFolder Is Nothing Then
-        MsgBox "(1) AGED Internal folder not found!", vbExclamation
-        Exit Sub
+        ' Create "(1) AGED Internal" folder
+        Set olAgedInternalFolder = olInbox.Folders.Add("(1) AGED Internal", olFolderInbox)
     End If
     
     ' Check if "(1) AGED External" folder already exists or create it
-    Set olAgedExternalFolder = FindSubFolder(olInbox, "(1) AGED External")
+    On Error Resume Next
+    Set olAgedExternalFolder = olInbox.Folders("(1) AGED External")
+    On Error GoTo 0
     
     If olAgedExternalFolder Is Nothing Then
+        ' Create "(1) AGED External" folder
         Set olAgedExternalFolder = olInbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
     
+    ' Loop through items in the internal folder and move if needed
     For i = olAgedInternalFolder.Items.Count To 1 Step -1
         Set olItem = olAgedInternalFolder.Items(i)
         If olItem.Class = 43 Then ' MailItem Class
             If Not olItem.SenderEmailType = "EX" Then
-                ' Check if sender's domain is ubs.com (internal)
+                ' Check if sender's domain is not ubs.com (external)
                 If Right(olItem.SenderEmailAddress, 7) <> "ubs.com" Then
                     olItem.Move olAgedExternalFolder
                 End If
@@ -48,19 +48,11 @@ Sub MoveExternalEmails()
         End If
     Next i
     
+    ' Release objects
     Set olItem = Nothing
     Set olAgedExternalFolder = Nothing
     Set olAgedInternalFolder = Nothing
     Set olInbox = Nothing
     Set olNamespace = Nothing
     Set olApp = Nothing
-    
 End Sub
-
-Function FindSubFolder(ByVal parentFolder As Object, ByVal folderName As String) As Object
-    Dim subFolder As Object
-    On Error Resume Next
-    Set subFolder = parentFolder.Folders(folderName)
-    On Error GoTo 0
-    Set FindSubFolder = subFolder
-End Function
