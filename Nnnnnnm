@@ -7,43 +7,33 @@ Sub MoveExternalEmails()
     Dim olAgedExternalFolder As Object
     Dim olItem As Object
     Dim i As Integer
-    Dim targetEmail As String
-    
-    ' Define the target email address
-    targetEmail = "kushal-ajith.shetty@ubs.com" ' Replace with the desired email address
     
     Set olApp = CreateObject("Outlook.Application")
     Set olNamespace = olApp.GetNamespace("MAPI")
     
-    ' Find the specific email account based on the target email address
-    For Each olInbox In olNamespace.Folders
-        If olInbox.Name = targetEmail Then
-            Exit For
-        End If
-    Next olInbox
+    ' Find the inbox folder
+    On Error Resume Next
+    Set olInbox = olNamespace.GetDefaultFolder(6) ' Inbox Folder (6)
+    On Error GoTo 0
     
     If olInbox Is Nothing Then
-        MsgBox "Email account not found!", vbExclamation
+        MsgBox "Inbox folder not found!", vbExclamation
         Exit Sub
     End If
     
-    ' Check if "(1) AGED External" folder already exists or create it
-    On Error Resume Next
-    Set olAgedExternalFolder = olInbox.Folders("(1) AGED External")
-    On Error GoTo 0
-    
-    If olAgedExternalFolder Is Nothing Then
-        Set olAgedExternalFolder = olInbox.Folders.Add("(1) AGED External", olFolderInbox)
-    End If
-    
     ' Find the "(1) AGED Internal" folder
-    On Error Resume Next
-    Set olAgedInternalFolder = olInbox.Folders("(1) AGED Internal")
-    On Error GoTo 0
+    Set olAgedInternalFolder = FindSubFolder(olInbox, "(1) AGED Internal")
     
     If olAgedInternalFolder Is Nothing Then
         MsgBox "(1) AGED Internal folder not found!", vbExclamation
         Exit Sub
+    End If
+    
+    ' Check if "(1) AGED External" folder already exists or create it
+    Set olAgedExternalFolder = FindSubFolder(olInbox, "(1) AGED External")
+    
+    If olAgedExternalFolder Is Nothing Then
+        Set olAgedExternalFolder = olInbox.Folders.Add("(1) AGED External", olFolderInbox)
     End If
     
     For i = olAgedInternalFolder.Items.Count To 1 Step -1
@@ -66,3 +56,11 @@ Sub MoveExternalEmails()
     Set olApp = Nothing
     
 End Sub
+
+Function FindSubFolder(ByVal parentFolder As Object, ByVal folderName As String) As Object
+    Dim subFolder As Object
+    On Error Resume Next
+    Set subFolder = parentFolder.Folders(folderName)
+    On Error GoTo 0
+    Set FindSubFolder = subFolder
+End Function
