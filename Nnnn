@@ -29,9 +29,9 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
     Dim foldersToCheck As Variant
     foldersToCheck = Array("(1) AGED Internal", "(1) AGED External")
     
-    For Each folderName In foldersToCheck
+    For i = LBound(foldersToCheck) To UBound(foldersToCheck)
         Dim objCheckFolder As Outlook.Folder
-        Set objCheckFolder = objFolder.Folders(CStr(folderName))
+        Set objCheckFolder = objFolder.Folders(foldersToCheck(i))
         
         For i = objCheckFolder.Items.Count To 1 Step -1
             If objCheckFolder.Items(i).Class = olMail Then
@@ -70,5 +70,5 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
                 End If
             End If
         Next i
-    Next folderName
+    Next i
 End Sub
