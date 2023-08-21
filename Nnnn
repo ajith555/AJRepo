@@ -1,4 +1,6 @@
-    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
+Dim objExternalFolder As Outlook.Folder
+
+' Check if the "(1) AGED External" folder exists or create it if it doesn't
     Dim foundExternal As Boolean
     foundExternal = False
     For Each objFolder In objinbox.Folders
