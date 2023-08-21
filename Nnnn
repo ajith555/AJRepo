@@ -31,7 +31,7 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
     
     For Each folderName In foldersToCheck
         Dim objCheckFolder As Outlook.Folder
-        Set objCheckFolder = objFolder.Folders(folderName)
+        Set objCheckFolder = objFolder.Folders(CStr(folderName))
         
         For i = objCheckFolder.Items.Count To 1 Step -1
             If objCheckFolder.Items(i).Class = olMail Then
