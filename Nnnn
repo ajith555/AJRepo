@@ -1,52 +1,36 @@
 Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
-    Dim objDuplicateFolderInternal As Outlook.Folder
-    Dim objDuplicateFolderExternal As Outlook.Folder
+    Dim objDuplicateFolder As Outlook.Folder
+    Dim objAgedDuplicateFolder As Outlook.Folder
     Dim objMail As Outlook.MailItem
-    Dim subjectDictInternal As Object ' Dictionary to track duplicate subjects for Internal folder
-    Dim subjectDictExternal As Object ' Dictionary to track duplicate subjects for External folder
-    Dim latestEmailsInternal As Object ' Dictionary to track the latest emails by subject for Internal folder
-    Dim latestEmailsExternal As Object ' Dictionary to track the latest emails by subject for External folder
+    Dim subjectDict As Object ' Dictionary to track duplicate subjects for AGED Internal
+    Dim externalSubjectDict As Object ' Dictionary to track duplicate subjects for AGED External
+    Dim latestEmails As Object ' Dictionary to track the latest emails by subject for AGED Internal
+    Dim externalLatestEmails As Object ' Dictionary to track the latest emails by subject for AGED External
     Dim i As Long
 
-    ' Check if the "(1) AGED Internal" folder exists or create it if it doesn't
-    Dim foundDuplicateInternal As Boolean
-    foundDuplicateInternal = False
-    Dim objSubfolderInternal As Outlook.Folder
-    For Each objSubfolderInternal In objFolder.Folders
-        If objSubfolderInternal.Name = "(1) AGED Internal" Then
-            foundDuplicateInternal = True
-            Set objDuplicateFolderInternal = objSubfolderInternal
+    ' Check if the "(1) AGED Duplicate" folder exists or create it if it doesn't
+    Dim foundDuplicate As Boolean
+    foundDuplicate = False
+    Dim objSubfolder As Outlook.Folder
+    For Each objSubfolder In objinbox.Folders
+        If objSubfolder.Name = "(1) AGED Duplicate" Then
+            foundDuplicate = True
+            Set objDuplicateFolder = objSubfolder
             Exit For
         End If
-    Next objSubfolderInternal
+    Next objSubfolder
     
-    If Not foundDuplicateInternal Then
-        Set objDuplicateFolderInternal = objFolder.Folders.Add("(1) AGED Internal", olFolderInbox)
+    If Not foundDuplicate Then
+        Set objDuplicateFolder = objinbox.Folders.Add("(1) AGED Duplicate", olFolderInbox)
     End If
 
-    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
-    Dim foundDuplicateExternal As Boolean
-    foundDuplicateExternal = False
-    Dim objSubfolderExternal As Outlook.Folder
-    For Each objSubfolderExternal In objFolder.Folders
-        If objSubfolderExternal.Name = "(1) AGED External" Then
-            foundDuplicateExternal = True
-            Set objDuplicateFolderExternal = objSubfolderExternal
-            Exit For
-        End If
-    Next objSubfolderExternal
+    ' Create dictionaries to track duplicate subjects and latest emails
+    Set subjectDict = CreateObject("Scripting.Dictionary")
+    Set latestEmails = CreateObject("Scripting.Dictionary")
+    Set externalSubjectDict = CreateObject("Scripting.Dictionary")
+    Set externalLatestEmails = CreateObject("Scripting.Dictionary")
     
-    If Not foundDuplicateExternal Then
-        Set objDuplicateFolderExternal = objFolder.Folders.Add("(1) AGED External", olFolderInbox)
-    End If
-
-    ' Create Dictionaries to track duplicate subjects and latest emails for both Internal and External folders
-    Set subjectDictInternal = CreateObject("Scripting.Dictionary")
-    Set latestEmailsInternal = CreateObject("Scripting.Dictionary")
-    
-    Set subjectDictExternal = CreateObject("Scripting.Dictionary")
-    Set latestEmailsExternal = CreateObject("Scripting.Dictionary")
-    
+    ' Loop through items in the AGED Internal folder and move duplicates
     For i = objFolder.Items.Count To 1 Step -1
         If objFolder.Items(i).Class = olMail Then
             Set objMail = objFolder.Items(i)
@@ -58,42 +42,66 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
                 Dim receivedDate As Date
                 receivedDate = objMail.ReceivedTime
                 
-                Dim objDuplicateFolder As Outlook.Folder
-                If InStr(subject, "Internal") > 0 Then
-                    Set objDuplicateFolder = objDuplicateFolderInternal
-                    If Not subjectDictInternal.Exists(subject) Then
-                        subjectDictInternal.Add subject, objMail.EntryID ' Track the subject and its EntryID
-                        latestEmailsInternal.Add subject, receivedDate ' Track the latest email's received date
-                    Else
-                        Dim latestEmailEntryIDInternal As String
-                        latestEmailEntryIDInternal = subjectDictInternal(subject)
-                        Dim latestEmailInternal As Outlook.MailItem
-                        Set latestEmailInternal = objFolder.Items.Find("[EntryID]='" & latestEmailEntryIDInternal & "'")
-                        If Not latestEmailInternal Is Nothing Then
-                            latestEmailInternal.Move objDuplicateFolder
+                If Not subjectDict.Exists(subject) Then
+                    subjectDict.Add subject, objMail.EntryID ' Track the subject and its EntryID for AGED Internal
+                    latestEmails.Add subject, receivedDate ' Track the latest email's received date for AGED Internal
+                Else
+                    ' Check if the current email's received date is later than the stored latest email's received date
+                    If receivedDate > latestEmails(subject) Then
+                        ' Move the previously stored latest email to the "(1) AGED Duplicate" folder
+                        Dim latestEmailEntryID As String
+                        latestEmailEntryID = subjectDict(subject)
+                        Dim latestEmail As Outlook.MailItem
+                        Set latestEmail = objFolder.Items.Find("[EntryID]='" & latestEmailEntryID & "'")
+                        If Not latestEmail Is Nothing Then
+                            latestEmail.Move objDuplicateFolder
                         End If
                         
                         ' Update the latest email's received date and EntryID in the dictionaries
-                        latestEmailsInternal(subject) = receivedDate
-                        subjectDictInternal(subject) = objMail.EntryID
+                        latestEmails(subject) = receivedDate
+                        subjectDict(subject) = objMail.EntryID
+                    Else
+                        ' Move the current email to the "(1) AGED Duplicate" folder
+                        objMail.Move objDuplicateFolder
                     End If
-                ElseIf InStr(subject, "External") > 0 Then
-                    Set objDuplicateFolder = objDuplicateFolderExternal
-                    If Not subjectDictExternal.Exists(subject) Then
-                        subjectDictExternal.Add subject, objMail.EntryID ' Track the subject and its EntryID
-                        latestEmailsExternal.Add subject, receivedDate ' Track the latest email's received date
-                    Else
-                        Dim latestEmailEntryIDExternal As String
-                        latestEmailEntryIDExternal = subjectDictExternal(subject)
-                        Dim latestEmailExternal As Outlook.MailItem
-                        Set latestEmailExternal = objFolder.Items.Find("[EntryID]='" & latestEmailEntryIDExternal & "'")
-                        If Not latestEmailExternal Is Nothing Then
-                            latestEmailExternal.Move objDuplicateFolder
+                End If
+            End If
+        End If
+    Next i
+    
+    ' Loop through items in the AGED External folder and move duplicates
+    For i = objExternalFolder.Items.Count To 1 Step -1
+        If objExternalFolder.Items(i).Class = olMail Then
+            Set objMail = objExternalFolder.Items(i)
+            Dim strReplied As String
+            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            If (strReplied <> "102" And strReplied <> "103") Then ' Only consider unreplied emails
+                Dim subject As String
+                subject = objMail.Subject
+                Dim receivedDate As Date
+                receivedDate = objMail.ReceivedTime
+                
+                If Not externalSubjectDict.Exists(subject) Then
+                    externalSubjectDict.Add subject, objMail.EntryID ' Track the subject and its EntryID for AGED External
+                    externalLatestEmails.Add subject, receivedDate ' Track the latest email's received date for AGED External
+                Else
+                    ' Check if the current email's received date is later than the stored latest email's received date
+                    If receivedDate > externalLatestEmails(subject) Then
+                        ' Move the previously stored latest email to the "(1) AGED Duplicate" folder in AGED External
+                        Dim latestEmailEntryID As String
+                        latestEmailEntryID = externalSubjectDict(subject)
+                        Dim latestEmail As Outlook.MailItem
+                        Set latestEmail = objExternalFolder.Items.Find("[EntryID]='" & latestEmailEntryID & "'")
+                        If Not latestEmail Is Nothing Then
+                            latestEmail.Move objAgedDuplicateFolder
                         End If
                         
                         ' Update the latest email's received date and EntryID in the dictionaries
-                        latestEmailsExternal(subject) = receivedDate
-                        subjectDictExternal(subject) = objMail.EntryID
+                        externalLatestEmails(subject) = receivedDate
+                        externalSubjectDict(subject) = objMail.EntryID
+                    Else
+                        ' Move the current email to the "(1) AGED Duplicate" folder in AGED External
+                        objMail.Move objAgedDuplicateFolder
                     End If
                 End If
             End If
