@@ -65,12 +65,12 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
                         subjectDictInternal.Add subject, objMail.EntryID ' Track the subject and its EntryID
                         latestEmailsInternal.Add subject, receivedDate ' Track the latest email's received date
                     Else
-                        Dim latestEmailEntryID As String
-                        latestEmailEntryID = subjectDictInternal(subject)
-                        Dim latestEmail As Outlook.MailItem
-                        Set latestEmail = objFolder.Items.Find("[EntryID]='" & latestEmailEntryID & "'")
-                        If Not latestEmail Is Nothing Then
-                            latestEmail.Move objDuplicateFolder
+                        Dim latestEmailEntryIDInternal As String
+                        latestEmailEntryIDInternal = subjectDictInternal(subject)
+                        Dim latestEmailInternal As Outlook.MailItem
+                        Set latestEmailInternal = objFolder.Items.Find("[EntryID]='" & latestEmailEntryIDInternal & "'")
+                        If Not latestEmailInternal Is Nothing Then
+                            latestEmailInternal.Move objDuplicateFolder
                         End If
                         
                         ' Update the latest email's received date and EntryID in the dictionaries
@@ -83,12 +83,12 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
                         subjectDictExternal.Add subject, objMail.EntryID ' Track the subject and its EntryID
                         latestEmailsExternal.Add subject, receivedDate ' Track the latest email's received date
                     Else
-                        Dim latestEmailEntryID As String
-                        latestEmailEntryID = subjectDictExternal(subject)
-                        Dim latestEmail As Outlook.MailItem
-                        Set latestEmail = objFolder.Items.Find("[EntryID]='" & latestEmailEntryID & "'")
-                        If Not latestEmail Is Nothing Then
-                            latestEmail.Move objDuplicateFolder
+                        Dim latestEmailEntryIDExternal As String
+                        latestEmailEntryIDExternal = subjectDictExternal(subject)
+                        Dim latestEmailExternal As Outlook.MailItem
+                        Set latestEmailExternal = objFolder.Items.Find("[EntryID]='" & latestEmailEntryIDExternal & "'")
+                        If Not latestEmailExternal Is Nothing Then
+                            latestEmailExternal.Move objDuplicateFolder
                         End If
                         
                         ' Update the latest email's received date and EntryID in the dictionaries
