@@ -62,4 +62,4 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
             End If
         End If
     Next i
-End Sub
+End Sub 
