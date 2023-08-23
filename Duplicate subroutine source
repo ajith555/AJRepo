@@ -1,0 +1,43 @@
+Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
+    Dim objDuplicateFolder As Outlook.Folder
+    Dim objMail As Outlook.MailItem
+    Dim subjectDict As Object ' Dictionary to track duplicate subjects
+    Dim i As Long
+
+    ' Check if the "(1) AGED Duplicate" folder exists or create it if it doesn't
+    Dim foundDuplicate As Boolean
+    foundDuplicate = False
+    Dim objSubfolder As Outlook.Folder
+    For Each objSubfolder In objinbox.Folders
+        If objSubfolder.Name = "(1) AGED Duplicate" Then
+            foundDuplicate = True
+            Set objDuplicateFolder = objSubfolder
+            Exit For
+        End If
+    Next objSubfolder
+    
+    If Not foundDuplicate Then
+        Set objDuplicateFolder = objinbox.Folders.Add("(1) AGED Duplicate", olFolderInbox)
+    End If
+
+    ' Create a Dictionary to track duplicate subjects
+    Set subjectDict = CreateObject("Scripting.Dictionary")
+    
+    For i = objFolder.Items.Count To 1 Step -1
+        If objFolder.Items(i).Class = olMail Then
+            Set objMail = objFolder.Items(i)
+            Dim strReplied As String
+            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            If (strReplied <> "102" And strReplied <> "103") Then ' Only consider unreplied emails
+                Dim subject As String
+                subject = objMail.Subject
+                If Not subjectDict.Exists(subject) Then
+                    subjectDict.Add subject, objMail.EntryID ' Track the subject and its EntryID
+                Else
+                    ' If the subject is already in the dictionary, move the email to the "(1) AGED Duplicate" folder
+                    objMail.Move objDuplicateFolder
+                End If
+            End If
+        End If
+    Next i
+End Sub
