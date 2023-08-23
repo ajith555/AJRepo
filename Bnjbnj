@@ -32,33 +32,25 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
                 Dim subject As String
                 subject = objMail.Subject
                 If Not subjectDict.Exists(subject) Then
-                    ' Track the subject and its EntryID along with the received time
-                    subjectDict.Add subject, Array(objMail.EntryID, objMail.ReceivedTime)
+                    ' Track the subject and its received time
+                    subjectDict.Add subject, objMail.ReceivedTime
                 Else
-                    ' Get the stored received time for this subject
-                    Dim storedReceivedTime As Date
-                    storedReceivedTime = subjectDict(subject)(1)
-                    
                     ' Compare the current email's received time with the stored received time
-                    If objMail.ReceivedTime < storedReceivedTime Then
+                    If objMail.ReceivedTime < subjectDict(subject) Then
                         ' Move the current email to the "(1) AGED Duplicate" folder
                         objMail.Move objDuplicateFolder
-                        
-                        ' Update the stored received time to the current email's received time
-                        subjectDict(subject)(1) = objMail.ReceivedTime
                     Else
                         ' Move the stored email to the "(1) AGED Duplicate" folder
-                        objFolder.Items.Find("[EntryID]='" & subjectDict(subject)(0) & "'").Move objDuplicateFolder
+                        objFolder.Items.Find("[ReceivedTime]='" & subjectDict(subject) & "'").Move objDuplicateFolder
                         ' Update the stored received time to the current email's received time
-                        subjectDict(subject)(1) = objMail.ReceivedTime
-                        ' Update the stored EntryID to the current email's EntryID
-                        subjectDict(subject)(0) = objMail.EntryID
+                        subjectDict(subject) = objMail.ReceivedTime
                     End If
                 End If
             End If
         End If
     Next i
 End Sub
+
 
 
 
