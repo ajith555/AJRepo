@@ -35,13 +35,23 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
                     ' Track the subject and its received time
                     subjectDict.Add subject, objMail.ReceivedTime
                 Else
+                    Dim storedReceivedTime As Date
+                    storedReceivedTime = subjectDict(subject)
+                    
                     ' Compare the current email's received time with the stored received time
-                    If objMail.ReceivedTime < subjectDict(subject) Then
+                    If objMail.ReceivedTime < storedReceivedTime Then
                         ' Move the current email to the "(1) AGED Duplicate" folder
                         objMail.Move objDuplicateFolder
                     Else
+                        ' Find the stored email with matching subject and received time
+                        Dim storedEmail As Outlook.MailItem
+                        Set storedEmail = FindMatchingEmail(objFolder, subject, storedReceivedTime)
+                        
                         ' Move the stored email to the "(1) AGED Duplicate" folder
-                        objFolder.Items.Find("[ReceivedTime]='" & subjectDict(subject) & "'").Move objDuplicateFolder
+                        If Not storedEmail Is Nothing Then
+                            storedEmail.Move objDuplicateFolder
+                        End If
+                        
                         ' Update the stored received time to the current email's received time
                         subjectDict(subject) = objMail.ReceivedTime
                     End If
@@ -50,6 +60,23 @@ Sub MoveDuplicateEmails(ByVal objFolder As Outlook.Folder)
         End If
     Next i
 End Sub
+
+Function FindMatchingEmail(objFolder As Outlook.Folder, subject As String, receivedTime As Date) As Outlook.MailItem
+    Dim objMail As Outlook.MailItem
+    Dim i As Long
+
+    For i = 1 To objFolder.Items.Count
+        If objFolder.Items(i).Class = olMail Then
+            Set objMail = objFolder.Items(i)
+            If objMail.Subject = subject And objMail.ReceivedTime = receivedTime Then
+                Set FindMatchingEmail = objMail
+                Exit Function
+            End If
+        End If
+    Next i
+    Set FindMatchingEmail = Nothing
+End Function
+
 
 
 
