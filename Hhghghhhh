@@ -1,33 +1,36 @@
-Sub KeepLatestOccurrence(ByVal wb As Excel.Workbook)
+Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
     Dim lastRow As Long
     Dim ws As Excel.Worksheet
-    Dim rng As Excel.Range
-    Dim subjectDict As Object ' Dictionary to track latest occurrence of subjects
+    Dim rngSubject As Excel.Range
+    Dim rngReceived As Excel.Range
+    Dim subjectDict As Object ' Dictionary to track subjects and their latest received date
     
     Set ws = wb.Worksheets(1)
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
-    Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, 1)) ' Only consider the "Subject" column (Column A)
+    Set rngSubject = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, 1)) ' Subject column (Column A)
+    Set rngReceived = ws.Range(ws.Cells(1, 2), ws.Cells(lastRow, 2)) ' Received column (Column B)
 
-    ' Create a Dictionary to track latest occurrence of subjects
+    ' Create a Dictionary to track subjects and their latest received date
     Set subjectDict = CreateObject("Scripting.Dictionary")
     
     Dim subjectCell As Range
+    Dim receivedCell As Range
     Dim rowIndex As Long
-    For rowIndex = 2 To lastRow ' Loop from the first row to the last
-        Set subjectCell = rng.Cells(rowIndex, 1)
+    For rowIndex = lastRow To 2 Step -1 ' Start from the last row and loop backward
+        Set subjectCell = rngSubject.Cells(rowIndex, 1)
+        Set receivedCell = rngReceived.Cells(rowIndex, 1)
         If Not subjectCell.Value = "" Then
-            ' Update or Add subject to the dictionary with its latest occurrence row
-            subjectDict(subjectCell.Value) = subjectCell.Row
+            If Not subjectDict.Exists(subjectCell.Value) Then
+                ' Add subject and its received date to the dictionary if it doesn't exist
+                subjectDict.Add subjectCell.Value, receivedCell.Value
+            Else
+                ' If the subject is already in the dictionary, compare received dates and update if necessary
+                If receivedCell.Value > subjectDict(subjectCell.Value) Then
+                    subjectDict(subjectCell.Value) = receivedCell.Value
+                End If
+                ' Delete the entire row since we're keeping the latest occurrence
+                ws.Rows(subjectCell.Row).Delete
+            End If
         End If
     Next rowIndex
-    
-    ' Delete earlier duplicate rows, keeping only the latest occurrence
-    Dim key As Variant
-    For Each key In subjectDict.Keys
-        Dim latestRow As Long
-        latestRow = subjectDict(key)
-        If latestRow < lastRow Then
-            ws.Rows(latestRow + 1 & ":" & lastRow).Delete
-        End If
-    Next key
 End Sub
