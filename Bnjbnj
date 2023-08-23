@@ -91,7 +91,7 @@ Sub MoveDuplicateEmailsInExternalFolder()
     Dim subjectDict As Object ' Dictionary to track duplicate subjects
     Dim i As Long
 
-    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
+    ' Find the "(1) AGED External" folder
     Dim foundExternal As Boolean
     foundExternal = False
     Dim objFolder As Outlook.Folder
@@ -125,7 +125,6 @@ Sub MoveDuplicateEmailsInExternalFolder()
     ' Create a Dictionary to track duplicate subjects
     Set subjectDict = CreateObject("Scripting.Dictionary")
     
-    ' Loop through items in the external folder and move duplicates
     For i = objExternalFolder.Items.Count To 1 Step -1
         If objExternalFolder.Items(i).Class = olMail Then
             Set objMail = objExternalFolder.Items(i)
@@ -135,30 +134,47 @@ Sub MoveDuplicateEmailsInExternalFolder()
                 Dim subject As String
                 subject = objMail.Subject
                 If Not subjectDict.Exists(subject) Then
-                    ' Track the subject and its EntryID along with the received time
-                    subjectDict.Add subject, Array(objMail.EntryID, objMail.ReceivedTime)
+                    ' Track the subject and its received time
+                    subjectDict.Add subject, objMail.ReceivedTime
                 Else
-                    ' Get the stored received time for this subject
                     Dim storedReceivedTime As Date
-                    storedReceivedTime = subjectDict(subject)(1)
+                    storedReceivedTime = subjectDict(subject)
                     
                     ' Compare the current email's received time with the stored received time
                     If objMail.ReceivedTime < storedReceivedTime Then
                         ' Move the current email to the "(1) AGED Duplicate" folder
                         objMail.Move objDuplicateFolder
+                    Else
+                        ' Find the stored email with matching subject and received time
+                        Dim storedEmail As Outlook.MailItem
+                        Set storedEmail = FindMatchingEmail(objExternalFolder, subject, storedReceivedTime)
+                        
+                        ' Move the stored email to the "(1) AGED Duplicate" folder
+                        If Not storedEmail Is Nothing Then
+                            storedEmail.Move objDuplicateFolder
+                        End If
                         
                         ' Update the stored received time to the current email's received time
-                        subjectDict(subject)(1) = objMail.ReceivedTime
-                    Else
-                        ' Move the stored email to the "(1) AGED Duplicate" folder
-                        objExternalFolder.Items.Find("[EntryID]='" & subjectDict(subject)(0) & "'").Move objDuplicateFolder
-                        ' Update the stored received time to the current email's received time
-                        subjectDict(subject)(1) = objMail.ReceivedTime
-                        ' Update the stored EntryID to the current email's EntryID
-                        subjectDict(subject)(0) = objMail.EntryID
+                        subjectDict(subject) = objMail.ReceivedTime
                     End If
                 End If
             End If
         End If
     Next i
 End Sub
+
+Function FindMatchingEmail(objFolder As Outlook.Folder, subject As String, receivedTime As Date) As Outlook.MailItem
+    Dim objMail As Outlook.MailItem
+    Dim i As Long
+
+    For i = 1 To objFolder.Items.Count
+        If objFolder.Items(i).Class = olMail Then
+            Set objMail = objFolder.Items(i)
+            If objMail.Subject = subject And objMail.ReceivedTime = receivedTime Then
+                Set FindMatchingEmail = objMail
+                Exit Function
+            End If
+        End If
+    Next i
+    Set FindMatchingEmail = Nothing
+End Function
