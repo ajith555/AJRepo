@@ -1,0 +1,60 @@
+Sub MoveDuplicateEmailsInExternalFolder()
+    Dim objExternalFolder As Outlook.Folder
+    Dim objDuplicateFolder As Outlook.Folder
+    Dim objMail As Outlook.MailItem
+    Dim subjectDict As Object
+    Dim i As Long
+
+    ' Check if the "(1) AGED External" folder exists or create it if it doesn't
+    Dim foundExternal As Boolean
+    foundExternal = False
+    Dim objFolder As Outlook.Folder
+    For Each objFolder In objinbox.Folders
+        If objFolder.Name = "(1) AGED External" Then
+            foundExternal = True
+            Set objExternalFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
+    
+    If Not foundExternal Then
+        Exit Sub ' Exit if "(1) AGED External" folder doesn't exist
+    End If
+
+    ' Check if the "(1) AGED Duplicate" folder exists or create it if it doesn't
+    Dim foundDuplicate As Boolean
+    foundDuplicate = False
+    For Each objFolder In objinbox.Folders
+        If objFolder.Name = "(1) AGED Duplicate" Then
+            foundDuplicate = True
+            Set objDuplicateFolder = objFolder
+            Exit For
+        End If
+    Next objFolder
+    
+    If Not foundDuplicate Then
+        Set objDuplicateFolder = objinbox.Folders.Add("(1) AGED Duplicate", olFolderInbox)
+    End If
+
+    ' Create a Dictionary to track duplicate subjects
+    Set subjectDict = CreateObject("Scripting.Dictionary")
+    
+    ' Loop through items in the external folder and move duplicates
+    For i = objExternalFolder.Items.Count To 1 Step -1
+        If objExternalFolder.Items(i).Class = olMail Then
+            Set objMail = objExternalFolder.Items(i)
+            Dim strReplied As String
+            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            If (strReplied <> "102" And strReplied <> "103") Then ' Only consider unreplied emails
+                Dim subject As String
+                subject = objMail.Subject
+                If Not subjectDict.Exists(subject) Then
+                    subjectDict.Add subject, objMail.EntryID ' Track the subject and its EntryID
+                Else
+                    ' If the subject is already in the dictionary, move the email to the "(1) AGED Duplicate" folder
+                    objMail.Move objDuplicateFolder
+                End If
+            End If
+        End If
+    Next i
+End Sub
