@@ -1,1 +1,33 @@
-ffprobe -i input_file -print_format json -show_format -show_streams
+Sub KeepLatestOccurrence(ByVal wb As Excel.Workbook)
+    Dim lastRow As Long
+    Dim ws As Excel.Worksheet
+    Dim rng As Excel.Range
+    Dim subjectDict As Object ' Dictionary to track latest occurrence of subjects
+    
+    Set ws = wb.Worksheets(1)
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, 1)) ' Only consider the "Subject" column (Column A)
+
+    ' Create a Dictionary to track latest occurrence of subjects
+    Set subjectDict = CreateObject("Scripting.Dictionary")
+    
+    Dim subjectCell As Range
+    Dim rowIndex As Long
+    For rowIndex = 2 To lastRow ' Loop from the first row to the last
+        Set subjectCell = rng.Cells(rowIndex, 1)
+        If Not subjectCell.Value = "" Then
+            ' Update or Add subject to the dictionary with its latest occurrence row
+            subjectDict(subjectCell.Value) = subjectCell.Row
+        End If
+    Next rowIndex
+    
+    ' Delete earlier duplicate rows, keeping only the latest occurrence
+    Dim key As Variant
+    For Each key In subjectDict.Keys
+        Dim latestRow As Long
+        latestRow = subjectDict(key)
+        If latestRow < lastRow Then
+            ws.Rows(latestRow + 1 & ":" & lastRow).Delete
+        End If
+    Next key
+End Sub
