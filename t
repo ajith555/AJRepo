@@ -1,11 +1,34 @@
-Response Time (Hours) = 
-VAR ResponseDateTime = RELATED('Sent Items'[DateTimeSent])
-RETURN
-IF(ISBLANK(ResponseDateTime), BLANK(), (ResponseDateTime - 'Inbox'[DateTimeReceived]) * 24)
+let
+    Source = Mail1, // Assuming Mail1 is your source table
+    ResponseTimeTable = Table.AddColumn(Source, "ResponseTime", each [DateTimeReceived] - Table.SelectRows(Source, each [Id] = [Id] and [Folder Path] = "\Sent Items\")[DateTimeSent]),
+    WeekNumberTable = Table.AddColumn(ResponseTimeTable, "WeekNumber", each Date.WeekOfYear([DateTimeReceived])),
+    GroupedTable = Table.Group(WeekNumberTable, "WeekNumber", {{"AverageResponseTime", each List.Average([ResponseTime], 0), type duration}})
+in
+    GroupedTable
 
-Average Response Time (Hours) = 
-AVERAGEX(
-    FILTER('Inbox', NOT(ISBLANK('Sent Items'[DateTimeSent]))),
-    'Inbox'[Response Time (Hours)]
-)
 
+
+
+
+let
+    Source = Mail1, // Assuming Mail1 is your source table
+    ResponseTimeTable = Table.AddColumn(Source, "ResponseTime", each [DateTimeReceived] - Table.SelectRows(Source, each [Id] = [Id] and [Folder Path] = "\Sent Items\")[DateTimeSent])
+in
+    ResponseTimeTable
+
+
+
+
+let
+    Source = ResponseTimeTable, // Assuming ResponseTimeTable is the table from step 1
+    WeekNumberTable = Table.AddColumn(Source, "WeekNumber", each Date.WeekOfYear([DateTimeReceived]))
+in
+    WeekNumberTable
+
+
+
+let
+    Source = WeekNumberTable, // Assuming WeekNumberTable is the table from step 2
+    GroupedTable = Table.Group(Source, "WeekNumber", {{"AverageResponseTime", each List.Average([ResponseTime], 0), type duration}})
+in
+    GroupedTable
