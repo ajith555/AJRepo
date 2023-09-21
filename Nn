@@ -68,7 +68,7 @@ Sub FetchAndDisplayEmails(ByVal objFolder As Object)
                 With objExcelWorksheet
                     .Cells(rowIndex, 1) = objMail.Subject
                     .Cells(rowIndex, 2) = objMail.ReceivedTime
-                    .Cells(rowIndex, 3) = GetRepliedTime(objMail) ' Display Replied Time
+                    .Cells(rowIndex, 3) = GetRepliedTime(objMail, objFolder) ' Display Replied Time
                     .Cells(rowIndex, 4) = objMail.SenderName
                 End With
                 rowIndex = rowIndex + 1
@@ -77,17 +77,14 @@ Sub FetchAndDisplayEmails(ByVal objFolder As Object)
     Next objItem
 End Sub
 
-Function GetRepliedTime(ByVal objMail As Object) As Variant
+Function GetRepliedTime(ByVal objMail As Object, ByVal objFolder As Object) As Variant
     ' Function to retrieve the time when a reply was sent for the given email
-    Dim objNamespace As Object
     Dim objReply As Object
     
-    Set objNamespace = GetObject("", "Outlook.Application").GetNamespace("MAPI")
-    
-    ' Find the corresponding reply in the "Sent Items" folder
-    For Each objReply In objNamespace.GetDefaultFolder(5).Items ' olFolderSentMail
-        If objReply.Subject = "RE: " & objMail.Subject And objReply.ReceivedByName = objMail.SenderName Then
-            GetRepliedTime = objReply.SentOn
+    ' Find the corresponding reply in the folder
+    For Each objReply In objFolder.Items
+        If objReply.Subject = "RE: " & objMail.Subject And objReply.ConversationTopic = objMail.ConversationTopic Then
+            GetRepliedTime = objReply.ReceivedTime
             Exit Function
         End If
     Next objReply
