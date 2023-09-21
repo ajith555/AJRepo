@@ -2,12 +2,16 @@ let
     Source = Exchange.Contents("kushal-ajith.shetty@ubs.com"),
     Mail1 = Source{[Name="Mail"]}[Data],
     
-    // Step 1: Add a custom column to identify matching sent emails
-    AddMatchingSentEmail = Table.AddColumn(Mail1, "MatchingSentEmail", each 
-        Table.SelectRows(Mail1, each [Folder Path] = "\Sent Items\" and Text.StartsWith([Subject], "RE: " & [Subject])).{0}),
+    // Step 1: Create a table with matching sent emails
+    SentItems = Table.SelectRows(Mail1, each [Folder Path] = "\Sent Items\"),
+    MatchingEmails = Table.AddColumn(Mail1, "MatchingSentEmail", each 
+        let
+            subject = [Subject]
+        in
+            Table.SelectRows(SentItems, each Text.StartsWith([Subject], "RE: " & subject))),
     
     // Step 2: Calculate the response time in minutes
-    AddResponseTimeMinutes = Table.AddColumn(AddMatchingSentEmail, "ResponseTimeMinutes", each 
+    AddResponseTimeMinutes = Table.AddColumn(MatchingEmails, "ResponseTimeMinutes", each 
         if [MatchingSentEmail] <> null then 
             Duration.From([DateTimeReceived] - [MatchingSentEmail][DateTimeReceived])[TotalMinutes] 
         else null)
