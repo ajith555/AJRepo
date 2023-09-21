@@ -69,7 +69,7 @@ Sub FetchAndDisplayRepliedEmails(ByVal objFolder As Object)
                     If Not conversation Is Nothing Then
                         For Each conversationMessage In conversation.GetTable
                             ' Check if the message is a mail item and not the original email
-                            If TypeOf conversationMessage.Item = Object And conversationMessage.Subject <> objMail.Subject Then
+                            If TypeOf conversationMessage Is Object And conversationMessage.Subject <> objMail.Subject Then
                                 With objExcelWorksheet
                                     .Cells(rowIndex, 1) = conversationMessage.Subject
                                     .Cells(rowIndex, 2) = conversationMessage.ReceivedTime
