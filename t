@@ -53,9 +53,9 @@ Sub ProcessFolder(ByVal objFolder As Object, ByVal days As Integer)
     Dim nLastRow As Long
     
     For Each objItem In objFolder.Items
-        If objItem.Class = OlObjectClass.olMail Then ' or olMail
-            If Not HasReplied(objItem) Then
-                If DateDiff("d", objItem.ReceivedTime, Now) <= days Then
+        If objItem.Class = OlObjectClass.olMail Then ' Check for email items
+            If Not HasReplied(objItem) Then ' Check if it's an unreplied email
+                If DateDiff("d", objItem.ReceivedTime, Now) <= days Then ' Check time frame
                     nLastRow = objExcelWorksheet.Cells(objExcelWorksheet.Rows.Count, 1).End(-4162).Row + 1
                     With objExcelWorksheet
                         .Cells(nLastRow, 1).Value = objItem.Subject
