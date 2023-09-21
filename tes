@@ -4,7 +4,7 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 
-Sub ExportSentEmails()
+Sub ExportRepliedSentEmails()
     Dim targetEmail As String
     targetEmail = "abc@ubs.com" ' Replace with the target email address you want to fetch emails from
     Dim numberOfDays As Integer
@@ -41,7 +41,7 @@ Sub ExportSentEmails()
     Dim objSentItemsFolder As Outlook.Folder
     Set objSentItemsFolder = objRootFolder.Folders("Sent Items")
 
-    ' Process the Sent Items folder, including only emails within the specified number of days
+    ' Process the Sent Items folder, including only replied emails within the specified number of days
     ProcessSentItemsFolder objSentItemsFolder, numberOfDays
 
     ' Format the Excel columns and rows
@@ -67,15 +67,18 @@ Sub ProcessSentItemsFolder(ByVal objSentItemsFolder As Outlook.Folder, ByVal num
 
         ' Check if the email is not from the target email address and is within the specified number of days
         If nDateDiff <= numberOfDays And objMail.SenderEmailAddress <> "abc@ubs.com" Then
-            nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+            ' Check if the email has been replied to
+            If objMail.ReceivedByName <> objMail.SentOnBehalfOfName Then
+                nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
 
-            With objExcelWorksheet
-                .Cells(nLastRow, 1) = objMail.Subject
-                .Cells(nLastRow, 2) = objMail.SenderName
-                .Cells(nLastRow, 3) = objMail.To
-                .Cells(nLastRow, 4) = objMail.ReceivedTime
-                .Cells(nLastRow, 5) = objMail.RepliedTime
-            End With
+                With objExcelWorksheet
+                    .Cells(nLastRow, 1) = objMail.Subject
+                    .Cells(nLastRow, 2) = objMail.SenderName
+                    .Cells(nLastRow, 3) = objMail.To
+                    .Cells(nLastRow, 4) = objMail.ReceivedTime
+                    .Cells(nLastRow, 5) = objMail.RepliedTime
+                End With
+            End If
         End If
     Next objMail
 
