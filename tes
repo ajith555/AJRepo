@@ -1,6 +1,6 @@
 Sub FetchSentItemsToExcel()
     Dim olApp As Outlook.Application
-    Dim olNamespace As Outlook.NameSpace
+    Dim olNamespace As Outlook.Namespace
     Dim olFolder As Outlook.MAPIFolder
     Dim olItems As Outlook.Items
     Dim olMail As Outlook.MailItem
@@ -21,7 +21,7 @@ Sub FetchSentItemsToExcel()
     Set olNamespace = olApp.GetNamespace("MAPI")
     
     ' Get the Sent Items folder of the specified email address
-    Set olFolder = olNamespace.GetDefaultFolder(olFolderSentMail).Folders("Sent Items")
+    Set olFolder = olNamespace.GetSharedDefaultFolder(olNamespace.CreateRecipient(emailAddress), olFolderSentMail)
     
     ' Set the time range
     startTime = Now - hoursAgo / 24 ' Convert hours to days
