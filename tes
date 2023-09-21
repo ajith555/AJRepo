@@ -1,72 +1,83 @@
-Sub ExportRepliedEmailsToExcelWithFixedHours()
-    Dim objApp As Outlook.Application
-    Dim objNamespace As Outlook.NameSpace
-    Dim objFolder As Outlook.MAPIFolder
-    Dim objItems As Outlook.Items
-    Dim objMail As Outlook.MailItem
+Sub GetRepliedEmails()
+    Dim objApp As Application
+    Dim objNS As NameSpace
+    Dim objSentFolder As MAPIFolder
+    Dim objItems As Items
+    Dim objItem As MailItem
     Dim xlApp As Object
     Dim xlWorkbook As Object
-    Dim xlSheet As Object
-    Dim iRow As Integer
-    Dim selectedAccountEmailAddress As String
-    Dim hours As Double
+    Dim xlWorksheet As Object
+    Dim row As Integer
+    Dim lastCheckedTime As Date
+    Dim repliedTime As Date
     
-    ' Define the email address of the desired account
-    selectedAccountEmailAddress = "your_email@example.com" ' Replace with the desired email address
+    ' Define the email address to filter by
+    Dim filterEmail As String
+    filterEmail = "your@email.com"
     
-    ' Define the desired time frame in hours
-    hours = 24 ' Replace with the desired number of hours
+    ' Define the desired time interval in hours
+    Dim hoursInterval As Integer
+    hoursInterval = 24 ' Change this to your desired interval
     
-    ' Create Excel Application
-    Set xlApp = CreateObject("Excel.Application")
+    ' Initialize Outlook objects
+    Set objApp = Application
+    Set objNS = objApp.GetNamespace("MAPI")
+    Set objSentFolder = objNS.GetDefaultFolder(olFolderSentMail)
+    Set objItems = objSentFolder.Items
+    objItems.Sort "[ReceivedTime]", False
+    row = 2 ' Start writing data from row 2 in Excel
     
-    ' Connect to the specified Outlook account
-    Set objApp = Outlook.Application
-    Set objNamespace = objApp.GetNamespace("MAPI")
-    Set objFolder = objNamespace.GetSharedDefaultFolder(objNamespace.CreateRecipient(selectedAccountEmailAddress), olFolderSentMail)
+    ' Initialize Excel objects
+    On Error Resume Next
+    Set xlApp = GetObject(, "Excel.Application")
+    On Error GoTo 0
     
-    ' Create a new Excel workbook and add a worksheet
-    Set xlWorkbook = xlApp.Workbooks.Add
-    Set xlSheet = xlWorkbook.Sheets(1)
+    ' If Excel is not open, create a new workbook
+    If xlApp Is Nothing Then
+        Set xlApp = CreateObject("Excel.Application")
+        xlApp.Visible = True
+        xlApp.Workbooks.Add
+    End If
     
-    ' Add headers to Excel worksheet
-    xlSheet.Cells(1, 1).Value = "Subject"
-    xlSheet.Cells(1, 2).Value = "Received Time"
-    xlSheet.Cells(1, 3).Value = "Response Time"
+    ' Set the Excel workbook and worksheet
+    Set xlWorkbook = xlApp.ActiveWorkbook
+    Set xlWorksheet = xlWorkbook.Sheets(1)
     
-    ' Get the emails from the Sent Items folder
-    Set objItems = objFolder.Items
+    ' Find the last checked time in Excel, assuming it's in cell A1
+    On Error Resume Next
+    lastCheckedTime = xlWorksheet.Cells(1, 1).Value
+    On Error GoTo 0
     
-    ' Initialize row counter
-    iRow = 2
-    
-    ' Loop through the emails in the Sent Items folder
-    For Each objMail In objItems
-        If objMail.Class = olMail Then
-            If objMail.ReceivedTime >= Now - hours / 24 Then
-                ' Check if the email has been replied to
-                If objMail.ReplyTime <> #1/1/4501# Then
-                    ' Write email information to Excel
-                    xlSheet.Cells(iRow, 1).Value = objMail.Subject
-                    xlSheet.Cells(iRow, 2).Value = objMail.ReceivedTime
-                    xlSheet.Cells(iRow, 3).Value = objMail.ReplyTime
-                    iRow = iRow + 1
+    ' Loop through sent items and extract data
+    For Each objItem In objItems
+        If objItem.ReceivedTime > lastCheckedTime Then
+            If InStr(objItem.Body, "RE:") = 1 Then ' Check if it's a replied email
+                If objItem.Recipients.Count > 0 Then
+                    repliedTime = objItem.ReceivedTime
+                    xlWorksheet.Cells(row, 1).Value = objItem.Subject
+                    xlWorksheet.Cells(row, 2).Value = objItem.SenderEmailAddress
+                    xlWorksheet.Cells(row, 3).Value = filterEmail
+                    xlWorksheet.Cells(row, 4).Value = repliedTime
+                    xlWorksheet.Cells(row, 5).Value = objItem.ReceivedTime
+                    row = row + 1
                 End If
             End If
         End If
-    Next objMail
+    Next objItem
     
-    ' Save Excel workbook and display it
-    xlWorkbook.SaveAs "C:\Path\To\Save\RepliedEmails.xlsx" ' Change the path as needed
+    ' Update the last checked time in Excel
+    xlWorksheet.Cells(1, 1).Value = Now
+    
+    ' Display the Excel file
     xlApp.Visible = True
     
-    ' Clean up objects
-    Set xlApp = Nothing
+    ' Clean up
     Set objApp = Nothing
-    Set objNamespace = Nothing
-    Set objFolder = Nothing
+    Set objNS = Nothing
+    Set objSentFolder = Nothing
     Set objItems = Nothing
-    Set objMail = Nothing
+    Set objItem = Nothing
+    Set xlApp = Nothing
     Set xlWorkbook = Nothing
-    Set xlSheet = Nothing
+    Set xlWorksheet = Nothing
 End Sub
