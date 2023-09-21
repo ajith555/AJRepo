@@ -4,6 +4,7 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objinbox As Outlook.Folder
+Dim Recipient As Outlook.Recipient ' Declare the Recipient object here
 
 Sub ExportUnrepliedEmails()
     Dim targetEmail As String
