@@ -97,6 +97,6 @@ End Function
 
 Function HasReplied(ByVal objMail As Object) As Boolean
     On Error Resume Next
-    HasReplied = (objMail.ReplyTime <> 0)
+    HasReplied = Not objMail.Replied
     On Error GoTo 0
 End Function
