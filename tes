@@ -3,7 +3,6 @@ Sub FetchSentItemsToExcel()
     Dim olNamespace As Outlook.Namespace
     Dim olFolder As Outlook.MAPIFolder
     Dim olItem As Object
-    Dim olMail As Outlook.MailItem
     Dim startTime As Date
     Dim emailAddress As String
     Dim hoursAgo As Integer
@@ -33,9 +32,6 @@ Sub FetchSentItemsToExcel()
     ' Set the time range
     startTime = Now - hoursAgo / 24 ' Convert hours to days
     
-    ' Initialize the collection of items
-    Set olItem = olFolder.Items.Restrict("[SentOn] >= '" & Format(startTime, "yyyy-mm-dd hh:mm:ss") & "'").GetLast()
-    
     ' Create a new Excel instance and workbook
     Set xlApp = CreateObject("Excel.Application")
     xlApp.Visible = True
@@ -49,23 +45,21 @@ Sub FetchSentItemsToExcel()
     
     ' Loop through and process the emails
     rowCount = 2 ' Start from the second row
-    
-    While Not olItem Is Nothing
-        If TypeOf olItem Is Outlook.MailItem Then
-            Set olMail = DirectCast(olItem, Outlook.MailItem)
-            xlWorksheet.Cells(rowCount, 1).Value = olMail.Subject
-            xlWorksheet.Cells(rowCount, 2).Value = olMail.SenderEmailAddress
-            xlWorksheet.Cells(rowCount, 3).Value = olMail.To
-            rowCount = rowCount + 1
+    For Each olItem In olFolder.Items
+        If olItem.Class = olMail Then ' Check if it's a mail item
+            If olItem.SentOn >= startTime Then
+                xlWorksheet.Cells(rowCount, 1).Value = olItem.Subject
+                xlWorksheet.Cells(rowCount, 2).Value = olItem.SenderEmailAddress
+                xlWorksheet.Cells(rowCount, 3).Value = olItem.To
+                rowCount = rowCount + 1
+            End If
         End If
-        Set olItem = olFolder.Items.Restrict("[SentOn] >= '" & Format(startTime, "yyyy-mm-dd hh:mm:ss") & "'").GetPrevious()
-    Wend
+    Next olItem
     
     ' Clean up
     Set xlWorksheet = Nothing
     Set xlWorkbook = Nothing
     Set xlApp = Nothing
-    Set olMail = Nothing
     Set olItem = Nothing
     Set olFolder = Nothing
     Set olNamespace = Nothing
