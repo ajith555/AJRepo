@@ -53,7 +53,7 @@ Sub ProcessFolder(ByVal objFolder As Object, ByVal days As Integer)
     Dim nLastRow As Long
     
     For Each objItem In objFolder.Items
-        If objItem.Class = 43 ' OlMail
+        If objItem.Class = OlObjectClass.olMail Then ' or olMail
             If Not HasReplied(objItem) Then
                 If DateDiff("d", objItem.ReceivedTime, Now) <= days Then
                     nLastRow = objExcelWorksheet.Cells(objExcelWorksheet.Rows.Count, 1).End(-4162).Row + 1
