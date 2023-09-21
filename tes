@@ -67,23 +67,17 @@ Sub ProcessSentItemsFolder(ByVal objSentItemsFolder As Outlook.Folder, ByVal num
 
         ' Check if the email is not from the target email address and is within the specified number of days
         If nDateDiff <= numberOfDays And objMail.SenderEmailAddress <> "abc@ubs.com" Then
-            ' Check if the email has been replied to based on the MessageClass
-            If objMail.MessageClass = "REPLIED" Or objMail.MessageClass = "IPM.Note" Then
-                ' Search for the corresponding reply in Sent Items
-                Dim reply As Outlook.MailItem
-                Set reply = GetReplyFromSentItems(objMail, objSentItemsFolder)
+            ' Check if the email has been replied to based on the ConversationID
+            If EmailIsReplied(objMail) Then
+                nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
 
-                If Not reply Is Nothing Then
-                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-
-                    With objExcelWorksheet
-                        .Cells(nLastRow, 1) = objMail.Subject
-                        .Cells(nLastRow, 2) = objMail.SenderName
-                        .Cells(nLastRow, 3) = objMail.To
-                        .Cells(nLastRow, 4) = objMail.ReceivedTime
-                        .Cells(nLastRow, 5) = reply.SentOn ' Use SentOn property of the reply
-                    End With
-                End If
+                With objExcelWorksheet
+                    .Cells(nLastRow, 1) = objMail.Subject
+                    .Cells(nLastRow, 2) = objMail.SenderName
+                    .Cells(nLastRow, 3) = objMail.To
+                    .Cells(nLastRow, 4) = objMail.ReceivedTime
+                    .Cells(nLastRow, 5) = GetReplyTime(objMail)
+                End With
             End If
         End If
     Next objMail
@@ -91,17 +85,40 @@ Sub ProcessSentItemsFolder(ByVal objSentItemsFolder As Outlook.Folder, ByVal num
     On Error GoTo 0
 End Sub
 
-Function GetReplyFromSentItems(ByVal originalMail As Outlook.MailItem, ByVal sentItemsFolder As Outlook.Folder) As Outlook.MailItem
-    Dim objMail As Outlook.MailItem
+Function EmailIsReplied(ByVal objMail As Outlook.MailItem) As Boolean
+    Dim conversation As Outlook.Conversation
+    Dim table As Outlook.Table
+    Dim row As Outlook.Row
 
-    For Each objMail In sentItemsFolder.Items
-        ' Check if the email is a reply to the original email
-        If objMail.Subject = "RE: " & originalMail.Subject And objMail.ReceivedTime >= originalMail.ReceivedTime Then
-            Set GetReplyFromSentItems = objMail
+    Set conversation = objMail.GetConversation
+    Set table = conversation.GetTable
+
+    While Not table.EndOfTable
+        Set row = table.GetNextRow
+        If row.Item("MessageClass") = "IPM.Note" And row.Item("Subject") = "RE: " & objMail.Subject Then
+            EmailIsReplied = True
             Exit Function
         End If
-    Next objMail
+    Wend
 
-    ' Return Nothing if no matching reply is found
-    Set GetReplyFromSentItems = Nothing
+    EmailIsReplied = False
+End Function
+
+Function GetReplyTime(ByVal objMail As Outlook.MailItem) As Date
+    Dim conversation As Outlook.Conversation
+    Dim table As Outlook.Table
+    Dim row As Outlook.Row
+
+    Set conversation = objMail.GetConversation
+    Set table = conversation.GetTable
+
+    While Not table.EndOfTable
+        Set row = table.GetNextRow
+        If row.Item("MessageClass") = "IPM.Note" And row.Item("Subject") = "RE: " & objMail.Subject Then
+            GetReplyTime = row.Item("ReceivedTime")
+            Exit Function
+        End If
+    Wend
+
+    GetReplyTime = #1/1/4501# ' Return an invalid date if no reply is found
 End Function
