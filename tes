@@ -1,86 +1,44 @@
-Sub GetRepliedEmails()
-    Dim objApp As Application
-    Dim objNS As Namespace
-    Dim objSentFolder As MAPIFolder
-    Dim objItems As Items
-    Dim objItem As Object ' Use Object instead of MailItem to handle various types of items
-    Dim xlApp As Object
-    Dim xlWorkbook As Object
-    Dim xlWorksheet As Object
-    Dim row As Integer
-    Dim lastCheckedTime As Date
-    Dim repliedTime As Date
+Sub FetchRepliedEmailsFromSentItems()
+    Dim objOutlook As Object
+    Dim objNamespace As Object
+    Dim objSentItemsFolder As Object
+    Dim objMailItem As Object
+    Dim objItems As Object
+    Dim startTime As Date
+    Dim filter As String
     
-    ' Define the email address to filter by
-    Dim filterEmail As String
-    filterEmail = "your@email.com;kushal-ajith.shetty@ubs.com"
+    ' Define the number of hours to go back
+    Dim hoursToGoBack As Integer
+    hoursToGoBack = 24 ' Change this to your desired number of hours
     
-    ' Define the desired time interval in hours
-    Dim hoursInterval As Integer
-    hoursInterval = 24 ' Change this to your desired interval
+    ' Calculate the start time
+    startTime = Now - TimeSerial(hoursToGoBack, 0, 0)
     
-    ' Initialize Outlook objects
-    Set objApp = Application
-    Set objNS = objApp.GetNamespace("MAPI")
-    Set objSentFolder = objNS.GetDefaultFolder(olFolderSentMail)
-    Set objItems = objSentFolder.Items
-    objItems.Sort "[ReceivedTime]", False
-    row = 2 ' Start writing data from row 2 in Excel
+    ' Create the Outlook application and namespace
+    Set objOutlook = CreateObject("Outlook.Application")
+    Set objNamespace = objOutlook.GetNamespace("MAPI")
     
-    ' Initialize Excel objects
-    On Error Resume Next
-    Set xlApp = GetObject(, "Excel.Application")
-    On Error GoTo 0
+    ' Get the "Sent Items" folder
+    Set objSentItemsFolder = objNamespace.GetDefaultFolder(5) ' 5 represents the Sent Items folder
     
-    ' If Excel is not open, create a new workbook
-    If xlApp Is Nothing Then
-        Set xlApp = CreateObject("Excel.Application")
-        xlApp.Visible = True
-        xlApp.Workbooks.Add
-    End If
+    ' Define the filter to retrieve replied emails from the specified time
+    filter = "[ReceivedTime] >= '" & Format(startTime, "yyyy-mm-dd hh:mm AMPM") & "' AND [MessageClass] = 'IPM.Note.SMIME.MultipartSigned'"
     
-    ' Set the Excel workbook and worksheet
-    Set xlWorkbook = xlApp.ActiveWorkbook
-    Set xlWorksheet = xlWorkbook.Sheets(1)
+    ' Get the items that match the filter
+    Set objItems = objSentItemsFolder.Items.Restrict(filter)
     
-    ' Find the last checked time in Excel, assuming it's in cell A1
-    On Error Resume Next
-    lastCheckedTime = xlWorksheet.Cells(1, 1).Value
-    On Error GoTo 0
+    ' Loop through the filtered items (replied emails)
+    For Each objMailItem In objItems
+        Debug.Print "Subject: " & objMailItem.Subject
+        Debug.Print "Received Time: " & objMailItem.ReceivedTime
+        Debug.Print "Sender: " & objMailItem.SenderName
+        ' You can add more actions here as needed
+    Next objMailItem
     
-    ' Loop through sent items and extract data
-    For Each objItem In objItems
-        If objItem.Class = olMail Then
-            Set objItem = objItem
-            If objItem.ReceivedTime > lastCheckedTime Then
-                If InStr(objItem.Subject, "RE:") = 1 Then ' Check if it's a replied email
-                    If objItem.Recipients.Count > 0 Then
-                        repliedTime = objItem.ReceivedTime
-                        xlWorksheet.Cells(row, 1).Value = objItem.Subject
-                        xlWorksheet.Cells(row, 2).Value = objItem.SenderEmailAddress
-                        xlWorksheet.Cells(row, 3).Value = filterEmail
-                        xlWorksheet.Cells(row, 4).Value = repliedTime
-                        xlWorksheet.Cells(row, 5).Value = objItem.ReceivedTime
-                        row = row + 1
-                    End If
-                End If
-            End If
-        End If
-    Next objItem
-    
-    ' Update the last checked time in Excel
-    xlWorksheet.Cells(1, 1).Value = Now
-    
-    ' Display the Excel file
-    xlApp.Visible = True
-    
-    ' Clean up
-    Set objApp = Nothing
-    Set objNS = Nothing
-    Set objSentFolder = Nothing
+    ' Clean up objects
+    Set objOutlook = Nothing
+    Set objNamespace = Nothing
+    Set objSentItemsFolder = Nothing
     Set objItems = Nothing
-    Set objItem = Nothing
-    Set xlApp = Nothing
-    Set xlWorkbook = Nothing
-    Set xlWorksheet = Nothing
+    Set objMailItem = Nothing
 End Sub
