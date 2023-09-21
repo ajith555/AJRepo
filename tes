@@ -8,6 +8,8 @@ Dim objinbox As Outlook.Folder
 Sub ExportRepliedEmails()
     Dim targetEmail As String
     targetEmail = "your_email@example.com" ' Replace with the target email address you want to fetch emails from
+    Dim numberOfDays As Integer
+    numberOfDays = 7 ' Change this number to the desired number of days
 
     ' Create Excel objects
     Set objExcelApplication = New Excel.Application
@@ -39,8 +41,8 @@ Sub ExportRepliedEmails()
     Set objRootFolder = objNamespace.Folders(targetEmail)
     Set objinbox = objRootFolder.Folders("Inbox")
 
-    ' Process the folders, including only replied emails
-    ProcessFolders objinbox
+    ' Process the folders, including only replied emails within the specified number of days
+    ProcessFolders objinbox, numberOfDays
 
     ' Format the Excel columns and rows
     With objExcelWorksheet
@@ -49,12 +51,11 @@ Sub ExportRepliedEmails()
         .Columns("E").WrapText = False
     End With
 
-    RemoveDuplicatesFromWorkbook
 
     MsgBox "Complete!", vbExclamation
 End Sub
 
-Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder)
+Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, ByVal numberOfDays As Integer)
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim nLastRow As Integer
@@ -67,25 +68,32 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder)
 
             ' Check if the email has been replied to
             If objMail.ReplyAllTime <> "1/1/4501 12:00:00 AM" Then
-                nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                ' Calculate the difference in days between now and the received date
+                Dim nDateDiff As Integer
+                nDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
 
-                With objExcelWorksheet
-                    .Cells(nLastRow, 1) = objMail.Subject
-                    .Cells(nLastRow, 2) = objMail.ReceivedTime
-                    .Cells(nLastRow, 3) = objMail.SenderName
-                End With
+                ' Check if the email is within the specified number of days
+                If nDateDiff <= numberOfDays Then
+                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
 
-                Dim recipients As String
-                recipients = ""
-                For Each Recipient In objMail.Recipients
-                    recipients = recipients & Recipient.Name & "; "
-                Next Recipient
-                recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
+                    With objExcelWorksheet
+                        .Cells(nLastRow, 1) = objMail.Subject
+                        .Cells(nLastRow, 2) = objMail.ReceivedTime
+                        .Cells(nLastRow, 3) = objMail.SenderName
+                    End With
 
-                With objExcelWorksheet
-                    .Cells(nLastRow, 4) = recipients
-                    .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..."
-                End With
+                    Dim recipients As String
+                    recipients = ""
+                    For Each Recipient In objMail.Recipients
+                        recipients = recipients & Recipient.Name & "; "
+                    Next Recipient
+                    recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
+
+                    With objExcelWorksheet
+                        .Cells(nLastRow, 4) = recipients
+                        .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..."
+                    End With
+                End If
             End If
         End If
     Next i
@@ -95,20 +103,9 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder)
     If objCurrentfolder.Folders.Count > 0 Then
         Dim objSubfolder As Outlook.Folder
         For Each objSubfolder In objCurrentfolder.Folders
-            ProcessFolders objSubfolder
+            ProcessFolders objSubfolder, numberOfDays
         Next objSubfolder
     End If
 End Sub
 
-Sub RemoveDuplicatesFromWorkbook()
-    Dim lastRow As Long
-    Dim lastCol As Long
-    Dim ws As Worksheet
-    Dim rng As Range
 
-    Set ws = objExcelWorkbook.Worksheets(1)
-    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
-    lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
-    Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
-    rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4, 5), Header:=xlYes
-End Sub
