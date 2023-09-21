@@ -66,7 +66,7 @@ Sub FetchAndDisplayRepliedEmails(ByVal objFolder As Object)
                     With objExcelWorksheet
                         .Cells(rowIndex, 1) = objMail.Subject
                         .Cells(rowIndex, 2) = objMail.ReceivedTime
-                        .Cells(rowIndex, 3) = GetResponseTime(objMail) ' Display Response Time
+                        .Cells(rowIndex, 3) = GetResponseTime(objMail, objFolder) ' Display Response Time
                         .Cells(rowIndex, 4) = objMail.SenderName
                     End With
                     rowIndex = rowIndex + 1
@@ -83,22 +83,22 @@ Function IsRepliedEmail(ByVal objMail As Object) As Boolean
     End If
 End Function
 
-Function GetResponseTime(ByVal objMail As Object) As Variant
+Function GetResponseTime(ByVal objMail As Object, ByVal objFolder As Object) As Variant
     ' Function to retrieve the time when a response was sent for the given email
-    Dim conversation As Object
-    Dim conversationMessage As Object
-    Set conversation = objMail.GetConversation
+    Dim responseTime As Variant
+    Dim objItem As Object
     
-    If Not conversation Is Nothing Then
-        For Each conversationMessage In conversation.GetTable
-            If conversationMessage.ConversationIndex = objMail.ConversationIndex Then
-                ' The current message is a response to objMail
-                GetResponseTime = conversationMessage.ReceivedTime
-                Exit Function
+    For Each objItem In objFolder.Items
+        If TypeOf objItem Is Object Then ' Check if the item is an object
+            Set objMail = objItem ' Cast the item to an object
+            
+            ' Check if the email is a response to the original email
+            If objMail.ConversationIndex = objMail.ConversationTopic Then
+                responseTime = objMail.ReceivedTime
+                Exit For
             End If
-        Next conversationMessage
-    End If
+        End If
+    Next objItem
     
-    ' If no corresponding response found, return a blank value
-    GetResponseTime = ""
+    GetResponseTime = responseTime
 End Function
