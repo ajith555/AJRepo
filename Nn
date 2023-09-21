@@ -63,23 +63,13 @@ Sub FetchAndDisplayRepliedEmails(ByVal objFolder As Object)
             ' Check if the email is within the specified number of hours
             If DateDiff("h", objMail.ReceivedTime, Now) <= HoursToFetch Then
                 If IsRepliedEmail(objMail) Then
-                    Dim conversation As Object
-                    Dim conversationMessage As Object
-                    Set conversation = objMail.GetConversation
-                    If Not conversation Is Nothing Then
-                        For Each conversationMessage In conversation.GetTable
-                            ' Check if the message is a mail item and not the original email
-                            If TypeOf conversationMessage Is Object And conversationMessage.Subject <> objMail.Subject Then
-                                With objExcelWorksheet
-                                    .Cells(rowIndex, 1) = conversationMessage.Subject
-                                    .Cells(rowIndex, 2) = conversationMessage.ReceivedTime
-                                    .Cells(rowIndex, 3) = objMail.ReceivedTime ' Display Received Time of the original message
-                                    .Cells(rowIndex, 4) = objMail.SenderName
-                                End With
-                                rowIndex = rowIndex + 1
-                            End If
-                        Next conversationMessage
-                    End If
+                    With objExcelWorksheet
+                        .Cells(rowIndex, 1) = objMail.Subject
+                        .Cells(rowIndex, 2) = objMail.ReceivedTime
+                        .Cells(rowIndex, 3) = GetResponseTime(objMail) ' Display Response Time
+                        .Cells(rowIndex, 4) = objMail.SenderName
+                    End With
+                    rowIndex = rowIndex + 1
                 End If
             End If
         End If
@@ -88,11 +78,27 @@ End Sub
 
 Function IsRepliedEmail(ByVal objMail As Object) As Boolean
     ' Function to check if an email is a reply
-    Dim conversation As Object
-    Set conversation = objMail.GetConversation
-    If Not conversation Is Nothing Then
-        If conversation.GetTable.Count > 1 Then
-            IsRepliedEmail = True
-        End If
+    If objMail.ConversationIndex <> objMail.ConversationTopic Then
+        IsRepliedEmail = True
     End If
+End Function
+
+Function GetResponseTime(ByVal objMail As Object) As Variant
+    ' Function to retrieve the time when a response was sent for the given email
+    Dim conversation As Object
+    Dim conversationMessage As Object
+    Set conversation = objMail.GetConversation
+    
+    If Not conversation Is Nothing Then
+        For Each conversationMessage In conversation.GetTable
+            If conversationMessage.ConversationIndex = objMail.ConversationIndex Then
+                ' The current message is a response to objMail
+                GetResponseTime = conversationMessage.ReceivedTime
+                Exit Function
+            End If
+        Next conversationMessage
+    End If
+    
+    ' If no corresponding response found, return a blank value
+    GetResponseTime = ""
 End Function
