@@ -24,10 +24,12 @@ Sub FetchEmailsFromSentItems()
     With objExcelWorksheet
         .Cells(1, 1) = "Subject"
         .Cells(1, 1).Font.Bold = True
-        .Cells(1, 2) = "Received"
+        .Cells(1, 2) = "Sent Time"
         .Cells(1, 2).Font.Bold = True
-        .Cells(1, 3) = "Sender"
+        .Cells(1, 3) = "Received Time"
         .Cells(1, 3).Font.Bold = True
+        .Cells(1, 4) = "Sender"
+        .Cells(1, 4).Font.Bold = True
     End With
     
     ' Get the Outlook Namespace and "Sent Items" folder
@@ -39,7 +41,7 @@ Sub FetchEmailsFromSentItems()
 
     ' Format the Excel columns and rows
     With objExcelWorksheet
-        .Columns("A:C").AutoFit
+        .Columns("A:D").AutoFit
     End With
 
     ' Clean up
@@ -65,8 +67,9 @@ Sub FetchAndDisplayEmails(ByVal objFolder As Outlook.Folder)
             If timeDiff <= HoursToFetch Then
                 With objExcelWorksheet
                     .Cells(rowIndex, 1) = objMail.Subject
-                    .Cells(rowIndex, 2) = objMail.ReceivedTime
-                    .Cells(rowIndex, 3) = objMail.SenderName
+                    .Cells(rowIndex, 2) = objMail.SentOn ' Display Sent Time
+                    .Cells(rowIndex, 3) = objMail.ReceivedTime
+                    .Cells(rowIndex, 4) = objMail.SenderName
                 End With
                 rowIndex = rowIndex + 1
             End If
