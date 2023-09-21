@@ -1,70 +1,102 @@
-Sub UpdateEmailsAndExportToExcel()
-    Dim objNamespace As Outlook.Namespace
-    Dim objRootFolder As Outlook.Folder
-    Dim targetEmail As String
-    Dim olApp As Outlook.Application
-    Dim olExplorer As Outlook.Explorer
-    Dim olFolder As Outlook.Folder
-    Dim olMail As Outlook.MailItem
-    Dim olExcelApp As Object
-    Dim olExcelWorkbook As Object
-    Dim olExcelSheet As Object
-    Dim startTime As Date
-    Dim endTime As Date
+Option Explicit
+
+Dim objExcelApplication As Object
+Dim objExcelWorkbook As Object
+Dim objExcelWorksheet As Object
+Dim objInbox As Object
+Dim targetEmail As String
+Dim daysToCheck As Integer
+
+Sub ExportUnrepliedEmails()
+    ' Update the target email address and days to check
+    targetEmail = "your@email.com"
+    daysToCheck = 7
     
-    ' Define the target email address to act on
-    targetEmail = "example@example.com"
+    ' Initialize Excel
+    Set objExcelApplication = CreateObject("Excel.Application")
+    Set objExcelWorkbook = objExcelApplication.Workbooks.Add
+    Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
     
-    ' Define the time frame (36 hours ago from now)
-    endTime = Now
-    startTime = DateAdd("h", -36, endTime) ' Subtract 36 hours
+    ' Set up Excel headers
+    With objExcelWorksheet
+        .Cells(1, 1).Value = "Subject"
+        .Cells(1, 2).Value = "Received"
+        .Cells(1, 3).Value = "Sender"
+        .Cells(1, 4).Value = "Excerpts"
+        .Range("A1:D1").Font.Bold = True
+    End With
     
-    ' Initialize Outlook objects
-    Set olApp = Outlook.Application
-    Set objNamespace = olApp.GetNamespace("MAPI")
-    Set objRootFolder = objNamespace.Folders(targetEmail)
+    objExcelApplication.Visible = True
     
-    ' Create Excel objects
-    Set olExcelApp = CreateObject("Excel.Application")
-    Set olExcelWorkbook = olExcelApp.Workbooks.Add
-    Set olExcelSheet = olExcelWorkbook.Sheets(1)
+    ' Initialize Outlook
+    Set objInbox = GetOutlookInbox(targetEmail)
     
-    ' Create Excel header row
-    olExcelSheet.Cells(1, 1).Value = "Subject"
-    olExcelSheet.Cells(1, 2).Value = "Received Time"
+    If Not objInbox Is Nothing Then
+        ' Process emails and subfolders
+        ProcessFolder objInbox, daysToCheck
+    Else
+        MsgBox "Email account not found!", vbExclamation
+    End If
     
-    ' Initialize Outlook Explorer
-    Set olExplorer = olApp.ActiveExplorer
+    ' Format Excel columns and rows
+    With objExcelWorksheet
+        .Columns("A:C").AutoFit
+        .Columns("D").ColumnWidth = 100
+        .Columns("D").WrapText = False
+    End With
     
-    ' Loop through all folders inside the Inbox folder
-    For Each olFolder In objRootFolder.Folders
-        If olFolder.DefaultItemType = olMailItem Then
-            ' Loop through the emails in the folder
-            For Each olMail In olFolder.Items
-                If olMail.ReceivedTime >= startTime And olMail.ReceivedTime <= endTime And olMail.ReplyTime = #1/1/4501# Then
-                    ' Email is within the specified time frame and has not been replied to
-                    ' Add email details to Excel
-                    olExcelSheet.Cells(olExcelSheet.UsedRange.Rows.Count + 1, 1).Value = olMail.Subject
-                    olExcelSheet.Cells(olExcelSheet.UsedRange.Rows.Count, 2).Value = olMail.ReceivedTime
-                End If
-            Next olMail
-        End If
-    Next olFolder
-    
-    ' Save and display the Excel workbook
-    olExcelWorkbook.SaveAs "C:\Path\To\Save\ExcelWorkbook.xlsx"
-    olExcelApp.Visible = True
-    olExcelWorkbook.Close
-    olExcelApp.Quit
-    
-    ' Clean up
-    Set olExplorer = Nothing
-    Set olFolder = Nothing
-    Set olMail = Nothing
-    Set olExcelSheet = Nothing
-    Set olExcelWorkbook = Nothing
-    Set olExcelApp = Nothing
-    Set objRootFolder = Nothing
-    Set objNamespace = Nothing
-    Set olApp = Nothing
+    MsgBox "Complete!", vbExclamation
 End Sub
+
+Sub ProcessFolder(ByVal objFolder As Object, ByVal days As Integer)
+    Dim objItem As Object
+    Dim nLastRow As Long
+    
+    For Each objItem In objFolder.Items
+        If objItem.Class = 43 ' OlMail
+            If Not HasReplied(objItem) Then
+                If DateDiff("d", objItem.ReceivedTime, Now) <= days Then
+                    nLastRow = objExcelWorksheet.Cells(objExcelWorksheet.Rows.Count, 1).End(-4162).Row + 1
+                    With objExcelWorksheet
+                        .Cells(nLastRow, 1).Value = objItem.Subject
+                        .Cells(nLastRow, 2).Value = objItem.ReceivedTime
+                        .Cells(nLastRow, 3).Value = objItem.SenderName
+                        .Cells(nLastRow, 4).Value = Left(Trim(objItem.Body), 100) & "..."
+                    End With
+                End If
+            End If
+        End If
+    Next objItem
+    
+    ' Recursively process subfolders
+    If objFolder.Folders.Count > 0 Then
+        Dim objSubfolder As Object
+        For Each objSubfolder In objFolder.Folders
+            ProcessFolder objSubfolder, days
+        Next objSubfolder
+    End If
+End Sub
+
+Function GetOutlookInbox(ByVal email As String) As Object
+    On Error Resume Next
+    Dim objNamespace As Object
+    Dim objRootFolder As Object
+    Dim objFolder As Object
+    
+    Set objNamespace = CreateObject("Outlook.Application").GetNamespace("MAPI")
+    Set objRootFolder = objNamespace.Folders(email)
+    Set objFolder = objRootFolder.Folders("Inbox")
+    
+    If Err.Number = 0 Then
+        Set GetOutlookInbox = objFolder
+    Else
+        Set GetOutlookInbox = Nothing
+    End If
+    On Error GoTo 0
+End Function
+
+Function HasReplied(ByVal objMail As Object) As Boolean
+    On Error Resume Next
+    HasReplied = (objMail.ReplyTime <> 0)
+    On Error GoTo 0
+End Function
