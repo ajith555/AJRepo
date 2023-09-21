@@ -1,6 +1,21 @@
 let
     Source = Exchange.Contents("kushal-ajith.shetty@ubs.com"),
     Mail1 = Source{[Name="Mail"]}[Data],
-    FilteredMail = Table.SelectRows(Mail1, each [Folder Path] = "\Sent Items\" or Text.StartsWith([Folder Path], "\Inbox\"))
+    FilteredMail = Table.SelectRows(Mail1, each [Folder Path] = "\Sent Items\" or Text.StartsWith([Folder Path], "\Inbox\")),
+    
+    // Filter \Sent Items\ rows where the subject starts with "RE: "
+    SentItemsFiltered = Table.SelectRows(FilteredMail, each [Folder Path] = "\Sent Items\" and Text.StartsWith([Subject], "RE: ")),
+    
+    // Filter \Inbox\ rows where the subject doesn't start with "RE: "
+    InboxFiltered = Table.SelectRows(FilteredMail, each Text.StartsWith([Folder Path], "\Inbox\") and not Text.StartsWith([Subject], "RE: ")),
+    
+    // Merge Sent Items and Inbox data based on subject (ignoring "RE: ")
+    MergedData = Table.Join(SentItemsFiltered, "Subject", InboxFiltered, "Subject", JoinKind.Inner),
+    
+    // Calculate the response time in hours
+    MergedDataWithResponseTime = Table.AddColumn(MergedData, "Response Time (Hours)", each Duration.From([DateTimeReceived] - [DateTimeReceived.1])/#duration(0,1,0,0)),
+    
+    // Select and reorder columns
+    FinalResult = Table.SelectColumns(MergedDataWithResponseTime, {"Folder Path", "Subject", "DateTimeReceived", "DateTimeReceived.1", "Response Time (Hours)"})
 in
-    FilteredMail
+    FinalResult
