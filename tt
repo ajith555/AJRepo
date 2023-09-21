@@ -4,9 +4,9 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objinbox As Outlook.Folder
-Dim targetEmail As String
 
 Sub ExportUnrepliedEmails()
+    Dim targetEmail As String
     targetEmail = "kushal-ajith.shetty@ubs.com"
     Dim objNamespace As Outlook.Namespace
     Dim objRootFolder As Outlook.Folder
@@ -26,12 +26,10 @@ Sub ExportUnrepliedEmails()
         .Cells(1, 1).Font.Bold = True
         .Cells(1, 2) = "Received"
         .Cells(1, 2).Font.Bold = True
-        .Cells(1, 3) = "Sender"
+        .Cells(1, 3) = "Recipients"
         .Cells(1, 3).Font.Bold = True
-        .Cells(1, 4) = "Recipients"
+        .Cells(1, 4) = "Excerpts"
         .Cells(1, 4).Font.Bold = True
-        .Cells(1, 5) = "Excerpts"
-        .Cells(1, 5).Font.Bold = True
     End With
     
     ' Get the specified email account and its Inbox folder
@@ -39,14 +37,14 @@ Sub ExportUnrepliedEmails()
     Set objRootFolder = objNamespace.Folders(targetEmail)
     Set objinbox = objRootFolder.Folders("Inbox")
     
-    ' Check and process the folders
+    ' Check and process the folders, excluding emails from a specific sender
     ProcessFolders objinbox
 
     ' Format the Excel columns and rows
     With objExcelWorksheet
         .Columns("A:D").AutoFit
-        .Columns("E").ColumnWidth = 100
-        .Columns("E").WrapText = False
+        .Columns("D").ColumnWidth = 100
+        .Columns("D").WrapText = False
     End With
 
     RemoveDuplicatesFromWorkbook
@@ -61,17 +59,21 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder)
     Dim nDateDiff As Integer
     Dim nReplyDateDiff As Integer
     Dim nLastRow As Integer
-    Dim Recipient As Outlook.Recipient
     
     On Error Resume Next
     
     For i = objCurrentfolder.Items.Count To 1 Step -1
         If objCurrentfolder.Items(i).Class = olMail Then
             Set objMail = objCurrentfolder.Items(i)
-            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
             
-            ' Add a condition to check if the sender's email address is not the same as the target email address
-            If objMail.SenderEmailAddress <> targetEmail Then
+            ' Specify the sender's name to exclude
+            Dim excludedSenderName As String
+            excludedSenderName = "SenderNameToExclude"
+            
+            ' Check if the email sender's name matches the excluded sender name
+            If objMail.SenderName <> excludedSenderName Then
+                strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+                
                 If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
                     nDateDiff = DateDiff("d", objMail.SentOn, Now)
                     nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
@@ -83,7 +85,6 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder)
                         With objExcelWorksheet
                             .Cells(nLastRow, 1) = objMail.Subject
                             .Cells(nLastRow, 2) = objMail.ReceivedTime
-                            .Cells(nLastRow, 3) = objMail.SenderName
                         End With
                         
                         Dim recipients As String
@@ -94,8 +95,8 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder)
                         recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
                         
                         With objExcelWorksheet
-                            .Cells(nLastRow, 4) = recipients ' Add recipients' names to the new column
-                            .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
+                            .Cells(nLastRow, 3) = recipients ' Add recipients' names to the new column
+                            .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
                         End With
                     End If
                 End If
@@ -123,5 +124,5 @@ Sub RemoveDuplicatesFromWorkbook()
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
     lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
     Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
-    rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4, 5), Header:=xlYes
+    rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4), Header:=xlYes
 End Sub
