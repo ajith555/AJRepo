@@ -3,8 +3,7 @@ Option Explicit
 Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
-Dim objResponseWorksheet As Excel.Worksheet ' New worksheet for ResponseTime
-Dim objDataWorksheet As Excel.Worksheet ' New worksheet for Data
+Dim objinbox As Outlook.Folder
 
 Sub ExportUnrepliedEmails()
     Dim targetEmail As String
@@ -16,43 +15,23 @@ Sub ExportUnrepliedEmails()
     Set objExcelApplication = New Excel.Application
     objExcelApplication.Visible = True ' Set Excel application visible before working with columns
 
-    ' Create a new workbook
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
     
-    ' Create a new worksheet for ResponseTime
-    Set objResponseWorksheet = objExcelWorkbook.Sheets.Add
-    objResponseWorksheet.Name = "ResponseTime"
-    
-    ' Create a new worksheet for Data
-    Set objDataWorksheet = objExcelWorkbook.Sheets.Add
-    objDataWorksheet.Name = "Data"
-    
-    ' Set fixed row height for all rows in the worksheets
+    ' Set fixed row height for all rows in the worksheet
     objExcelWorksheet.Rows.RowHeight = 20
-    objResponseWorksheet.Rows.RowHeight = 20
-    objDataWorksheet.Rows.RowHeight = 20
 
-    ' Set headers for ResponseTime sheet
-    With objResponseWorksheet
+    With objExcelWorksheet
         .Cells(1, 1) = "Subject"
         .Cells(1, 1).Font.Bold = True
         .Cells(1, 2) = "Received"
         .Cells(1, 2).Font.Bold = True
-        .Cells(1, 3) = "Response Time" ' New column for response time
+        .Cells(1, 3) = "Sender"
         .Cells(1, 3).Font.Bold = True
-    End With
-    
-    ' Set headers for Data sheet
-    With objDataWorksheet
-        .Cells(1, 1) = "Week"
-        .Cells(1, 1).Font.Bold = True
-        .Cells(1, 2) = "Month"
-        .Cells(1, 2).Font.Bold = True
-        .Cells(1, 3) = "Year"
-        .Cells(1, 3).Font.Bold = True
-        .Cells(1, 4) = "Avg Response Time" ' New column for average response time
+        .Cells(1, 4) = "Recipients"
         .Cells(1, 4).Font.Bold = True
+        .Cells(1, 5) = "Excerpts"
+        .Cells(1, 5).Font.Bold = True
     End With
     
     ' Get the specified email account and its Inbox folder
@@ -70,25 +49,7 @@ Sub ExportUnrepliedEmails()
         .Columns("E").WrapText = False
     End With
 
-    ' Format the ResponseTime worksheet columns and rows
-    With objResponseWorksheet
-        .Columns("A:C").AutoFit
-        .Columns("C").ColumnWidth = 20
-        .Columns("C").NumberFormat = "hh:mm:ss" ' Format Response Time as hh:mm:ss
-    End With
-
-    ' Format the Data worksheet columns and rows
-    With objDataWorksheet
-        .Columns("A:D").AutoFit
-        .Columns("D").ColumnWidth = 20
-        .Columns("D").NumberFormat = "hh:mm:ss" ' Format Avg Response Time as hh:mm:ss
-    End With
-
-    ' Remove duplicates from the main worksheet
-    RemoveDuplicatesFromMainWorksheet
-
-    ' Calculate and populate data for Data worksheet (Week, Month, Year view)
-    PopulateDataSheet
+    RemoveDuplicatesFromWorkbook
 
     MsgBox "Complete!", vbExclamation
 End Sub
@@ -97,11 +58,9 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder)
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
-    Dim nDateDiff As Double
-    Dim nReplyDateDiff As Double
+    Dim nDateDiff As Integer
+    Dim nReplyDateDiff As Integer
     Dim nLastRow As Integer
-    Dim nResponseTime As Double
-    Dim nResponseRow As Integer
     
     On Error Resume Next
     
@@ -118,28 +77,29 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder)
                 strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
                 
                 If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
-                    nDateDiff = (objMail.ReceivedTime - objMail.SentOn) * 86400 ' Convert to seconds
-                    nReplyDateDiff = (Now - objMail.ReceivedTime) * 86400 ' Convert to seconds
+                    nDateDiff = DateDiff("d", objMail.SentOn, Now)
+                    nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
                     
                     ' Check if email is from the last 3 days and not replied for more than 2 days
-                    If nDateDiff <= 259200 And nReplyDateDiff > 172800 Then
+                    If nDateDiff <= 3 And nReplyDateDiff > 2 Then
                         nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                        nResponseRow = objResponseWorksheet.Range("A" & objResponseWorksheet.Rows.Count).End(xlUp).Row + 1
-                        
-                        ' Calculate response time in seconds
-                        nResponseTime = nReplyDateDiff - nDateDiff
                         
                         With objExcelWorksheet
                             .Cells(nLastRow, 1) = objMail.Subject
                             .Cells(nLastRow, 2) = objMail.ReceivedTime
                             .Cells(nLastRow, 3) = objMail.SenderName ' Add sender's name
-                            .Cells(nLastRow, 4) = Format(TimeSerial(0, 0, nResponseTime), "hh:mm:ss") ' Response Time in main sheet
                         End With
                         
-                        With objResponseWorksheet
-                            .Cells(nResponseRow, 1) = objMail.Subject
-                            .Cells(nResponseRow, 2) = objMail.ReceivedTime
-                            .Cells(nResponseRow, 3) = TimeSerial(0, 0, nResponseTime) ' Response Time in ResponseTime sheet
+                        Dim recipients As String
+                        recipients = ""
+                        For Each Recipient In objMail.Recipients
+                            recipients = recipients & Recipient.Name & "; "
+                        Next Recipient
+                        recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
+                        
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 4) = recipients ' Add recipients' names to the new column
+                            .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
                         End With
                     End If
                 End If
@@ -157,75 +117,140 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder)
     End If
 End Sub
 
-Sub RemoveDuplicatesFromMainWorksheet()
+Sub RemoveDuplicatesFromWorkbook()
     Dim lastRow As Long
     Dim lastCol As Long
     Dim ws As Worksheet
     Dim rng As Range
     
-    Set ws = objExcelWorksheet
+    Set ws = objExcelWorkbook.Worksheets(1)
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
     lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
     Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
-    rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4), Header:=xlYes
+    rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4, 5), Header:=xlYes
 End Sub
 
-Sub PopulateDataSheet()
-    Dim dataWs As Worksheet
-    Dim responseWs As Worksheet
-    Dim lastDataRow As Long
-    Dim dataRow As Long
-    Dim dataCol As Long
-    Dim responseTime As Double
-    Dim weekStartDate As Date
-    Dim monthStartDate As Date
-    Dim yearStartDate As Date
-    Dim avgResponseTime As Double
-    Dim weekCount As Long
-    Dim monthCount As Long
-    Dim yearCount As Long
+Sub ExportRepliedEmails()
+    Dim targetEmail As String
+    targetEmail = "kushal-ajith.shetty@ubs.com"
+    Dim objNamespace As Outlook.Namespace
+    Dim objRootFolder As Outlook.Folder
     
-    Set dataWs = objDataWorksheet
-    Set responseWs = objResponseWorksheet
-    lastDataRow = responseWs.Cells(responseWs.Rows.Count, 1).End(xlUp).Row
-    dataRow = 2 ' Start from the second row since the first row is for headers
+    ' Create Excel objects
+    Set objExcelApplication = New Excel.Application
+    objExcelApplication.Visible = True ' Set Excel application visible before working with columns
+
+    ' Create a new workbook and worksheet for replied emails
+    Set objExcelWorkbook = objExcelApplication.Workbooks.Add
+    Set objExcelWorksheet = objExcelWorkbook.Worksheets.Add
+    objExcelWorksheet.Name = "Replied Emails"
     
-    ' Initialize variables
-    weekStartDate = responseWs.Cells(2, 2).Value ' Start date of the first email in ResponseTime sheet
-    monthStartDate = weekStartDate
-    yearStartDate = weekStartDate
-    avgResponseTime = 0
-    weekCount = 0
-    monthCount = 0
-    yearCount = 0
+    ' Set fixed row height for all rows in the worksheet
+    objExcelWorksheet.Rows.RowHeight = 20
+
+    With objExcelWorksheet
+        .Cells(1, 1) = "Subject"
+        .Cells(1, 1).Font.Bold = True
+        .Cells(1, 2) = "Received"
+        .Cells(1, 2).Font.Bold = True
+        .Cells(1, 3) = "Sender"
+        .Cells(1, 3).Font.Bold = True
+        .Cells(1, 4) = "Recipients"
+        .Cells(1, 4).Font.Bold = True
+        .Cells(1, 5) = "Excerpts"
+        .Cells(1, 5).Font.Bold = True
+        .Cells(1, 6) = "Response Time (hrs)" ' New column for response time
+        .Cells(1, 6).Font.Bold = True
+    End With
     
-    For dataRow = 2 To lastDataRow ' Start from the second row of the ResponseTime sheet
-        responseTime = responseWs.Cells(dataRow, 3).Value
-        avgResponseTime = avgResponseTime + responseTime
-        
-        ' Check if the current email is within the same week, month, and year
-        If responseWs.Cells(dataRow, 2).Value >= DateAdd("d", 7, weekStartDate) Then
-            ' Start a new week
-            weekCount = weekCount + 1
-            dataWs.Cells(weekCount + 1, 1).Value = Format(weekStartDate, "yyyy-mm-dd")
-            dataWs.Cells(weekCount + 1, 4).Value = Format(TimeSerial(0, 0, avgResponseTime / (weekCount * 3600)), "hh:mm:ss") ' Calculate average response time for the week
-            weekStartDate = responseWs.Cells(dataRow, 2).Value ' Update week start date
+    ' Get the specified email account and its Inbox folder
+    Set objNamespace = Outlook.GetNamespace("MAPI")
+    Set objRootFolder = objNamespace.Folders(targetEmail)
+    Set objinbox = objRootFolder.Folders("Inbox")
+    
+    ' Check and process the folders, excluding emails from a specific sender
+    ProcessFolders objinbox, True ' Pass True to indicate replied emails
+
+    ' Format the Excel columns and rows
+    With objExcelWorksheet
+        .Columns("A:G").AutoFit ' Adjust column range for the new response time column
+        .Columns("E").ColumnWidth = 100
+        .Columns("E").WrapText = False
+    End With
+
+    RemoveDuplicatesFromWorkbook
+
+    MsgBox "Complete!", vbExclamation
+End Sub
+
+Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder, Optional ByVal repliedOnly As Boolean = False)
+    Dim i As Long
+    Dim objMail As Outlook.MailItem
+    Dim strReplied As String
+    Dim nDateDiff As Integer
+    Dim nReplyDateDiff As Integer
+    Dim nLastRow As Integer
+    
+    On Error Resume Next
+    
+    For i = objCurrentfolder.Items.Count To 1 Step -1
+        If objCurrentfolder.Items(i).Class = olMail Then
+            Set objMail = objCurrentfolder.Items(i)
             
-            If responseWs.Cells(dataRow, 2).Value >= DateAdd("m", 1, monthStartDate) Then
-                ' Start a new month
-                monthCount = monthCount + 1
-                dataWs.Cells(monthCount + 1, 2).Value = Format(monthStartDate, "yyyy-mm")
-                dataWs.Cells(monthCount + 1, 4).Value = Format(TimeSerial(0, 0, avgResponseTime / (monthCount * 3600)), "hh:mm:ss") ' Calculate average response time for the month
-                monthStartDate = responseWs.Cells(dataRow, 2).Value ' Update month start date
+            ' Check if the email sender's name matches the excluded sender name
+            If objMail.SenderName <> "SenderNameToExclude" Then
+                strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
                 
-                If responseWs.Cells(dataRow, 2).Value >= DateAdd("yyyy", 1, yearStartDate) Then
-                    ' Start a new year
-                    yearCount = yearCount + 1
-                    dataWs.Cells(yearCount + 1, 3).Value = Format(yearStartDate, "yyyy")
-                    dataWs.Cells(yearCount + 1, 4).Value = Format(TimeSerial(0, 0, avgResponseTime / (yearCount * 3600)), "hh:mm:ss") ' Calculate average response time for the year
-                    yearStartDate = responseWs.Cells(dataRow, 2).Value ' Update year start date
+                If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
+                    nDateDiff = DateDiff("d", objMail.SentOn, Now)
+                    nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
+                    
+                    ' Check if email is from the last 3 days and not replied for more than 2 days
+                    If nDateDiff <= 3 And nReplyDateDiff > 2 Then
+                        nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
+                        
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 1) = objMail.Subject
+                            .Cells(nLastRow, 2) = objMail.ReceivedTime
+                            .Cells(nLastRow, 3) = objMail.SenderName ' Add sender's name
+                        End With
+                        
+                        Dim recipients As String
+                        recipients = ""
+                        For Each Recipient In objMail.Recipients
+                            recipients = recipients & Recipient.Name & "; "
+                        Next Recipient
+                        recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
+                        
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 4) = recipients ' Add recipients' names to the new column
+                            .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
+                        End With
+                    End If
                 End If
             End If
         End If
-    Next dataRow
+    Next i
+
+    On Error GoTo 0
+    
+    If objCurrentfolder.Folders.Count > 0 Then
+        Dim objSubfolder As Outlook.Folder
+        For Each objSubfolder In objCurrentfolder.Folders
+            ProcessFolders objSubfolder
+        Next objSubfolder
+    End If
+End Sub
+
+Sub RemoveDuplicatesFromWorkbook()
+    Dim lastRow As Long
+    Dim lastCol As Long
+    Dim ws As Worksheet
+    Dim rng As Range
+    
+    Set ws = objExcelWorkbook.Worksheets(1)
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+    Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
+    rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4, 5), Header:=xlYes
 End Sub
