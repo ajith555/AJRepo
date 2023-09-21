@@ -67,8 +67,8 @@ Sub ProcessSentItemsFolder(ByVal objSentItemsFolder As Outlook.Folder, ByVal num
 
         ' Check if the email is not from the target email address and is within the specified number of days
         If nDateDiff <= numberOfDays And objMail.SenderEmailAddress <> "abc@ubs.com" Then
-            ' Check if the email has been replied to
-            If objMail.ReceivedByName <> objMail.SentOnBehalfOfName Then
+            ' Check if the email has been replied to based on the MessageClass
+            If objMail.MessageClass = "REPLIED" Or objMail.MessageClass = "IPM.Note" Then
                 nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
 
                 With objExcelWorksheet
@@ -76,7 +76,7 @@ Sub ProcessSentItemsFolder(ByVal objSentItemsFolder As Outlook.Folder, ByVal num
                     .Cells(nLastRow, 2) = objMail.SenderName
                     .Cells(nLastRow, 3) = objMail.To
                     .Cells(nLastRow, 4) = objMail.ReceivedTime
-                    .Cells(nLastRow, 5) = objMail.RepliedTime
+                    .Cells(nLastRow, 5) = objMail.ReceivedTime
                 End With
             End If
         End If
