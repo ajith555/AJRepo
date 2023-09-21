@@ -28,8 +28,12 @@ Sub FetchEmailsFromSentItems()
         .Cells(1, 2).Font.Bold = True
         .Cells(1, 3) = "Sent Time"
         .Cells(1, 3).Font.Bold = True
-        .Cells(1, 4) = "Sender"
+        .Cells(1, 4) = "Replied Time"
         .Cells(1, 4).Font.Bold = True
+        .Cells(1, 5) = "Modified Time"
+        .Cells(1, 5).Font.Bold = True
+        .Cells(1, 6) = "Sender"
+        .Cells(1, 6).Font.Bold = True
     End With
     
     ' Get the Outlook Namespace and "Sent Items" folder
@@ -41,7 +45,7 @@ Sub FetchEmailsFromSentItems()
 
     ' Format the Excel columns and rows
     With objExcelWorksheet
-        .Columns("A:D").AutoFit
+        .Columns("A:F").AutoFit
     End With
 
     ' Clean up
@@ -69,7 +73,9 @@ Sub FetchAndDisplayEmails(ByVal objFolder As Outlook.Folder)
                     .Cells(rowIndex, 1) = objMail.Subject
                     .Cells(rowIndex, 2) = objMail.ReceivedTime
                     .Cells(rowIndex, 3) = objMail.SentOn ' Display Sent Time
-                    .Cells(rowIndex, 4) = objMail.SenderName
+                    .Cells(rowIndex, 4) = objMail.ReceivedTime ' Display Received Time
+                    .Cells(rowIndex, 5) = objMail.LastModificationTime ' Display Modified Time
+                    .Cells(rowIndex, 6) = objMail.SenderName
                 End With
                 rowIndex = rowIndex + 1
             End If
