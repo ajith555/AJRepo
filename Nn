@@ -1,10 +1,10 @@
 Option Explicit
 
-Dim objExcelApplication As Excel.Application
-Dim objExcelWorkbook As Excel.Workbook
-Dim objExcelWorksheet As Excel.Worksheet
-Dim objNamespace As Outlook.Namespace
-Dim objSentItemsFolder As Outlook.Folder
+Dim objExcelApplication As Object
+Dim objExcelWorkbook As Object
+Dim objExcelWorksheet As Object
+Dim objNamespace As Object
+Dim objSentItemsFolder As Object
 Dim HoursToFetch As Integer ' Number of hours to fetch emails
 
 Sub FetchEmailsFromSentItems()
@@ -12,7 +12,7 @@ Sub FetchEmailsFromSentItems()
     HoursToFetch = 24 ' Change this value to the desired number of hours
     
     ' Create Excel objects
-    Set objExcelApplication = New Excel.Application
+    Set objExcelApplication = CreateObject("Excel.Application")
     objExcelApplication.Visible = True ' Set Excel application visible before working with columns
 
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
@@ -33,8 +33,8 @@ Sub FetchEmailsFromSentItems()
     End With
     
     ' Get the Outlook Namespace and "Sent Items" folder
-    Set objNamespace = Outlook.GetNamespace("MAPI")
-    Set objSentItemsFolder = objNamespace.GetDefaultFolder(olFolderSentMail)
+    Set objNamespace = GetObject("", "Outlook.Application").GetNamespace("MAPI")
+    Set objSentItemsFolder = objNamespace.GetDefaultFolder(5) ' olFolderSentMail
 
     ' Fetch and display emails from "Sent Items" folder
     FetchAndDisplayEmails objSentItemsFolder
@@ -49,16 +49,16 @@ Sub FetchEmailsFromSentItems()
     Set objExcelWorkbook = Nothing
 End Sub
 
-Sub FetchAndDisplayEmails(ByVal objFolder As Outlook.Folder)
+Sub FetchAndDisplayEmails(ByVal objFolder As Object)
     Dim objItem As Object
     Dim rowIndex As Integer
     
     rowIndex = 2 ' Start from the second row (first row is for headers)
     
     For Each objItem In objFolder.Items
-        If TypeOf objItem Is Outlook.MailItem Then ' Check if the item is a mail item
-            Dim objMail As Outlook.MailItem
-            Set objMail = objItem ' Cast the item to a mail item
+        If TypeOf objItem Is Object Then ' Check if the item is an object
+            Dim objMail As Object
+            Set objMail = objItem ' Cast the item to an object
             ' Calculate the time difference in hours
             Dim timeDiff As Double
             timeDiff = DateDiff("h", objMail.ReceivedTime, Now)
@@ -77,15 +77,15 @@ Sub FetchAndDisplayEmails(ByVal objFolder As Outlook.Folder)
     Next objItem
 End Sub
 
-Function GetRepliedTime(ByVal objMail As Outlook.MailItem) As Variant
+Function GetRepliedTime(ByVal objMail As Object) As Variant
     ' Function to retrieve the time when a reply was sent for the given email
-    Dim objNamespace As Outlook.Namespace
-    Dim objReply As Outlook.MailItem
+    Dim objNamespace As Object
+    Dim objReply As Object
     
-    Set objNamespace = Outlook.GetNamespace("MAPI")
+    Set objNamespace = GetObject("", "Outlook.Application").GetNamespace("MAPI")
     
     ' Find the corresponding reply in the "Sent Items" folder
-    For Each objReply In objNamespace.GetDefaultFolder(olFolderSentMail).Items
+    For Each objReply In objNamespace.GetDefaultFolder(5).Items ' olFolderSentMail
         If objReply.Subject = "RE: " & objMail.Subject And objReply.ReceivedByName = objMail.SenderName Then
             GetRepliedTime = objReply.SentOn
             Exit Function
