@@ -1,21 +1,15 @@
 let
     Source = Exchange.Contents("kushal-ajith.shetty@ubs.com"),
     Mail1 = Source{[Name="Mail"]}[Data],
-    FilteredMail = Table.SelectRows(Mail1, each [Folder Path] = "\Sent Items\" or Text.StartsWith([Folder Path], "\Inbox\")),
     
-    // Filter \Sent Items\ rows where the subject starts with "RE: "
-    SentItemsFiltered = Table.SelectRows(FilteredMail, each [Folder Path] = "\Sent Items\" and Text.StartsWith([Subject], "RE: ")),
+    // Step 1: Add a custom column to identify matching sent emails
+    AddMatchingSentEmail = Table.AddColumn(Mail1, "MatchingSentEmail", each 
+        Table.SelectRows(Mail1, each [Folder Path] = "\Sent Items\" and Text.StartsWith([Subject], "RE: " & [Subject])).{0}),
     
-    // Filter \Inbox\ rows where the subject doesn't start with "RE: "
-    InboxFiltered = Table.SelectRows(FilteredMail, each Text.StartsWith([Folder Path], "\Inbox\") and not Text.StartsWith([Subject], "RE: ")),
-    
-    // Merge the latest sent items and inbox items based on thread Id
-    MergedData = Table.Join(SentItemsFiltered, "Id", InboxFiltered, "Id", JoinKind.Inner),
-    
-    // Calculate the response time in hours
-    MergedDataWithResponseTime = Table.AddColumn(MergedData, "Response Time (Hours)", each Duration.From([DateTimeReceived] - [DateTimeReceived.1]) / #duration(0, 1, 0, 0)),
-    
-    // Select and reorder columns
-    FinalResult = Table.SelectColumns(MergedDataWithResponseTime, {"Id", "Response Time (Hours)"})
+    // Step 2: Calculate the response time in minutes
+    AddResponseTimeMinutes = Table.AddColumn(AddMatchingSentEmail, "ResponseTimeMinutes", each 
+        if [MatchingSentEmail] <> null then 
+            Duration.From([DateTimeReceived] - [MatchingSentEmail][DateTimeReceived])[TotalMinutes] 
+        else null)
 in
-    FinalResult
+    AddResponseTimeMinutes
