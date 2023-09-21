@@ -1,6 +1,6 @@
 Sub GetRepliedEmails()
     Dim objApp As Application
-    Dim objNS As NameSpace
+    Dim objNS As Namespace
     Dim objSentFolder As MAPIFolder
     Dim objItems As Items
     Dim objItem As MailItem
@@ -51,7 +51,7 @@ Sub GetRepliedEmails()
     ' Loop through sent items and extract data
     For Each objItem In objItems
         If objItem.ReceivedTime > lastCheckedTime Then
-            If InStr(objItem.Body, "RE:") = 1 Then ' Check if it's a replied email
+            If InStr(objItem.Subject, "RE:") = 1 Then ' Check if it's a replied email
                 If objItem.Recipients.Count > 0 Then
                     repliedTime = objItem.ReceivedTime
                     xlWorksheet.Cells(row, 1).Value = objItem.Subject
