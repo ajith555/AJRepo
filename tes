@@ -1,68 +1,61 @@
-Option Explicit
-
-Dim objExcelApplication As Object
-Dim objExcelWorkbook As Object
-Dim objExcelWorksheet As Object
-Dim objNamespace As Object
-Dim objSentItemsFolder As Object
-
-Sub ExportRepliedEmailsToExcel()
-    Dim hoursAgo As Integer
-    Dim objItems As Object
-    Dim objItem As Object
-    Dim rowCount As Integer
-
-    ' Define the number of hours to fetch emails from
-    hoursAgo = 24 ' Change this value as needed
-
-    ' Create Excel objects
-    Set objExcelApplication = CreateObject("Excel.Application")
-    objExcelApplication.Visible = True ' Set Excel application visible before working with columns
-
-    Set objExcelWorkbook = objExcelApplication.Workbooks.Add
-    Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
-
-    ' Set Excel column headers
-    With objExcelWorksheet
-        .Cells(1, 1).Value = "Subject"
-        .Cells(1, 2).Value = "Received Time"
-        .Cells(1, 3).Value = "Sender"
-    End With
-
-    rowCount = 2 ' Start from the second row to enter data
-
-    ' Create Outlook application object
-    Set objNamespace = CreateObject("Outlook.Application").GetNamespace("MAPI")
-
-    ' Set Sent Items folder for your email account (replace with your email address)
-    Set objSentItemsFolder = objNamespace.Folders("kushal-ajith.shetty@ubs.com").Folders("Sent Items")
-
-    ' Filter emails based on the specified number of hours
+Sub FetchSentItemsToExcel()
+    Dim olApp As Outlook.Application
+    Dim olNamespace As Outlook.NameSpace
+    Dim olFolder As Outlook.MAPIFolder
+    Dim olItems As Outlook.Items
+    Dim olMail As Outlook.MailItem
     Dim startTime As Date
-    startTime = Now - hoursAgo / 24 ' Calculate the start time
-    Set objItems = objSentItemsFolder.Items.Restrict("[ReceivedTime] >= '" & Format(startTime, "ddddd h:nn AMPM") & "'")
-
-    ' Loop through the filtered emails and extract data
-    For Each objItem In objItems
-        If objItem.Class = 43 Then ' 43 represents a MailItem
-            ' Check if the email has been replied to
-            If objItem.ReplyRecipientNames <> "" Then
-                ' Insert email data into Excel
-                objExcelWorksheet.Cells(rowCount, 1).Value = objItem.Subject
-                objExcelWorksheet.Cells(rowCount, 2).Value = objItem.ReceivedTime
-                objExcelWorksheet.Cells(rowCount, 3).Value = objItem.SenderName
-                rowCount = rowCount + 1
-            End If
-        End If
-    Next objItem
-
-    ' Format Excel columns and rows
-    objExcelWorksheet.Columns.AutoFit
-
-    ' Clean up objects
-    Set objExcelWorksheet = Nothing
-    Set objExcelWorkbook = Nothing
-    Set objSentItemsFolder = Nothing
-    Set objNamespace = Nothing
-    Set objExcelApplication = Nothing
+    Dim emailAddress As String
+    Dim hoursAgo As Integer
+    Dim xlApp As Object
+    Dim xlWorkbook As Object
+    Dim xlWorksheet As Object
+    Dim rowCount As Integer
+    
+    ' Set the email address and number of hours
+    emailAddress = "kushal-ajith.shetty@ubs.com"
+    hoursAgo = 24
+    
+    ' Set the Outlook Application and Namespace
+    Set olApp = New Outlook.Application
+    Set olNamespace = olApp.GetNamespace("MAPI")
+    
+    ' Resolve the email address to an account
+    Set olFolder = olNamespace.CreateRecipient(emailAddress).SentItems
+    
+    ' Set the time range
+    startTime = Now - hoursAgo / 24 ' Convert hours to days
+    
+    ' Initialize the collection of items
+    Set olItems = olFolder.Items.Restrict("[SentOn] >= '" & Format(startTime, "yyyy-mm-dd hh:mm:ss") & "'")
+    
+    ' Create a new Excel instance and workbook
+    Set xlApp = CreateObject("Excel.Application")
+    xlApp.Visible = True
+    Set xlWorkbook = xlApp.Workbooks.Add
+    Set xlWorksheet = xlWorkbook.Sheets(1)
+    
+    ' Add headers to the Excel worksheet
+    xlWorksheet.Cells(1, 1).Value = "Subject"
+    xlWorksheet.Cells(1, 2).Value = "Sender"
+    xlWorksheet.Cells(1, 3).Value = "Recipient"
+    
+    ' Loop through and process the emails
+    rowCount = 2 ' Start from the second row
+    For Each olMail In olItems
+        xlWorksheet.Cells(rowCount, 1).Value = olMail.Subject
+        xlWorksheet.Cells(rowCount, 2).Value = olMail.SenderEmailAddress
+        xlWorksheet.Cells(rowCount, 3).Value = olMail.To
+        rowCount = rowCount + 1
+    Next olMail
+    
+    ' Clean up
+    Set xlWorksheet = Nothing
+    Set xlWorkbook = Nothing
+    Set xlApp = Nothing
+    Set olMail = Nothing
+    Set olItems = Nothing
+    Set olFolder = Nothing
+    Set olNamespace = Nothing
+    Set olApp = Nothing
 End Sub
