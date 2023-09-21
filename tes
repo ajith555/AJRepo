@@ -3,7 +3,7 @@ Sub GetRepliedEmails()
     Dim objNS As Namespace
     Dim objSentFolder As MAPIFolder
     Dim objItems As Items
-    Dim objItem As MailItem
+    Dim objItem As Object ' Use Object instead of MailItem to handle various types of items
     Dim xlApp As Object
     Dim xlWorkbook As Object
     Dim xlWorksheet As Object
@@ -13,7 +13,7 @@ Sub GetRepliedEmails()
     
     ' Define the email address to filter by
     Dim filterEmail As String
-    filterEmail = "your@email.com"
+    filterEmail = "your@email.com;kushal-ajith.shetty@ubs.com"
     
     ' Define the desired time interval in hours
     Dim hoursInterval As Integer
@@ -50,16 +50,19 @@ Sub GetRepliedEmails()
     
     ' Loop through sent items and extract data
     For Each objItem In objItems
-        If objItem.ReceivedTime > lastCheckedTime Then
-            If InStr(objItem.Subject, "RE:") = 1 Then ' Check if it's a replied email
-                If objItem.Recipients.Count > 0 Then
-                    repliedTime = objItem.ReceivedTime
-                    xlWorksheet.Cells(row, 1).Value = objItem.Subject
-                    xlWorksheet.Cells(row, 2).Value = objItem.SenderEmailAddress
-                    xlWorksheet.Cells(row, 3).Value = filterEmail
-                    xlWorksheet.Cells(row, 4).Value = repliedTime
-                    xlWorksheet.Cells(row, 5).Value = objItem.ReceivedTime
-                    row = row + 1
+        If objItem.Class = olMail Then
+            Set objItem = objItem
+            If objItem.ReceivedTime > lastCheckedTime Then
+                If InStr(objItem.Subject, "RE:") = 1 Then ' Check if it's a replied email
+                    If objItem.Recipients.Count > 0 Then
+                        repliedTime = objItem.ReceivedTime
+                        xlWorksheet.Cells(row, 1).Value = objItem.Subject
+                        xlWorksheet.Cells(row, 2).Value = objItem.SenderEmailAddress
+                        xlWorksheet.Cells(row, 3).Value = filterEmail
+                        xlWorksheet.Cells(row, 4).Value = repliedTime
+                        xlWorksheet.Cells(row, 5).Value = objItem.ReceivedTime
+                        row = row + 1
+                    End If
                 End If
             End If
         End If
