@@ -10,10 +10,10 @@ let
         in
             Table.SelectRows(SentItems, each Text.StartsWith([Subject], "RE: " & subject))),
     
-    // Step 2: Calculate the response time in minutes
-    AddResponseTimeMinutes = Table.AddColumn(MatchingEmails, "ResponseTimeMinutes", each 
+    // Step 2: Calculate the response time in hours
+    AddResponseTimeHours = Table.AddColumn(MatchingEmails, "ResponseTimeHours", each 
         if [MatchingSentEmail] <> null then 
-            Duration.From([DateTimeReceived] - [MatchingSentEmail][DateTimeReceived])[TotalMinutes] 
+            Duration.From([DateTimeReceived] - [MatchingSentEmail][DateTimeReceived])[TotalHours] 
         else null)
 in
-    AddResponseTimeMinutes
+    AddResponseTimeHours
