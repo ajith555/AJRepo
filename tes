@@ -1,40 +1,29 @@
 Option Explicit
 
+Dim objExcelApplication As Object
+Dim objExcelWorkbook As Object
+Dim objExcelWorksheet As Object
+Dim objNamespace As Object
+Dim objSentItemsFolder As Object
+
 Sub ExportRepliedEmailsToExcel()
-    Dim objOutlookApp As Object
-    Dim objNamespace As Object
-    Dim objFolder As Object
+    Dim hoursAgo As Integer
     Dim objItems As Object
     Dim objItem As Object
-    Dim objExcelApp As Object
-    Dim objWorkbook As Object
-    Dim objWorksheet As Object
-    Dim startTime As Date
-    Dim hoursAgo As Integer
     Dim rowCount As Integer
 
     ' Define the number of hours to fetch emails from
     hoursAgo = 24 ' Change this value as needed
 
-    ' Create Outlook application object
-    Set objOutlookApp = CreateObject("Outlook.Application")
+    ' Create Excel objects
+    Set objExcelApplication = CreateObject("Excel.Application")
+    objExcelApplication.Visible = True ' Set Excel application visible before working with columns
 
-    ' Set Outlook Namespace and Sent Items folder
-    Set objNamespace = objOutlookApp.GetNamespace("MAPI")
-    Set objFolder = objNamespace.GetDefaultFolder(5) ' 5 represents the Sent Items folder
-
-    ' Filter emails based on the specified number of hours
-    startTime = Now - hoursAgo / 24 ' Calculate the start time
-    Set objItems = objFolder.Items.Restrict("[ReceivedTime] >= '" & Format(startTime, "ddddd h:nn AMPM") & "'")
-
-    ' Create Excel application and workbook
-    Set objExcelApp = CreateObject("Excel.Application")
-    objExcelApp.Visible = True
-    Set objWorkbook = objExcelApp.Workbooks.Add
-    Set objWorksheet = objWorkbook.Worksheets(1)
+    Set objExcelWorkbook = objExcelApplication.Workbooks.Add
+    Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
 
     ' Set Excel column headers
-    With objWorksheet
+    With objExcelWorksheet
         .Cells(1, 1).Value = "Subject"
         .Cells(1, 2).Value = "Received Time"
         .Cells(1, 3).Value = "Sender"
@@ -42,29 +31,38 @@ Sub ExportRepliedEmailsToExcel()
 
     rowCount = 2 ' Start from the second row to enter data
 
+    ' Create Outlook application object
+    Set objNamespace = CreateObject("Outlook.Application").GetNamespace("MAPI")
+
+    ' Set Sent Items folder
+    Set objSentItemsFolder = objNamespace.GetDefaultFolder(5) ' 5 represents the Sent Items folder
+
+    ' Filter emails based on the specified number of hours
+    Dim startTime As Date
+    startTime = Now - hoursAgo / 24 ' Calculate the start time
+    Set objItems = objSentItemsFolder.Items.Restrict("[ReceivedTime] >= '" & Format(startTime, "ddddd h:nn AMPM") & "'")
+
     ' Loop through the filtered emails and extract data
     For Each objItem In objItems
         If objItem.Class = 43 Then ' 43 represents a MailItem
             ' Check if the email has been replied to
-            If objItem.ReplyTime <> #1/1/4501# Then
+            If objItem.ReplyRecipientNames <> "" Then
                 ' Insert email data into Excel
-                objWorksheet.Cells(rowCount, 1).Value = objItem.Subject
-                objWorksheet.Cells(rowCount, 2).Value = objItem.ReceivedTime
-                objWorksheet.Cells(rowCount, 3).Value = objItem.SenderName
+                objExcelWorksheet.Cells(rowCount, 1).Value = objItem.Subject
+                objExcelWorksheet.Cells(rowCount, 2).Value = objItem.ReceivedTime
+                objExcelWorksheet.Cells(rowCount, 3).Value = objItem.SenderName
                 rowCount = rowCount + 1
             End If
         End If
     Next objItem
 
     ' Format Excel columns and rows
-    objWorksheet.Columns.AutoFit
+    objExcelWorksheet.Columns.AutoFit
 
     ' Clean up objects
-    Set objOutlookApp = Nothing
+    Set objExcelWorksheet = Nothing
+    Set objExcelWorkbook = Nothing
+    Set objSentItemsFolder = Nothing
     Set objNamespace = Nothing
-    Set objFolder = Nothing
-    Set objItems = Nothing
-    Set objExcelApp = Nothing
-    Set objWorkbook = Nothing
-    Set objWorksheet = Nothing
+    Set objExcelApplication = Nothing
 End Sub
