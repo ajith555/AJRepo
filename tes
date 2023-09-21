@@ -34,8 +34,8 @@ Sub ExportRepliedEmailsToExcel()
     ' Create Outlook application object
     Set objNamespace = CreateObject("Outlook.Application").GetNamespace("MAPI")
 
-    ' Set Sent Items folder
-    Set objSentItemsFolder = objNamespace.GetDefaultFolder(5) ' 5 represents the Sent Items folder
+    ' Set Sent Items folder for your email account (replace with your email address)
+    Set objSentItemsFolder = objNamespace.Folders("kushal-ajith.shetty@ubs.com").Folders("Sent Items")
 
     ' Filter emails based on the specified number of hours
     Dim startTime As Date
