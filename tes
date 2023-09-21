@@ -3,7 +3,7 @@ Sub FetchSentItemsToExcel()
     Dim olNamespace As Outlook.Namespace
     Dim olFolder As Outlook.MAPIFolder
     Dim olItems As Outlook.Items
-    Dim olMail As Outlook.MailItem
+    Dim olMail As Object ' Use Object to handle different types of items
     Dim startTime As Date
     Dim emailAddress As String
     Dim hoursAgo As Integer
@@ -21,7 +21,14 @@ Sub FetchSentItemsToExcel()
     Set olNamespace = olApp.GetNamespace("MAPI")
     
     ' Get the Sent Items folder of the specified email address
-    Set olFolder = olNamespace.GetSharedDefaultFolder(olNamespace.CreateRecipient(emailAddress), olFolderSentMail)
+    On Error Resume Next
+    Set olFolder = olNamespace.GetDefaultFolder(olFolderSentMail).Folders("Sent Items")
+    On Error GoTo 0
+    
+    If olFolder Is Nothing Then
+        MsgBox "Sent Items folder not found for the specified email address."
+        Exit Sub
+    End If
     
     ' Set the time range
     startTime = Now - hoursAgo / 24 ' Convert hours to days
@@ -43,10 +50,13 @@ Sub FetchSentItemsToExcel()
     ' Loop through and process the emails
     rowCount = 2 ' Start from the second row
     For Each olMail In olItems
-        xlWorksheet.Cells(rowCount, 1).Value = olMail.Subject
-        xlWorksheet.Cells(rowCount, 2).Value = olMail.SenderEmailAddress
-        xlWorksheet.Cells(rowCount, 3).Value = olMail.To
-        rowCount = rowCount + 1
+        If TypeOf olMail Is Outlook.MailItem Then
+            Set olMail = DirectCast(olMail, Outlook.MailItem)
+            xlWorksheet.Cells(rowCount, 1).Value = olMail.Subject
+            xlWorksheet.Cells(rowCount, 2).Value = olMail.SenderEmailAddress
+            xlWorksheet.Cells(rowCount, 3).Value = olMail.To
+            rowCount = rowCount + 1
+        End If
     Next olMail
     
     ' Clean up
