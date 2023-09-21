@@ -30,7 +30,7 @@ Sub FetchRepliedEmails()
     Set objNamespace = GetObject("", "Outlook.Application").GetNamespace("MAPI")
     Set objSentItemsFolder = objNamespace.GetDefaultFolder(5) ' olFolderSentMail
 
-    ' Fetch and display replied emails
+    ' Fetch and display replied emails within the last 24 hours
     FetchAndDisplayRepliedEmails objSentItemsFolder
 
     ' Format the Excel columns and rows
@@ -54,8 +54,8 @@ Sub FetchAndDisplayRepliedEmails(ByVal objFolder As Object)
             Dim objMail As Object
             Set objMail = objItem ' Cast the item to an object
             
-            ' Check if the email is a reply (part of a conversation)
-            If objMail.ConversationIndex <> objMail.ConversationTopic Then
+            ' Check if the email is a reply (part of a conversation) and within the last 24 hours
+            If objMail.ConversationIndex <> objMail.ConversationTopic And DateDiff("h", objMail.ReceivedTime, Now) <= 24 Then
                 With objExcelWorksheet
                     .Cells(rowIndex, 1) = objMail.Subject
                     .Cells(rowIndex, 2) = objMail.ReceivedTime
