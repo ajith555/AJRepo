@@ -1,7 +1,8 @@
 Sub FetchSentItemsToExcel()
     Dim olApp As Outlook.Application
     Dim olNamespace As Outlook.Namespace
-    Dim olFolder As Outlook.MAPIFolder
+    Dim olStore As Outlook.Store
+    Dim olFolder As Outlook.Folder
     Dim olItems As Outlook.Items
     Dim olMail As Object ' Use Object to handle different types of items
     Dim startTime As Date
@@ -20,12 +21,18 @@ Sub FetchSentItemsToExcel()
     Set olApp = New Outlook.Application
     Set olNamespace = olApp.GetNamespace("MAPI")
     
-    ' Find the "Sent Items" folder for the specified email address
-    On Error Resume Next
-    Set olFolder = olNamespace.GetDefaultFolder(olFolderInbox).Folders("Sent Items")
-    On Error GoTo 0
+    ' Find the "Sent Items" folder for the specified email address by iterating through all folders
+    For Each olStore In olNamespace.Stores
+        For Each olFolder In olStore.GetRootFolder.Folders
+            If olFolder.Name = "Sent Items" Then
+                Set olItems = olFolder.Items
+                Exit For
+            End If
+        Next olFolder
+        If Not olItems Is Nothing Then Exit For
+    Next olStore
     
-    If olFolder Is Nothing Then
+    If olItems Is Nothing Then
         MsgBox "Sent Items folder not found for the specified email address."
         Exit Sub
     End If
@@ -34,7 +41,7 @@ Sub FetchSentItemsToExcel()
     startTime = Now - hoursAgo / 24 ' Convert hours to days
     
     ' Initialize the collection of items
-    Set olItems = olFolder.Items.Restrict("[SentOn] >= '" & Format(startTime, "yyyy-mm-dd hh:mm:ss") & "'")
+    Set olItems = olItems.Restrict("[SentOn] >= '" & Format(startTime, "yyyy-mm-dd hh:mm:ss") & "'")
     
     ' Create a new Excel instance and workbook
     Set xlApp = CreateObject("Excel.Application")
