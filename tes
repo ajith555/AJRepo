@@ -51,7 +51,7 @@ Sub FetchSentItemsToExcel()
     rowCount = 2 ' Start from the second row
     For Each olMail In olItems
         If TypeOf olMail Is Object Then
-            Set olMail = DirectCast(olMail, Object)
+            Set olMail = olItems.GetLast()
             xlWorksheet.Cells(rowCount, 1).Value = olMail.Subject
             xlWorksheet.Cells(rowCount, 2).Value = olMail.SenderEmailAddress
             xlWorksheet.Cells(rowCount, 3).Value = olMail.To
