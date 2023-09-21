@@ -5,8 +5,12 @@ Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objNamespace As Outlook.Namespace
 Dim objSentItemsFolder As Outlook.Folder
+Dim HoursToFetch As Integer ' Number of hours to fetch emails
 
 Sub FetchEmailsFromSentItems()
+    ' Set the number of hours to fetch emails
+    HoursToFetch = 24 ' Change this value to the desired number of hours
+    
     ' Create Excel objects
     Set objExcelApplication = New Excel.Application
     objExcelApplication.Visible = True ' Set Excel application visible before working with columns
@@ -51,12 +55,19 @@ Sub FetchAndDisplayEmails(ByVal objFolder As Outlook.Folder)
     
     For Each objMail In objFolder.Items
         If objMail.Class = olMail Then
-            With objExcelWorksheet
-                .Cells(rowIndex, 1) = objMail.Subject
-                .Cells(rowIndex, 2) = objMail.ReceivedTime
-                .Cells(rowIndex, 3) = objMail.SenderName
-            End With
-            rowIndex = rowIndex + 1
+            ' Calculate the time difference in hours
+            Dim timeDiff As Double
+            timeDiff = DateDiff("h", objMail.ReceivedTime, Now)
+            
+            ' Check if the email is within the specified number of hours
+            If timeDiff <= HoursToFetch Then
+                With objExcelWorksheet
+                    .Cells(rowIndex, 1) = objMail.Subject
+                    .Cells(rowIndex, 2) = objMail.ReceivedTime
+                    .Cells(rowIndex, 3) = objMail.SenderName
+                End With
+                rowIndex = rowIndex + 1
+            End If
         End If
     Next objMail
 End Sub
