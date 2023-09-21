@@ -8,7 +8,11 @@ Sub ExportRepliedSentEmails()
     Dim targetEmail As String
     targetEmail = "abc@ubs.com" ' Replace with the target email address you want to fetch emails from
     Dim numberOfDays As Integer
-    numberOfDays = 7 ' Change this number to the desired number of days
+    numberOfDays = 1 ' Change this number to the desired number of days (e.g., 1, 2, 3)
+
+    ' Calculate the start date based on the number of days
+    Dim startDate As Date
+    startDate = Now - numberOfDays
 
     ' Create Excel objects
     Set objExcelApplication = New Excel.Application
@@ -41,8 +45,8 @@ Sub ExportRepliedSentEmails()
     Dim objSentItemsFolder As Outlook.Folder
     Set objSentItemsFolder = objRootFolder.Folders("Sent Items")
 
-    ' Process the Sent Items folder, including only replied emails within the specified number of days
-    ProcessSentItemsFolder objSentItemsFolder, numberOfDays
+    ' Process the Sent Items folder, including only replied emails within the specified time frame
+    ProcessSentItemsFolder objSentItemsFolder, startDate
 
     ' Format the Excel columns and rows
     With objExcelWorksheet
@@ -54,19 +58,15 @@ Sub ExportRepliedSentEmails()
     MsgBox "Complete!", vbExclamation
 End Sub
 
-Sub ProcessSentItemsFolder(ByVal objSentItemsFolder As Outlook.Folder, ByVal numberOfDays As Integer)
+Sub ProcessSentItemsFolder(ByVal objSentItemsFolder As Outlook.Folder, ByVal startDate As Date)
     Dim objMail As Outlook.MailItem
     Dim nLastRow As Integer
 
     On Error Resume Next
 
     For Each objMail In objSentItemsFolder.Items
-        ' Check if the email is within the specified number of days
-        Dim nDateDiff As Integer
-        nDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
-
-        ' Check if the email is not from the target email address and is within the specified number of days
-        If nDateDiff <= numberOfDays And objMail.SenderEmailAddress <> "abc@ubs.com" Then
+        ' Check if the email is within the specified time frame
+        If objMail.ReceivedTime >= startDate And objMail.SenderEmailAddress <> "abc@ubs.com" Then
             ' Check if the email has been replied to based on the ConversationID
             If EmailIsReplied(objMail) Then
                 nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
