@@ -1,6 +1,6 @@
 let
-    Source = YourExchangeOnlineDataSource, // Replace with your actual data source
-    FilteredRows = Table.SelectRows(Source, each [Folder Path] = "\Sent Items\" or Text.StartsWith([Folder Path], "\Inbox\")),
-    // Replace 'YourExchangeOnlineDataSource' with your actual data source reference
+    Source = Exchange.Contents("kushal-ajith.shetty@ubs.com"),
+    Mail1 = Source{[Name="Mail"]}[Data],
+    FilteredMail = Table.SelectRows(Mail1, each [Folder Path] = "\Sent Items\" or Text.StartsWith([Folder Path], "\Inbox\"))
 in
-    FilteredRows
+    FilteredMail
