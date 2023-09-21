@@ -48,13 +48,15 @@ Sub FetchEmailsFromSentItems()
 End Sub
 
 Sub FetchAndDisplayEmails(ByVal objFolder As Outlook.Folder)
-    Dim objMail As Outlook.MailItem
+    Dim objItem As Object
     Dim rowIndex As Integer
     
     rowIndex = 2 ' Start from the second row (first row is for headers)
     
-    For Each objMail In objFolder.Items
-        If objMail.Class = olMail Then
+    For Each objItem In objFolder.Items
+        If TypeOf objItem Is Outlook.MailItem Then ' Check if the item is a mail item
+            Dim objMail As Outlook.MailItem
+            Set objMail = objItem ' Cast the item to a mail item
             ' Calculate the time difference in hours
             Dim timeDiff As Double
             timeDiff = DateDiff("h", objMail.ReceivedTime, Now)
@@ -69,5 +71,5 @@ Sub FetchAndDisplayEmails(ByVal objFolder As Outlook.Folder)
                 rowIndex = rowIndex + 1
             End If
         End If
-    Next objMail
+    Next objItem
 End Sub
