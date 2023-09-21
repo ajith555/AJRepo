@@ -17,7 +17,7 @@ Sub UpdateEmailsAndExportToExcel()
     
     ' Define the time frame (36 hours ago from now)
     endTime = Now
-    startTime = endTime - TimeValue("36:00:00")
+    startTime = DateAdd("h", -36, endTime) ' Subtract 36 hours
     
     ' Initialize Outlook objects
     Set olApp = Outlook.Application
