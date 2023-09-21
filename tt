@@ -4,7 +4,6 @@ Dim objExcelApplication As Excel.Application
 Dim objExcelWorkbook As Excel.Workbook
 Dim objExcelWorksheet As Excel.Worksheet
 Dim objinbox As Outlook.Folder
-Dim Recipient As Outlook.Recipient ' Declare the Recipient object here
 
 Sub ExportUnrepliedEmails()
     Dim targetEmail As String
@@ -27,10 +26,12 @@ Sub ExportUnrepliedEmails()
         .Cells(1, 1).Font.Bold = True
         .Cells(1, 2) = "Received"
         .Cells(1, 2).Font.Bold = True
-        .Cells(1, 3) = "Recipients"
+        .Cells(1, 3) = "Sender"
         .Cells(1, 3).Font.Bold = True
-        .Cells(1, 4) = "Excerpts"
+        .Cells(1, 4) = "Recipients"
         .Cells(1, 4).Font.Bold = True
+        .Cells(1, 5) = "Excerpts"
+        .Cells(1, 5).Font.Bold = True
     End With
     
     ' Get the specified email account and its Inbox folder
@@ -43,9 +44,9 @@ Sub ExportUnrepliedEmails()
 
     ' Format the Excel columns and rows
     With objExcelWorksheet
-        .Columns("A:D").AutoFit
-        .Columns("D").ColumnWidth = 100
-        .Columns("D").WrapText = False
+        .Columns("A:E").AutoFit
+        .Columns("E").ColumnWidth = 100
+        .Columns("E").WrapText = False
     End With
 
     RemoveDuplicatesFromWorkbook
@@ -86,6 +87,7 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder)
                         With objExcelWorksheet
                             .Cells(nLastRow, 1) = objMail.Subject
                             .Cells(nLastRow, 2) = objMail.ReceivedTime
+                            .Cells(nLastRow, 3) = objMail.SenderName ' Add sender's name
                         End With
                         
                         Dim recipients As String
@@ -96,8 +98,8 @@ Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder)
                         recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
                         
                         With objExcelWorksheet
-                            .Cells(nLastRow, 3) = recipients ' Add recipients' names to the new column
-                            .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
+                            .Cells(nLastRow, 4) = recipients ' Add recipients' names to the new column
+                            .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
                         End With
                     End If
                 End If
@@ -125,5 +127,5 @@ Sub RemoveDuplicatesFromWorkbook()
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
     lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
     Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
-    rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4), Header:=xlYes
+    rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4, 5), Header:=xlYes
 End Sub
