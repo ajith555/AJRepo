@@ -9,17 +9,13 @@ let
     // Filter \Inbox\ rows where the subject doesn't start with "RE: "
     InboxFiltered = Table.SelectRows(FilteredMail, each Text.StartsWith([Folder Path], "\Inbox\") and not Text.StartsWith([Subject], "RE: ")),
     
-    // Group sent items and inbox items by subject, then get the latest email for each group
-    LatestSentItems = Table.Group(SentItemsFiltered, {"Subject"}, {"LatestSentItem", each List.Max([DateTimeReceived])}),
-    LatestInboxItems = Table.Group(InboxFiltered, {"Subject"}, {"LatestInboxItem", each List.Max([DateTimeReceived])}),
-    
-    // Merge the latest sent items and inbox items based on subject
-    MergedData = Table.Join(LatestSentItems, "Subject", LatestInboxItems, "Subject", JoinKind.Inner),
+    // Merge the latest sent items and inbox items based on thread Id
+    MergedData = Table.Join(SentItemsFiltered, "Id", InboxFiltered, "Id", JoinKind.Inner),
     
     // Calculate the response time in hours
-    MergedDataWithResponseTime = Table.AddColumn(MergedData, "Response Time (Hours)", each Duration.From([LatestSentItem]{0}[DateTimeReceived] - [LatestInboxItem]{0}[DateTimeReceived]) / #duration(0, 1, 0, 0)),
+    MergedDataWithResponseTime = Table.AddColumn(MergedData, "Response Time (Hours)", each Duration.From([DateTimeReceived] - [DateTimeReceived.1]) / #duration(0, 1, 0, 0)),
     
     // Select and reorder columns
-    FinalResult = Table.SelectColumns(MergedDataWithResponseTime, {"Subject", "Response Time (Hours)"})
+    FinalResult = Table.SelectColumns(MergedDataWithResponseTime, {"Id", "Response Time (Hours)"})
 in
     FinalResult
