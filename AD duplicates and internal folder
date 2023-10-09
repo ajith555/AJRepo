@@ -106,6 +106,7 @@ Sub ProcessAndCopyEmails(ByVal objCurrentFolder As Outlook.Folder, ByVal objTarg
                 Set copiedMail = objMail.Copy
                 
                 ' Save the copied email to the target folder
+                copiedMail.Save
                 copiedMail.Move objTargetFolder
             End If
         End If
