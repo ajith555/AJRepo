@@ -2,7 +2,7 @@ Dim objInbox As Outlook.Folder
 Dim objNamespace As Outlook.NameSpace
 Dim objDestFolder As Outlook.Folder
 
-Sub MoveEmailsToAgedFolder()
+Sub CopyEmailsToAgedFolder()
     ' Initialize Outlook objects
     Set objNamespace = Application.GetNamespace("MAPI")
     Set objInbox = objNamespace.GetDefaultFolder(olFolderInbox)
@@ -21,7 +21,7 @@ Sub MoveEmailsToAgedFolder()
         Set objDestFolder = objInbox.Folders.Add(destFolderName)
     End If
 
-    ' Process folders and move emails
+    ' Process folders and copy emails
     Call ProcessFolders(objInbox, objDestFolder)
 End Sub
 
@@ -40,8 +40,8 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestFolder
             nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
             
             If (Not (strReplied = "102")) And (Not (strReplied = "103")) And (nDateDiff <= 48) Then
-                ' Move the email to the destination folder
-                objMail.Move objDestFolder
+                ' Copy the email to the destination folder
+                objMail.Copy objDestFolder
             End If
         End If
     Next
