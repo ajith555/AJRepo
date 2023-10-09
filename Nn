@@ -44,11 +44,11 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestFolder
                 copiedMail.Move objDestFolder
             End If
         End If
-    Next
+    Next objMail
 
     ' Recursively process subfolders
     Dim objSubfolder As Outlook.Folder
     For Each objSubfolder In objCurrentFolder.Folders
         ProcessFolders objSubfolder, objDestFolder
-    Next
+    Next objSubfolder
 End Sub
