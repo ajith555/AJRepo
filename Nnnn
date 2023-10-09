@@ -48,9 +48,11 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedIntern
                     nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
 
                     If (Not (strReplied = "102")) And (Not (strReplied = "103")) And (nDateDiff <= 48) Then
-                        ' Copy the email to the "(1) AGED Internal" folder
-                        objMail.Copy
-                        objAgedInternalFolder.Items(objAgedInternalFolder.Items.Count).Move objAgedInternalFolder
+                        ' Attempt to copy the email to the "(1) AGED Internal" folder
+                        Dim objCopiedMail As Outlook.MailItem
+                        Set objCopiedMail = objMail.Copy
+                        objCopiedMail.Move objAgedInternalFolder
+                        Set objCopiedMail = Nothing ' Release the copied email object
                     End If
                 End If
             End If
