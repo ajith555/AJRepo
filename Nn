@@ -9,7 +9,7 @@ Sub MoveUnrepliedEmails()
     
     ' Set the email address of the account you want to process
     Dim EmailAddress As String
-    EmailAddress = "kushal-ajith.shetty@ubs.com" ' Change to your desired email address
+    EmailAddress = "abc@abc.com" ' Change to your desired email address
     
     ' Calculate the age limit (72 hours ago)
     AgeLimit = DateAdd("h", -72, Now)
@@ -69,14 +69,22 @@ End Function
 
 Sub ProcessFolder(ByVal CurrentFolder As Object, ByVal AgeLimit As Date, ByVal DestFolder As Object)
     Dim Item As Object
+    Dim Conversation As Object
+    Dim ConversationTable As Object
     
     For Each Item In CurrentFolder.Items
         If Item.Class = olMail Then
             ' Check if the email is received in the past 72 hours
             If Item.ReceivedTime >= AgeLimit Then
-                ' Check if the email has been replied to
-                If Not Item.IsReplied Then
-                    Item.Move DestFolder
+                ' Check if the email has a reply by checking its conversation
+                Set Conversation = Item.GetConversation
+                If Not Conversation Is Nothing Then
+                    Set ConversationTable = Conversation.GetTable
+                    
+                    If ConversationTable.GetRowCount >= 2 Then
+                        ' There is at least one reply in the conversation
+                        Item.Move DestFolder
+                    End If
                 End If
             End If
         End If
