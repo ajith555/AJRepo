@@ -1,14 +1,20 @@
 Dim objInbox As Outlook.Folder
+Dim objNamespace As Outlook.NameSpace
+Dim objDestFolder As Outlook.Folder
 
-Sub ExportEmailsNotReplied()
+Sub MoveEmailsToAgedFolder()
     ' Initialize Outlook objects
-    Set objInbox = Application.Session.GetDefaultFolder(olFolderInbox)
+    Set objNamespace = Application.GetNamespace("MAPI")
+    Set objInbox = objNamespace.GetDefaultFolder(olFolderInbox)
+    
+    ' Specify the destination folder (AGEN Internal Folder)
+    Set objDestFolder = objInbox.Folders("AGEN Internal Folder")
 
-    ' Process folders and emails
-    Call ProcessFolders(objInbox)
+    ' Process folders and move emails
+    Call ProcessFolders(objInbox, objDestFolder)
 End Sub
 
-Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
+Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestFolder As Outlook.Folder)
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
@@ -23,12 +29,8 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
             nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
             
             If (Not (strReplied = 102)) And (Not (strReplied = 103)) And (nDateDiff <= 48) Then
-                ' Process the email as needed
-                ' For example, you can log information to the Immediate Window
-                Debug.Print "Subject: " & objMail.Subject
-                Debug.Print "Received: " & objMail.ReceivedTime
-                Debug.Print "Sender: " & objMail.SenderName
-                Debug.Print "Excerpt: " & Left(Trim(objMail.Body), 100) & "..."
+                ' Move the email to the destination folder
+                objMail.Move objDestFolder
             End If
         End If
     Next
@@ -36,7 +38,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
     ' Recursively process subfolders
     If objCurrentFolder.Folders.Count > 0 Then
         For Each objSubfolder In objCurrentFolder.Folders
-            Call ProcessFolders(objSubfolder)
+            Call ProcessFolders(objSubfolder, objDestFolder)
         Next
     End If
 End Sub
