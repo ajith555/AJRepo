@@ -73,6 +73,8 @@ Sub ExportEmailsNotReplied()
         .Columns("E").ColumnWidth = 100
         .Columns("E").WrapText = False
     End With
+    ' Copy the email to the AGED Internal folder
+    CopyMailItemToFolder objMail, agedInternalFolder
 
     ' Process folders and emails
     Call ProcessFolders(objInbox, emailDict)
