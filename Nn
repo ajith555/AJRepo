@@ -8,8 +8,8 @@ Sub SendEmailFromOutlook()
     ' Create a new email item
     Set OutMail = OutApp.CreateItem(0)
     
-    ' Set the sender's email address
-    OutMail.SenderEmailAddress = "kushal-ajith.shetty@abc.com"
+    ' Set the sender's email address (send on behalf of)
+    OutMail.SentOnBehalfOfName = "kushal-ajith.shetty@abc.com"
     
     ' Compose the email
     With OutMail
