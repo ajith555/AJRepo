@@ -48,14 +48,16 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedIntern
                     nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
 
                     If (Not (strReplied = "102")) And (Not (strReplied = "103")) And (nDateDiff <= 48) Then
-                        ' Check if the mail item can be moved
-                        If objMail.Move(objAgedInternalFolder) Then
-                            ' Successfully moved
-                        Else
+                        ' Attempt to move the email to the "(1) AGED Internal" folder
+                        On Error Resume Next
+                        objMail.Move objAgedInternalFolder
+                        If Err.Number <> 0 Then
                             ' Handle any error condition here
                             ' You can log the error or take appropriate action
                             Debug.Print "Error moving item: " & objMail.Subject
+                            Err.Clear
                         End If
+                        On Error GoTo 0
                     End If
                 End If
             End If
