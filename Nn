@@ -1,26 +1,63 @@
-Sub SendEmailFromOutlook()
-    Dim OutApp As Object
-    Dim OutMail As Object
-    
-    ' Create Outlook Application object
-    Set OutApp = CreateObject("Outlook.Application")
-    
-    ' Create a new email item
-    Set OutMail = OutApp.CreateItem(0)
-    
-    ' Set the sender's email address (send on behalf of)
-    OutMail.SentOnBehalfOfName = "kushal-ajith.shetty@abc.com"
-    
-    ' Compose the email
-    With OutMail
-        .To = "recipient@example.com" ' Replace with the recipient's email address
-        .Subject = "Subject of the email"
-        .Body = "This is the body of the email."
-        ' You can use .HTMLBody for HTML-formatted email content
-        .Send ' Uncomment this line to send the email immediately
-    End With
-    
+Sub MoveUnrepliedEmails()
+    Dim olApp As Object
+    Dim olNamespace As Object
+    Dim olFolder As Object
+    Dim olSubfolder As Object
+    Dim olItems As Object
+    Dim olMail As Object
+    Dim olReplyTime As Date
+    Dim olReceivedTime As Date
+    Dim olAgedFolder As Object
+    Dim daysSinceReceived As Integer
+    Dim daysSinceReplied As Integer
+
+    ' Connect to Outlook Application and Namespace
+    Set olApp = CreateObject("Outlook.Application")
+    Set olNamespace = olApp.GetNamespace("MAPI")
+
+    ' Define the main Inbox folder
+    Set olFolder = olNamespace.GetDefaultFolder(6) ' 6 corresponds to the Inbox folder
+
+    ' Define the Aged Internal folder
+    On Error Resume Next
+    Set olAgedFolder = olFolder.Folders("(1) AGED Internal")
+    On Error GoTo 0
+
+    ' If the Aged Internal folder doesn't exist, create it
+    If olAgedFolder Is Nothing Then
+        Set olAgedFolder = olFolder.Folders.Add("(1) AGED Internal")
+    End If
+
+    ' Define the time thresholds (in hours)
+    daysSinceReceived = 72 * 24 ' 72 hours
+    daysSinceReplied = 48 * 24 ' 48 hours
+
+    ' Loop through the items in the Inbox and its subfolders
+    For Each olSubfolder In olFolder.Folders
+        Set olItems = olSubfolder.Items
+        For Each olMail In olItems
+            If olMail.Class = 43 Then ' 43 corresponds to mail items
+                ' Calculate the time elapsed since receiving the email
+                olReceivedTime = olMail.ReceivedTime
+                olReplyTime = olMail.ReceivedTime + TimeSerial(48, 0, 0) ' Add 48 hours to received time
+
+                If Now - olReceivedTime < daysSinceReceived Then
+                    ' Check if the email has not been replied to for more than 48 hours
+                    If Now > olReplyTime Then
+                        ' Move the email to the Aged Internal folder
+                        olMail.Move olAgedFolder
+                    End If
+                End If
+            End If
+        Next olMail
+    Next olSubfolder
+
     ' Clean up objects
-    Set OutMail = Nothing
-    Set OutApp = Nothing
+    Set olApp = Nothing
+    Set olNamespace = Nothing
+    Set olFolder = Nothing
+    Set olSubfolder = Nothing
+    Set olItems = Nothing
+    Set olMail = Nothing
+    Set olAgedFolder = Nothing
 End Sub
