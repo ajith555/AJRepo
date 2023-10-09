@@ -4,6 +4,8 @@ Dim objExcelWorksheet As Object
 Dim objNamespace As Outlook.Namespace
 Dim objAccount As Outlook.Account
 Dim objInbox As Outlook.Folder
+Dim emailDict As Object
+Dim agedInternalFolder As Outlook.Folder
 
 Sub ExportEmailsNotReplied()
     ' Define the email ID of the account to use
@@ -29,7 +31,6 @@ Sub ExportEmailsNotReplied()
     End If
 
     ' Initialize a reference to the AGED Internal folder
-    Dim agedInternalFolder As Outlook.Folder
     On Error Resume Next
     Set agedInternalFolder = objInbox.Folders("(1) AGED Internal")
     On Error GoTo 0
@@ -38,6 +39,9 @@ Sub ExportEmailsNotReplied()
     If agedInternalFolder Is Nothing Then
         Set agedInternalFolder = objInbox.Folders.Add("(1) AGED Internal")
     End If
+
+    ' Initialize a dictionary to track unique email subjects and their latest received times
+    Set emailDict = CreateObject("Scripting.Dictionary")
 
     ' Create Excel objects
     Set objExcelApplication = CreateObject("Excel.Application")
@@ -70,15 +74,11 @@ Sub ExportEmailsNotReplied()
         .Columns("E").WrapText = False
     End With
 
-    ' Initialize a dictionary to track unique email subjects and their latest received times
-    Dim emailDict As Object
-    Set emailDict = CreateObject("Scripting.Dictionary")
-
     ' Process folders and emails
-    Call ProcessFolders(objInbox, emailDict, agedInternalFolder)
+    Call ProcessFolders(objInbox, emailDict)
 End Sub
 
-Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal emailDict As Object, ByVal agedInternalFolder As Outlook.Folder)
+Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal emailDict As Object)
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
@@ -118,30 +118,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal emailDict As 
     If objCurrentFolder.Folders.Count > 0 Then
         Dim objSubfolder As Outlook.Folder
         For Each objSubfolder In objCurrentFolder.Folders
-            Call ProcessFolders(objSubfolder, emailDict, agedInternalFolder)
+            Call ProcessFolders(objSubfolder, emailDict)
         Next
     End If
-
-    ' Update the Excel worksheet after processing all emails in the current folder
-    UpdateExcelWorksheet emailDict
-End Sub
-
-Sub UpdateExcelWorksheet(ByVal emailDict As Object)
-    Dim nLastRow As Integer
-    Dim objMail As Outlook.MailItem
-    
-    ' Late-bind Excel worksheet
-    nLastRow = objExcelWorksheet.Cells(objExcelWorksheet.Rows.Count, "A").End(-4162).Row + 1
-    
-    For Each objMail In agedInternalFolder.Items
-        ' Add the email to the Excel worksheet
-        With objExcelWorksheet
-            .Cells(nLastRow, 1) = objMail.Subject
-            .Cells(nLastRow, 2) = objMail.ReceivedTime
-            .Cells(nLastRow, 3) = objMail.SenderName
-            .Cells(nLastRow, 4) = objMail.To ' Receiver's Name
-            .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..."
-        End With
-        nLastRow = nLastRow + 1
-    Next objMail
 End Sub
