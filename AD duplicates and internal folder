@@ -81,6 +81,26 @@ Sub ExportEmailsNotReplied()
     UpdateExcelWorksheet emailDict
 End Sub
 
+Sub CopyMailItemToFolder(objMail As Outlook.MailItem, destinationFolder As Outlook.Folder)
+    Dim objNewMail As Outlook.MailItem
+    
+    ' Create a new mail item
+    Set objNewMail = Application.CreateItem(olMailItem)
+    
+    ' Copy the relevant information from the original mail item to the new one
+    With objNewMail
+        .Subject = objMail.Subject
+        .ReceivedTime = objMail.ReceivedTime
+        .SenderName = objMail.SenderName
+        .To = objMail.To
+        .Body = Left(Trim(objMail.Body), 100) & "..."
+        ' Add any additional properties you need to copy
+    End With
+    
+    ' Save the new mail item to the destination folder
+    objNewMail.Move destinationFolder
+End Sub
+
 Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal emailDict As Object)
     Dim i As Long
     Dim objMail As Outlook.MailItem
@@ -101,7 +121,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal emailDict As 
                     ' This is a unique email, add it to the dictionary
                     emailDict(objMail.Subject) = objMail.ReceivedTime
                     ' Copy the email to the AGED Internal folder
-                    objMail.Copy agedInternalFolder
+                    CopyMailItemToFolder objMail, agedInternalFolder
                 End If
             End If
         End If
