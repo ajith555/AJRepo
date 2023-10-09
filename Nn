@@ -1,23 +1,22 @@
 Sub MoveUnrepliedEmails()
     Dim OutlookApp As Object
     Dim Namespace As Object
-    Dim Accounts As Object
     Dim Account As Object
     Dim Inbox As Object
+    Dim Subfolder As Object
     Dim AgeLimit As Date
     Dim DestFolder As Object
     Dim DestFolderPath As String
-    Dim EmailAddresses() As String
-    Dim i As Integer
+    
+    ' Set the email address of the account you want to process
+    Dim EmailAddress As String
+    EmailAddress = "abc@abc.com" ' Change to your desired email address
     
     ' Calculate the age limit (72 hours ago)
     AgeLimit = DateAdd("h", -72, Now)
     
     ' Define the destination folder path
     DestFolderPath = "(1) AGED Internal"
-    
-    ' Define the email addresses for the accounts you want to process
-    EmailAddresses = Split("abc@abc.com,xyz@xyz.com", ",")
     
     ' Create or get the Outlook Application
     On Error Resume Next
@@ -29,34 +28,30 @@ Sub MoveUnrepliedEmails()
         Set OutlookApp = CreateObject("Outlook.Application")
     End If
     
-    ' Set the namespace and accounts
+    ' Set the namespace
     Set Namespace = OutlookApp.GetNamespace("MAPI")
-    Set Accounts = Namespace.Accounts
     
-    ' Loop through the specified email accounts
-    For i = LBound(EmailAddresses) To UBound(EmailAddresses)
-        ' Get the account based on the email address
-        Set Account = GetAccountByEmail(Accounts, EmailAddresses(i))
+    ' Get the account based on the email address
+    Set Account = GetAccountByEmail(Namespace, EmailAddress)
+    
+    If Not Account Is Nothing Then
+        ' Get the Inbox folder for the current account
+        Set Inbox = Account.GetDefaultFolder(olFolderInbox)
         
-        If Not Account Is Nothing Then
-            ' Get the Inbox folder for the current account
-            Set Inbox = Account.GetDefaultFolder(olFolderInbox)
-            
-            ' Check if the destination folder exists, create it if not
-            On Error Resume Next
-            Set DestFolder = Inbox.Folders(DestFolderPath)
-            On Error GoTo 0
-            
-            If DestFolder Is Nothing Then
-                Set DestFolder = Inbox.Folders.Add(DestFolderPath)
-            End If
-            
-            ' Loop through all emails in Inbox and its subfolders
-            For Each Subfolder In Inbox.Folders
-                ProcessFolder Subfolder, AgeLimit, DestFolder
-            Next Subfolder
+        ' Check if the destination folder exists, create it if not
+        On Error Resume Next
+        Set DestFolder = Inbox.Folders(DestFolderPath)
+        On Error GoTo 0
+        
+        If DestFolder Is Nothing Then
+            Set DestFolder = Inbox.Folders.Add(DestFolderPath)
         End If
-    Next i
+        
+        ' Loop through all emails in Inbox and its subfolders
+        For Each Subfolder In Inbox.Folders
+            ProcessFolder Subfolder, AgeLimit, DestFolder
+        Next Subfolder
+    End If
     
     ' Clean up objects
     Set DestFolder = Nothing
@@ -65,9 +60,9 @@ Sub MoveUnrepliedEmails()
     Set OutlookApp = Nothing
 End Sub
 
-Function GetAccountByEmail(Accounts As Object, EmailAddress As String) As Object
+Function GetAccountByEmail(Namespace As Object, EmailAddress As String) As Object
     Dim Account As Object
-    For Each Account In Accounts
+    For Each Account In Namespace.Accounts
         If Account.SmtpAddress = EmailAddress Then
             Set GetAccountByEmail = Account
             Exit Function
