@@ -1,85 +1,66 @@
-Sub MoveDuplicateEmailsInExternalFolder()
-    Dim olApp As Object
-    Dim olNamespace As Object
-    Dim olInbox As Object
-    Dim olAgedExternalFolder As Object
-    Dim olDuplicateFolder As Object
-    Dim olItem As Object
-    Dim subjectDict As Object ' Dictionary to track duplicate subjects
-    Dim latestEmails As Object ' Dictionary to track the latest emails by subject
+Dim objExcelApplication As Object ' Use Object type to late-bind Excel
+Dim objExcelWorkbook As Object
+Dim objExcelWorksheet As Object
+Dim objInbox As Outlook.Folder
+
+Sub ExportEmailsNotReplied()
+    ' Initialize Outlook objects
+    Set objInbox = Application.Session.GetDefaultFolder(olFolderInbox)
+
+    ' Create the "(1) AGED Internal" folder if it doesn't exist
+    Dim objAgedInternalFolder As Outlook.Folder
+    On Error Resume Next
+    Set objAgedInternalFolder = objInbox.Folders("(1) AGED Internal")
+    On Error GoTo 0
+    
+    If objAgedInternalFolder Is Nothing Then
+        Set objAgedInternalFolder = objInbox.Folders.Add("(1) AGED Internal")
+    End If
+
+    ' Process folders and emails
+    Call ProcessFolders(objInbox, objAgedInternalFolder)
+End Sub
+
+Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedInternalFolder As Outlook.Folder)
+    Dim colSubfolders As New Collection
+    Dim objSubfolder As Outlook.Folder
     Dim i As Integer
-    
-    ' Create Outlook Application instance
-    Set olApp = CreateObject("Outlook.Application")
-    ' Get MAPI Namespace
-    Set olNamespace = olApp.GetNamespace("MAPI")
-    
-    ' Get the target email account inbox folder
-    Set olInbox = olNamespace.Folders(targetEmail).Folders("Inbox")
-    
-    ' Get "(1) AGED External" folder
-    On Error Resume Next
-    Set olAgedExternalFolder = olInbox.Folders("(1) AGED External")
-    On Error GoTo 0
-    
-    ' Exit if "(1) AGED External" folder doesn't exist
-    If olAgedExternalFolder Is Nothing Then
-        Exit Sub
-    End If
-    
-    ' Get or create "(1) AGED Duplicate" folder
-    On Error Resume Next
-    Set olDuplicateFolder = olInbox.Folders("(1) AGED Duplicate")
-    On Error GoTo 0
-    
-    If olDuplicateFolder Is Nothing Then
-        Set olDuplicateFolder = olInbox.Folders.Add("(1) AGED Duplicate", olFolderInbox)
-    End If
-    
-    ' Create a Dictionary to track duplicate subjects and latest emails
-    Set subjectDict = CreateObject("Scripting.Dictionary")
-    Set latestEmails = CreateObject("Scripting.Dictionary")
-    
-    ' Loop through items in the "(1) AGED External" folder
-    For i = olAgedExternalFolder.Items.Count To 1 Step -1
-        Set olItem = olAgedExternalFolder.Items(i)
-        If olItem.Class = 43 Then ' MailItem Class
-            Dim subject As String
-            subject = olItem.Subject
-            Dim receivedDate As Date
-            receivedDate = olItem.ReceivedTime
-            
-            If Not subjectDict.Exists(subject) Then
-                subjectDict.Add subject, olItem.EntryID ' Track the subject and its EntryID
-                latestEmails.Add subject, receivedDate ' Track the latest email's received date
-            Else
-                ' Check if the current email's received date is later than the stored latest email's received date
-                If receivedDate > latestEmails(subject) Then
-                    ' Move the previously stored latest email to the "(1) AGED Duplicate" folder
-                    Dim latestEmailEntryID As String
-                    latestEmailEntryID = subjectDict(subject)
-                    Dim latestEmail As Object
-                    Set latestEmail = olAgedExternalFolder.Items.Find("[EntryID]='" & latestEmailEntryID & "'")
-                    If Not latestEmail Is Nothing Then
-                        latestEmail.Move olDuplicateFolder
+
+    ' Add the current folder to the collection
+    colSubfolders.Add objCurrentFolder
+
+    ' Loop through the collection of folders
+    Do While colSubfolders.Count > 0
+        Set objCurrentFolder = colSubfolders(1)
+        colSubfolders.Remove 1 ' Remove the processed folder from the collection
+
+        For i = objCurrentFolder.Items.Count To 1 Step -1
+            If objCurrentFolder.Items(i).Class = olMail Then
+                Dim objMail As Outlook.MailItem
+                Set objMail = objCurrentFolder.Items(i)
+                Dim strReplied As Variant
+
+                If Not IsEmpty(objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")) Then
+                    strReplied = CStr(objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003"))
+
+                    ' Calculate the time difference in hours (48 hours = 2 days)
+                    Dim nDateDiff As Integer
+                    nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
+
+                    If (Not (strReplied = "102")) And (Not (strReplied = "103")) And (nDateDiff <= 48) Then
+                        ' Attempt to copy the email to the "(1) AGED Internal" folder
+                        Dim objCopiedMail As Outlook.MailItem
+                        Set objCopiedMail = objMail.Copy
+                        objCopiedMail.Move objAgedInternalFolder
+                        Set objCopiedMail = Nothing ' Release the copied email object
                     End If
-                    
-                    ' Update the latest email's received date and EntryID in the dictionaries
-                    latestEmails(subject) = receivedDate
-                    subjectDict(subject) = olItem.EntryID
-                Else
-                    ' Move the current email to the "(1) AGED Duplicate" folder
-                    olItem.Move olDuplicateFolder
                 End If
             End If
-        End If
-    Next i
-    
-    ' Release objects
-    Set olItem = Nothing
-    Set olDuplicateFolder = Nothing
-    Set olAgedExternalFolder = Nothing
-    Set olInbox = Nothing
-    Set olNamespace = Nothing
-    Set olApp = Nothing
+        Next i
+
+        ' Add subfolders to the collection
+        For Each objSubfolder In objCurrentFolder.Folders
+            colSubfolders.Add objSubfolder
+        Next objSubfolder
+    Loop
 End Sub
