@@ -5,7 +5,7 @@ Dim objNamespace As Outlook.Namespace
 Dim objAccount As Outlook.Account
 Dim objInbox As Outlook.Folder
 
-Sub ExportEmailsNotRepliedAndMove()
+Sub ExportEmailsNotRepliedAndCopy()
     ' Define the email ID of the account to use
     Dim accountEmail As String
     accountEmail = "youremail@example.com" ' Replace with the desired email ID
@@ -72,10 +72,10 @@ Sub ExportEmailsNotRepliedAndMove()
     End If
 
     ' Process folders and emails
-    Call ProcessAndMoveEmails(objInbox, objTargetFolder)
+    Call ProcessAndCopyEmails(objInbox, objTargetFolder)
 End Sub
 
-Sub ProcessAndMoveEmails(ByVal objCurrentFolder As Outlook.Folder, ByVal objTargetFolder As Outlook.Folder)
+Sub ProcessAndCopyEmails(ByVal objCurrentFolder As Outlook.Folder, ByVal objTargetFolder As Outlook.Folder)
     Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
@@ -101,8 +101,10 @@ Sub ProcessAndMoveEmails(ByVal objCurrentFolder As Outlook.Folder, ByVal objTarg
                     .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..."
                 End With
                 
-                ' Move the email to the target folder
-                objMail.Move objTargetFolder
+                ' Create a copy of the email and move it to the target folder
+                Dim copiedMail As Outlook.MailItem
+                Set copiedMail = objMail.Copy
+                copiedMail.Move objTargetFolder
             End If
         End If
     Next
@@ -110,7 +112,7 @@ Sub ProcessAndMoveEmails(ByVal objCurrentFolder As Outlook.Folder, ByVal objTarg
     ' Recursively process subfolders
     If objCurrentFolder.Folders.Count > 0 Then
         For Each objSubfolder In objCurrentFolder.Folders
-            Call ProcessAndMoveEmails(objSubfolder, objTargetFolder)
+            Call ProcessAndCopyEmails(objSubfolder, objTargetFolder)
         Next
     End If
 End Sub
