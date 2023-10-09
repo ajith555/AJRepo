@@ -3,14 +3,13 @@ Sub MoveUnrepliedEmails()
     Dim Namespace As Object
     Dim Account As Object
     Dim Inbox As Object
-    Dim Subfolder As Object
     Dim AgeLimit As Date
     Dim DestFolder As Object
     Dim DestFolderPath As String
     
     ' Set the email address of the account you want to process
     Dim EmailAddress As String
-    EmailAddress = "abc@abc.com" ' Change to your desired email address
+    EmailAddress = "kushal-ajith.shetty@ubs.com" ' Change to your desired email address
     
     ' Calculate the age limit (72 hours ago)
     AgeLimit = DateAdd("h", -72, Now)
@@ -36,7 +35,7 @@ Sub MoveUnrepliedEmails()
     
     If Not Account Is Nothing Then
         ' Get the Inbox folder for the current account
-        Set Inbox = Account.GetDefaultFolder(olFolderInbox)
+        Set Inbox = Namespace.GetDefaultFolder(6) ' 6 represents olFolderInbox
         
         ' Check if the destination folder exists, create it if not
         On Error Resume Next
@@ -48,9 +47,7 @@ Sub MoveUnrepliedEmails()
         End If
         
         ' Loop through all emails in Inbox and its subfolders
-        For Each Subfolder In Inbox.Folders
-            ProcessFolder Subfolder, AgeLimit, DestFolder
-        Next Subfolder
+        ProcessFolder Inbox, AgeLimit, DestFolder
     End If
     
     ' Clean up objects
