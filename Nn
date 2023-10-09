@@ -67,8 +67,12 @@ Sub ProcessFolder(ByVal CurrentFolder As Object, ByVal AgeLimit As Date, ByVal D
     
     For Each Item In CurrentFolder.Items
         If Item.Class = olMail Then
-            If Item.ReceivedTime >= AgeLimit And Not Item.ReplyTime >= AgeLimit Then
-                Item.Move DestFolder
+            ' Check if the email is received in the past 72 hours
+            If Item.ReceivedTime >= AgeLimit Then
+                ' Check if the email has been replied to
+                If Not Item.IsReplied Then
+                    Item.Move DestFolder
+                End If
             End If
         End If
     Next Item
