@@ -6,7 +6,7 @@ Dim objInbox As Outlook.Folder
 Sub ExportEmailsNotReplied()
     ' Initialize Outlook objects
     Set objInbox = Application.Session.GetDefaultFolder(olFolderInbox)
-    
+
     ' Create the "(1) AGED Internal" folder if it doesn't exist
     Dim objAgedInternalFolder As Outlook.Folder
     On Error Resume Next
@@ -18,28 +18,39 @@ Sub ExportEmailsNotReplied()
     End If
 
     ' Process folders and emails
-    Call ProcessFolderItems(objInbox, objAgedInternalFolder)
+    Call ProcessFolders(objInbox, objAgedInternalFolder)
 End Sub
 
-Sub ProcessFolderItems(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedInternalFolder As Outlook.Folder)
-    Dim objItems As Outlook.Items
+Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedInternalFolder As Outlook.Folder)
+    Dim i As Long
     Dim objMail As Outlook.MailItem
-    Dim strReplied As String
+    Dim strReplied As Variant ' Change the data type to Variant
     Dim nDateDiff As Integer
+    Dim nLastRow As Integer
 
-    Set objItems = objCurrentFolder.Items
-    
-    For Each objMail In objItems
-        If objMail.Class = olMail Then
-            strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
-            
-            ' Calculate the time difference in hours (48 hours = 2 days)
-            nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
-            
-            If (Not (strReplied = "102")) And (Not (strReplied = "103")) And (nDateDiff <= 48) Then
-                ' Move the email to the "(1) AGED Internal" folder
-                objMail.Move objAgedInternalFolder
+    For i = objCurrentFolder.Items.Count To 1 Step -1
+        If objCurrentFolder.Items(i).Class = olMail Then
+            Set objMail = objCurrentFolder.Items(i)
+            ' Ensure the property is not empty
+            If Not IsEmpty(objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")) Then
+                ' Convert the property value to a string
+                strReplied = CStr(objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003"))
+                
+                ' Calculate the time difference in hours (48 hours = 2 days)
+                nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
+                
+                If (Not (strReplied = "102")) And (Not (strReplied = "103")) And (nDateDiff <= 48) Then
+                    ' Move the email to the "(1) AGED Internal" folder
+                    objMail.Move objAgedInternalFolder
+                End If
             End If
         End If
-    Next objMail
+    Next
+
+    ' Recursively process subfolders
+    If objCurrentFolder.Folders.Count > 0 Then
+        For Each objSubfolder In objCurrentFolder.Folders
+            Call ProcessFolders(objSubfolder, objAgedInternalFolder)
+        Next
+    End If
 End Sub
