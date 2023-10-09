@@ -1,6 +1,6 @@
-Dim objExcelApplication As Excel.Application
-Dim objExcelWorkbook As Excel.Workbook
-Dim objExcelWorksheet As Excel.Worksheet
+Dim objExcelApplication As Object ' Use Object type to late-bind Excel
+Dim objExcelWorkbook As Object
+Dim objExcelWorksheet As Object
 Dim objInbox As Outlook.Folder
 
 Sub ExportEmailsNotReplied()
@@ -8,7 +8,7 @@ Sub ExportEmailsNotReplied()
     Set objInbox = Application.Session.GetDefaultFolder(olFolderInbox)
 
     ' Create Excel objects
-    Set objExcelApplication = New Excel.Application
+    Set objExcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
     Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
 
@@ -56,7 +56,8 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
             nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
             
             If (Not (strReplied = 102)) And (Not (strReplied = 103)) And (nDateDiff <= 48) Then
-                nLastRow = objExcelWorksheet.Cells(objExcelWorksheet.Rows.Count, "A").End(xlUp).Row + 1
+                ' Late-bind Excel worksheet
+                nLastRow = objExcelWorksheet.Cells(objExcelWorksheet.Rows.Count, "A").End(-4162).Row + 1
                 With objExcelWorksheet
                     .Cells(nLastRow, 1) = objMail.Subject
                     .Cells(nLastRow, 2) = objMail.ReceivedTime
