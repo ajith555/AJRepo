@@ -4,7 +4,6 @@ Sub MoveUnrepliedEmails()
     Dim Accounts As Object
     Dim Account As Object
     Dim Inbox As Object
-    Dim Subfolder As Object
     Dim AgeLimit As Date
     Dim DestFolder As Object
     Dim DestFolderPath As String
@@ -41,7 +40,7 @@ Sub MoveUnrepliedEmails()
         
         If Not Account Is Nothing Then
             ' Get the Inbox folder for the current account
-            Set Inbox = Namespace.GetFolder("Inbox").Folders(Account.DeliveryStore.DisplayName)
+            Set Inbox = Account.GetDefaultFolder(olFolderInbox)
             
             ' Check if the destination folder exists, create it if not
             On Error Resume Next
