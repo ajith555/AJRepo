@@ -36,23 +36,27 @@ Sub MoveUnrepliedEmails()
     
     ' Loop through the specified email accounts
     For i = LBound(EmailAddresses) To UBound(EmailAddresses)
-        ' Get the inbox for the current account
-        Set Account = Accounts.Item(EmailAddresses(i))
-        Set Inbox = Account.DeliveryStore.GetDefaultFolder(olFolderInbox)
+        ' Get the account based on the email address
+        Set Account = GetAccountByEmail(Accounts, EmailAddresses(i))
         
-        ' Check if the destination folder exists, create it if not
-        On Error Resume Next
-        Set DestFolder = Inbox.Folders(DestFolderPath)
-        On Error GoTo 0
-        
-        If DestFolder Is Nothing Then
-            Set DestFolder = Inbox.Folders.Add(DestFolderPath)
+        If Not Account Is Nothing Then
+            ' Get the Inbox folder for the current account
+            Set Inbox = Namespace.GetFolder("Inbox").Folders(Account.DeliveryStore.DisplayName)
+            
+            ' Check if the destination folder exists, create it if not
+            On Error Resume Next
+            Set DestFolder = Inbox.Folders(DestFolderPath)
+            On Error GoTo 0
+            
+            If DestFolder Is Nothing Then
+                Set DestFolder = Inbox.Folders.Add(DestFolderPath)
+            End If
+            
+            ' Loop through all emails in Inbox and its subfolders
+            For Each Subfolder In Inbox.Folders
+                ProcessFolder Subfolder, AgeLimit, DestFolder
+            Next Subfolder
         End If
-        
-        ' Loop through all emails in Inbox and its subfolders
-        For Each Subfolder In Inbox.Folders
-            ProcessFolder Subfolder, AgeLimit, DestFolder
-        Next Subfolder
     Next i
     
     ' Clean up objects
@@ -61,6 +65,16 @@ Sub MoveUnrepliedEmails()
     Set Namespace = Nothing
     Set OutlookApp = Nothing
 End Sub
+
+Function GetAccountByEmail(Accounts As Object, EmailAddress As String) As Object
+    Dim Account As Object
+    For Each Account In Accounts
+        If Account.SmtpAddress = EmailAddress Then
+            Set GetAccountByEmail = Account
+            Exit Function
+        End If
+    Next Account
+End Function
 
 Sub ProcessFolder(ByVal CurrentFolder As Object, ByVal AgeLimit As Date, ByVal DestFolder As Object)
     Dim Item As Object
