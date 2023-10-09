@@ -1,63 +1,83 @@
 Sub MoveUnrepliedEmails()
-    Dim olApp As Object
-    Dim olNamespace As Object
-    Dim olFolder As Object
-    Dim olSubfolder As Object
-    Dim olItems As Object
-    Dim olMail As Object
-    Dim olReplyTime As Date
-    Dim olReceivedTime As Date
-    Dim olAgedFolder As Object
-    Dim daysSinceReceived As Integer
-    Dim daysSinceReplied As Integer
-
-    ' Connect to Outlook Application and Namespace
-    Set olApp = CreateObject("Outlook.Application")
-    Set olNamespace = olApp.GetNamespace("MAPI")
-
-    ' Define the main Inbox folder
-    Set olFolder = olNamespace.GetDefaultFolder(6) ' 6 corresponds to the Inbox folder
-
-    ' Define the Aged Internal folder
+    Dim OutlookApp As Object
+    Dim Namespace As Object
+    Dim Accounts As Object
+    Dim Account As Object
+    Dim Inbox As Object
+    Dim Subfolder As Object
+    Dim AgeLimit As Date
+    Dim DestFolder As Object
+    Dim DestFolderPath As String
+    Dim EmailAddress As String
+    
+    ' Set the age limit (72 hours ago)
+    AgeLimit = Now - TimeValue("72:00:00")
+    
+    ' Define the destination folder path
+    DestFolderPath = "(1) AGED Internal"
+    
+    ' Define the email addresses for the accounts you want to process
+    Dim EmailAddresses() As String
+    EmailAddresses = Split("abc@abc.com,xyz@xyz.com", ",")
+    
+    ' Create or get the Outlook Application
     On Error Resume Next
-    Set olAgedFolder = olFolder.Folders("(1) AGED Internal")
+    Set OutlookApp = GetObject(, "Outlook.Application")
     On Error GoTo 0
-
-    ' If the Aged Internal folder doesn't exist, create it
-    If olAgedFolder Is Nothing Then
-        Set olAgedFolder = olFolder.Folders.Add("(1) AGED Internal")
+    
+    ' If Outlook is not open, create a new instance
+    If OutlookApp Is Nothing Then
+        Set OutlookApp = CreateObject("Outlook.Application")
     End If
-
-    ' Define the time thresholds (in hours)
-    daysSinceReceived = 72 * 24 ' 72 hours
-    daysSinceReplied = 48 * 24 ' 48 hours
-
-    ' Loop through the items in the Inbox and its subfolders
-    For Each olSubfolder In olFolder.Folders
-        Set olItems = olSubfolder.Items
-        For Each olMail In olItems
-            If olMail.Class = 43 Then ' 43 corresponds to mail items
-                ' Calculate the time elapsed since receiving the email
-                olReceivedTime = olMail.ReceivedTime
-                olReplyTime = olMail.ReceivedTime + TimeSerial(48, 0, 0) ' Add 48 hours to received time
-
-                If Now - olReceivedTime < daysSinceReceived Then
-                    ' Check if the email has not been replied to for more than 48 hours
-                    If Now > olReplyTime Then
-                        ' Move the email to the Aged Internal folder
-                        olMail.Move olAgedFolder
-                    End If
-                End If
-            End If
-        Next olMail
-    Next olSubfolder
-
+    
+    ' Set the namespace and accounts
+    Set Namespace = OutlookApp.GetNamespace("MAPI")
+    Set Accounts = Namespace.Accounts
+    
+    ' Loop through the specified email accounts
+    For Each EmailAddress In EmailAddresses
+        ' Get the inbox for the current account
+        Set Account = Accounts.Item(EmailAddress)
+        Set Inbox = Account.DeliveryStore.GetDefaultFolder(olFolderInbox)
+        
+        ' Check if the destination folder exists, create it if not
+        On Error Resume Next
+        Set DestFolder = Inbox.Folders(DestFolderPath)
+        On Error GoTo 0
+        
+        If DestFolder Is Nothing Then
+            Set DestFolder = Inbox.Folders.Add(DestFolderPath)
+        End If
+        
+        ' Loop through all emails in Inbox and its subfolders
+        For Each Subfolder In Inbox.Folders
+            ProcessFolder Subfolder, AgeLimit, DestFolder
+        Next Subfolder
+    Next EmailAddress
+    
     ' Clean up objects
-    Set olApp = Nothing
-    Set olNamespace = Nothing
-    Set olFolder = Nothing
-    Set olSubfolder = Nothing
-    Set olItems = Nothing
-    Set olMail = Nothing
-    Set olAgedFolder = Nothing
+    Set DestFolder = Nothing
+    Set Inbox = Nothing
+    Set Namespace = Nothing
+    Set OutlookApp = Nothing
+End Sub
+
+Sub ProcessFolder(ByVal CurrentFolder As Object, ByVal AgeLimit As Date, ByVal DestFolder As Object)
+    Dim Item As Object
+    
+    For Each Item In CurrentFolder.Items
+        If Item.Class = olMail Then
+            If Item.ReceivedTime >= AgeLimit And Item.ReceivedTime < AgeLimit - TimeValue("48:00:00") And Not Item.ReplyTime >= AgeLimit Then
+                Item.Move DestFolder
+            End If
+        End If
+    Next Item
+    
+    ' Recursively process subfolders
+    If CurrentFolder.Folders.Count > 0 Then
+        Dim Subfolder As Object
+        For Each Subfolder In CurrentFolder.Folders
+            ProcessFolder Subfolder, AgeLimit, DestFolder
+        Next Subfolder
+    End If
 End Sub
