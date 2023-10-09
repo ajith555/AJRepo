@@ -1,5 +1,5 @@
-Dim objInbox As Outlook.Folder
 Dim objNamespace As Outlook.NameSpace
+Dim objInbox As Outlook.Folder
 Dim objDestFolder As Outlook.Folder
 
 Sub CopyEmailsToAgedFolder()
@@ -22,47 +22,33 @@ Sub CopyEmailsToAgedFolder()
     End If
 
     ' Process folders and copy emails
-    Call ProcessFolders(objInbox, objDestFolder)
+    ProcessFolders objInbox, objDestFolder
 End Sub
 
 Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestFolder As Outlook.Folder)
-    Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
-    Dim nDateDiff As Integer
+    Dim nDateDiff As Long
 
-    For i = objCurrentFolder.Items.Count To 1 Step -1
-        If objCurrentFolder.Items(i).Class = olMail Then
-            Set objMail = objCurrentFolder.Items(i)
+    For Each objMail In objCurrentFolder.Items
+        If objMail.Class = olMail Then
             strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
             
             ' Calculate the time difference in hours (48 hours = 2 days)
             nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
             
-            If (Not (strReplied = "102")) And (Not (strReplied = "103")) And (nDateDiff <= 48) Then
+            If (strReplied <> "102" And strReplied <> "103") And (nDateDiff <= 48) Then
                 ' Copy the email by creating a new item in the destination folder
                 Dim copiedMail As Outlook.MailItem
-                Set copiedMail = objDestFolder.Items.Add(olMailItem)
-                copiedMail.Subject = objMail.Subject
-                copiedMail.SenderName = objMail.SenderName
-                copiedMail.Body = Left(Trim(objMail.Body), 100) & "..."
-                
-                ' Set the received time to match the original email's received time
-                copiedMail.ReceivedTime = objMail.ReceivedTime
-                
-                ' Save the copied email
-                copiedMail.Save
-                
-                ' Optionally, you can delete the original email if needed
-               ' objMail.Delete
+                Set copiedMail = objMail.Copy
+                copiedMail.Move objDestFolder
             End If
         End If
     Next
 
     ' Recursively process subfolders
-    If objCurrentFolder.Folders.Count > 0 Then
-        For Each objSubfolder In objCurrentFolder.Folders
-            Call ProcessFolders(objSubfolder, objDestFolder)
-        Next
-    End If
+    Dim objSubfolder As Outlook.Folder
+    For Each objSubfolder In objCurrentFolder.Folders
+        ProcessFolders objSubfolder, objDestFolder
+    Next
 End Sub
