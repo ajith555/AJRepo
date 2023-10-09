@@ -11,8 +11,8 @@ Sub MoveUnrepliedEmails()
     Dim EmailAddresses() As String
     Dim i As Integer
     
-    ' Set the age limit (72 hours ago)
-    AgeLimit = Now - TimeValue("72:00:00")
+    ' Calculate the age limit (72 hours ago)
+    AgeLimit = DateAdd("h", -72, Now)
     
     ' Define the destination folder path
     DestFolderPath = "(1) AGED Internal"
