@@ -1,24 +1,26 @@
-let
-    Source = Exchange.Contents("kushal-ajith.shetty@ubs.com"),
-    Mail1 = Source{[Name="Mail"]}[Data],
-
-    // Step 1: Create a table with matching sent emails
-    SentItems = Table.SelectRows(Mail1, each [Folder Path] = "\Sent Items\"),
-    AddMatchingSentEmail = Table.AddColumn(Mail1, "MatchingSentEmail", each
-        let
-            subject = [Subject],
-            matchingSentEmail = Table.SelectRows(SentItems, each Text.StartsWith([Subject], "RE: " & subject))
-        in
-            if Table.IsEmpty(matchingSentEmail) then null else matchingSentEmail),
-
-    // Step 2: Create a custom column to indicate if there is a matching sent email
-    AddMatchingIndicator = Table.AddColumn(AddMatchingSentEmail, "MatchingIndicator", each
-        if [MatchingSentEmail] <> null then "Yes" else "No"),
-
-    // Step 3: Calculate the response time in hours
-    AddResponseTimeHours = Table.AddColumn(AddMatchingIndicator, "ResponseTimeHours", each
-        if [MatchingSentEmail] <> null then
-            Duration.From([DateTimeReceived] - [MatchingSentEmail][DateTimeReceived])[TotalHours]
-        else null)
-in
-    AddResponseTimeHours
+Sub SendEmailFromOutlook()
+    Dim OutApp As Object
+    Dim OutMail As Object
+    
+    ' Create Outlook Application object
+    Set OutApp = CreateObject("Outlook.Application")
+    
+    ' Create a new email item
+    Set OutMail = OutApp.CreateItem(0)
+    
+    ' Set the sender's email address
+    OutMail.SenderEmailAddress = "kushal-ajith.shetty@abc.com"
+    
+    ' Compose the email
+    With OutMail
+        .To = "recipient@example.com" ' Replace with the recipient's email address
+        .Subject = "Subject of the email"
+        .Body = "This is the body of the email."
+        ' You can use .HTMLBody for HTML-formatted email content
+        .Send ' Uncomment this line to send the email immediately
+    End With
+    
+    ' Clean up objects
+    Set OutMail = Nothing
+    Set OutApp = Nothing
+End Sub
