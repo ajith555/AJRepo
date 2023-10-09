@@ -1,55 +1,44 @@
-Dim objNamespace As Outlook.NameSpace
+Dim objExcelApplication As Object ' Use Object type to late-bind Excel
+Dim objExcelWorkbook As Object
+Dim objExcelWorksheet As Object
 Dim objInbox As Outlook.Folder
-Dim objDestFolder As Outlook.Folder
 
-Sub CopyEmailsToAgedFolder()
+Sub ExportEmailsNotReplied()
     ' Initialize Outlook objects
-    Set objNamespace = Application.GetNamespace("MAPI")
-    Set objInbox = objNamespace.GetDefaultFolder(olFolderInbox)
-    
-    ' Specify the destination folder name
-    Dim destFolderName As String
-    destFolderName = "(1) AGED Internal"
-    
-    ' Check if the destination folder exists, and create it if not
-    On Error Resume Next
-    Set objDestFolder = objInbox.Folders(destFolderName)
-    On Error GoTo 0
-    
-    If objDestFolder Is Nothing Then
-        ' The folder doesn't exist, so create it
-        Set objDestFolder = objInbox.Folders.Add(destFolderName)
-    End If
+    Set objInbox = Application.Session.GetDefaultFolder(olFolderInbox)
 
-    ' Process folders and copy emails
-    ProcessFolders objInbox, objDestFolder
+
+    ' Process folders and emails
+    Call ProcessFolders(objInbox)
 End Sub
 
-Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestFolder As Outlook.Folder)
+Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
+    Dim i As Long
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
-    Dim nDateDiff As Long
+    Dim nDateDiff As Integer
+    Dim nLastRow As Integer
 
-    For Each objMail In objCurrentFolder.Items
-        If TypeOf objMail Is Outlook.MailItem Then ' Check if it's a mail item
+    For i = objCurrentFolder.Items.Count To 1 Step -1
+        If objCurrentFolder.Items(i).Class = olMail Then
+            Set objMail = objCurrentFolder.Items(i)
             strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
             
             ' Calculate the time difference in hours (48 hours = 2 days)
             nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
             
-            If (strReplied <> "102" And strReplied <> "103") And (nDateDiff <= 48) Then
-                ' Copy the email by creating a new item in the destination folder
-                Dim copiedMail As Outlook.MailItem
-                Set copiedMail = objMail.Copy
-                copiedMail.Move objDestFolder
+            If (Not (strReplied = 102)) And (Not (strReplied = 103)) And (nDateDiff <= 48) Then
+
+
+                End With
             End If
         End If
-    Next objMail
+    Next
 
     ' Recursively process subfolders
-    Dim objSubfolder As Outlook.Folder
-    For Each objSubfolder In objCurrentFolder.Folders
-        ProcessFolders objSubfolder, objDestFolder
-    Next objSubfolder
+    If objCurrentFolder.Folders.Count > 0 Then
+        For Each objSubfolder In objCurrentFolder.Folders
+            Call ProcessFolders(objSubfolder)
+        Next
+    End If
 End Sub
-
