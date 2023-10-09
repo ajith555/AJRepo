@@ -1,100 +1,42 @@
-Sub MoveUnrepliedEmails()
-    Dim OutlookApp As Object
-    Dim Namespace As Object
-    Dim Account As Object
-    Dim Inbox As Object
-    Dim AgeLimit As Date
-    Dim DestFolder As Object
-    Dim DestFolderPath As String
-    
-    ' Set the email address of the account you want to process
-    Dim EmailAddress As String
-    EmailAddress = "kushal-ajith.shetty@ubs.com" ' Change to your desired email address
-    
-    ' Calculate the age limit (72 hours ago)
-    AgeLimit = DateAdd("h", -72, Now)
-    
-    ' Define the destination folder path
-    DestFolderPath = "(1) AGED Internal"
-    
-    ' Create or get the Outlook Application
-    On Error Resume Next
-    Set OutlookApp = GetObject(, "Outlook.Application")
-    On Error GoTo 0
-    
-    ' If Outlook is not open, create a new instance
-    If OutlookApp Is Nothing Then
-        Set OutlookApp = CreateObject("Outlook.Application")
-    End If
-    
-    ' Set the namespace
-    Set Namespace = OutlookApp.GetNamespace("MAPI")
-    
-    ' Get the account based on the email address
-    Set Account = GetAccountByEmail(Namespace, EmailAddress)
-    
-    If Not Account Is Nothing Then
-        ' Get the Inbox folder for the current account
-        Set Inbox = Namespace.GetDefaultFolder(6) ' 6 represents olFolderInbox
-        
-        ' Check if the destination folder exists, create it if not
-        On Error Resume Next
-        Set DestFolder = Inbox.Folders(DestFolderPath)
-        On Error GoTo 0
-        
-        If DestFolder Is Nothing Then
-            Set DestFolder = Inbox.Folders.Add(DestFolderPath)
-        End If
-        
-        ' Loop through all emails in Inbox and its subfolders
-        ProcessFolder Inbox, AgeLimit, DestFolder
-    End If
-    
-    ' Clean up objects
-    Set DestFolder = Nothing
-    Set Inbox = Nothing
-    Set Namespace = Nothing
-    Set OutlookApp = Nothing
+Dim objInbox As Outlook.Folder
+
+Sub ExportEmailsNotReplied()
+    ' Initialize Outlook objects
+    Set objInbox = Application.Session.GetDefaultFolder(olFolderInbox)
+
+    ' Process folders and emails
+    Call ProcessFolders(objInbox)
 End Sub
 
-Function GetAccountByEmail(Namespace As Object, EmailAddress As String) As Object
-    Dim Account As Object
-    For Each Account In Namespace.Accounts
-        If Account.SmtpAddress = EmailAddress Then
-            Set GetAccountByEmail = Account
-            Exit Function
-        End If
-    Next Account
-End Function
+Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
+    Dim i As Long
+    Dim objMail As Outlook.MailItem
+    Dim strReplied As String
+    Dim nDateDiff As Integer
 
-Sub ProcessFolder(ByVal CurrentFolder As Object, ByVal AgeLimit As Date, ByVal DestFolder As Object)
-    Dim Item As Object
-    Dim Conversation As Object
-    Dim ConversationTable As Object
-    
-    For Each Item In CurrentFolder.Items
-        If Item.Class = olMail Then
-            ' Check if the email is received in the past 72 hours
-            If Item.ReceivedTime >= AgeLimit Then
-                ' Check if the email has a reply by checking its conversation
-                Set Conversation = Item.GetConversation
-                If Not Conversation Is Nothing Then
-                    Set ConversationTable = Conversation.GetTable
-                    
-                    If ConversationTable.GetRowCount >= 2 Then
-                        ' There is at least one reply in the conversation
-                        Item.Copy DestFolder ' Copy instead of move
-                    End If
-                End If
+    For i = objCurrentFolder.Items.Count To 1 Step -1
+        If objCurrentFolder.Items(i).Class = olMail Then
+            Set objMail = objCurrentFolder.Items(i)
+            strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            
+            ' Calculate the time difference in hours (48 hours = 2 days)
+            nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
+            
+            If (Not (strReplied = 102)) And (Not (strReplied = 103)) And (nDateDiff <= 48) Then
+                ' Process the email as needed
+                ' For example, you can log information to the Immediate Window
+                Debug.Print "Subject: " & objMail.Subject
+                Debug.Print "Received: " & objMail.ReceivedTime
+                Debug.Print "Sender: " & objMail.SenderName
+                Debug.Print "Excerpt: " & Left(Trim(objMail.Body), 100) & "..."
             End If
         End If
-    Next Item
-    
+    Next
+
     ' Recursively process subfolders
-    If CurrentFolder.Folders.Count > 0 Then
-        Dim Subfolder As Object
-        For Each Subfolder In CurrentFolder.Folders
-            ProcessFolder Subfolder, AgeLimit, DestFolder
-        Next Subfolder
+    If objCurrentFolder.Folders.Count > 0 Then
+        For Each objSubfolder In objCurrentFolder.Folders
+            Call ProcessFolders(objSubfolder)
+        Next
     End If
 End Sub
