@@ -31,7 +31,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestFolder
     Dim nDateDiff As Long
 
     For Each objMail In objCurrentFolder.Items
-        If objMail.Class = olMail Then
+        If TypeOf objMail Is Outlook.MailItem Then ' Check if it's a mail item
             strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
             
             ' Calculate the time difference in hours (48 hours = 2 days)
@@ -52,3 +52,4 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestFolder
         ProcessFolders objSubfolder, objDestFolder
     Next objSubfolder
 End Sub
+
