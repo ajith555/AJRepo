@@ -83,13 +83,12 @@ End Sub
 
 Sub CopyMailItemToFolder(objMail As Outlook.MailItem, destinationFolder As Outlook.Folder)
     ' Copy the mail item to the destination folder
-    objMail.Copy
-    ' Get the copied mail item (which is now the last item in the destination folder)
     Dim copiedMail As Outlook.MailItem
-    Set copiedMail = destinationFolder.Items.GetLast
-    ' Optionally, move the copied mail item to the target folder
+    Set copiedMail = objMail.Copy
+    ' Move the copied mail item to the destination folder
     copiedMail.Move destinationFolder
 End Sub
+
 
 Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal emailDict As Object)
     Dim i As Long
