@@ -42,12 +42,16 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objDestFolder
             If (Not (strReplied = "102")) And (Not (strReplied = "103")) And (nDateDiff <= 48) Then
                 ' Copy the email by creating a new item in the destination folder
                 Dim copiedMail As Outlook.MailItem
-                Set copiedMail = objDestFolder.Items.Add
+                Set copiedMail = objDestFolder.Items.Add(olMailItem)
                 copiedMail.Subject = objMail.Subject
-                copiedMail.ReceivedTime = objMail.ReceivedTime
                 copiedMail.SenderName = objMail.SenderName
                 copiedMail.Body = Left(Trim(objMail.Body), 100) & "..."
-                copiedMail.Save ' Save the copied email
+                
+                ' Set the received time to match the original email's received time
+                copiedMail.ReceivedTime = objMail.ReceivedTime
+                
+                ' Save the copied email
+                copiedMail.Save
                 
                 ' Optionally, you can delete the original email if needed
                ' objMail.Delete
