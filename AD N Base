@@ -7,9 +7,6 @@ Sub ExportEmailsNotReplied()
     ' Initialize Outlook objects
     Set objInbox = Application.Session.GetDefaultFolder(olFolderInbox)
 
-    ' Process folders and emails
-    Call ProcessFolders(objInbox)
-
     ' Create Excel objects
     Set objExcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
@@ -38,6 +35,9 @@ Sub ExportEmailsNotReplied()
         .Columns("D").ColumnWidth = 100
         .Columns("D").WrapText = False
     End With
+
+    ' Process folders and emails
+    Call ProcessFolders(objInbox)
 End Sub
 
 Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
