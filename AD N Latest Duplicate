@@ -101,19 +101,20 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                 If (Not (strReplied = "102")) And (Not (strReplied = "103")) And (nDateDiff >= 0 And nDateDiff <= 5) Then
                     ' Check if an email with the same subject already exists in the AGED folder
                     isDuplicate = False
+                    Set latestMail = Nothing
+
                     For Each objExistingMail In objAgedFolder.Items
                         If objExistingMail.Subject = objMail.Subject Then
                             isDuplicate = True
-                            ' Check if this is the latest email among duplicates
-                            If latestMail Is Nothing Or objMail.ReceivedTime > latestMail.ReceivedTime Then
-                                ' Update the latestMail reference
-                                Set latestMail = objMail
+                            ' Check if the current email is the latest one
+                            If latestMail Is Nothing Or objExistingMail.ReceivedTime > latestMail.ReceivedTime Then
+                                Set latestMail = objExistingMail
                             End If
                         End If
                     Next
 
-                    ' If it's not a duplicate, or if it's the latest among duplicates, then copy the email to the AGED folder
-                    If Not isDuplicate Or objMail Is latestMail Then
+                    ' If it's not a duplicate, or if it's the latest one, then copy the email to the AGED folder
+                    If Not isDuplicate Then
                         ' Move the email to the AGED folder
                         objMail.Move objAgedFolder
 
