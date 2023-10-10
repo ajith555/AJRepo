@@ -1,0 +1,38 @@
+Dim objInbox As Outlook.Folder
+
+Sub ExportEmailsNotReplied()
+    ' Initialize Outlook objects
+    Set objInbox = Application.Session.GetDefaultFolder(olFolderInbox)
+
+    ' Process folders and emails
+    Call ProcessFolders(objInbox)
+End Sub
+
+Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
+    Dim i As Long
+    Dim objMail As Outlook.MailItem
+    Dim strReplied As String
+    Dim nDateDiff As Integer
+    Dim nLastRow As Integer
+
+    For i = objCurrentFolder.Items.Count To 1 Step -1
+        If objCurrentFolder.Items(i).Class = olMail Then
+            Set objMail = objCurrentFolder.Items(i)
+            strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            
+            ' Calculate the time difference in hours (48 hours = 2 days)
+            nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
+            
+            If (Not (strReplied = 102)) And (Not (strReplied = 103)) And (nDateDiff >= 2 And nDateDiff <= 72) Then
+
+            End If
+        End If
+    Next
+
+    ' Recursively process subfolders
+    If objCurrentFolder.Folders.Count > 0 Then
+        For Each objSubfolder In objCurrentFolder.Folders
+            Call ProcessFolders(objSubfolder)
+        Next
+    End If
+End Sub
