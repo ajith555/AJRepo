@@ -65,6 +65,9 @@ Sub ExportEmailsNotReplied()
         Call ProcessFolders(objStack(1), objAgedFolder, objRepliedFolder)
         objStack.Remove 1
     Loop
+    
+    ' Move replied emails from AGED Internal to AGED Replied folder
+    MoveRepliedEmails
 End Sub
 
 Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder As Outlook.Folder, ByVal objRepliedFolder As Outlook.Folder)
@@ -148,4 +151,26 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
             objStack.Add objSubfolder
         Next
     End If
+End Sub
+
+Sub MoveRepliedEmails()
+    ' Initialize Outlook objects
+    Dim objNamespace As Outlook.NameSpace
+    Dim objAgedInternalFolder As Outlook.Folder
+    Dim objAgedRepliedFolder As Outlook.Folder
+    Dim objMail As Outlook.MailItem
+    
+    ' Set the Outlook namespace and folders
+    Set objNamespace = Application.GetNamespace("MAPI")
+    Set objAgedInternalFolder = objNamespace.GetDefaultFolder(olFolderInbox).Parent.Folders("(1) AGED Internal")
+    Set objAgedRepliedFolder = objNamespace.GetDefaultFolder(olFolderInbox).Parent.Folders("(1) AGED Replied")
+    
+    ' Loop through emails in the AGED Internal folder
+    For Each objMail In objAgedInternalFolder.Items
+        ' Check if the email has been replied to (PR_LAST_VERB_EXECUTION_TIME exists)
+        If Not IsEmpty(objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10820040")) Then
+            ' Move the replied email to the AGED Replied folder
+            objMail.Move objAgedRepliedFolder
+        End If
+    Next objMail
 End Sub
