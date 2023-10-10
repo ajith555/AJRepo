@@ -87,6 +87,10 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
     Dim objExistingMail As Outlook.MailItem
     Dim isDuplicate As Boolean
     Dim latestMail As Outlook.MailItem
+    Dim latestMailReceivedTime As Date ' Variable to store the received time of the latest mail
+
+    ' Initialize latestMailReceivedTime to a very early date to ensure the first mail is considered the latest initially
+    latestMailReceivedTime = DateSerial(1900, 1, 1)
 
     ' Check if the current folder is the Inbox or a subfolder of the Inbox
     If objCurrentFolder = objInbox Or objCurrentFolder.Parent = objInbox Then
@@ -105,8 +109,9 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                         If objExistingMail.Subject = objMail.Subject Then
                             isDuplicate = True
                             ' Check if this is the latest email among duplicates
-                            If latestMail Is Nothing Or objMail.ReceivedTime > latestMail.ReceivedTime Then
-                                ' Update the latestMail reference
+                            If objMail.ReceivedTime > latestMailReceivedTime Then
+                                ' Update the latestMailReceivedTime and the latestMail reference
+                                latestMailReceivedTime = objMail.ReceivedTime
                                 Set latestMail = objMail
                             End If
                         End If
@@ -131,6 +136,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
         Next
     End If
 End Sub
+
 
 
 Sub CheckRepliedEmails(ByVal objAgedInternalFolder As Outlook.Folder, ByVal objAgedRepliedFolder As Outlook.Folder)
