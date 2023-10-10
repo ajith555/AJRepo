@@ -1,0 +1,132 @@
+Dim objExcelApplication As Object ' Use Object type to late-bind Excel
+Dim objExcelWorkbook As Object
+Dim objExcelWorksheet As Object
+Dim objInbox As Outlook.Folder
+Dim objStack As New Collection
+
+Sub ExportEmailsNotReplied()
+    ' Initialize Outlook objects
+    Set objInbox = Application.Session.GetDefaultFolder(olFolderInbox)
+    
+    ' Initialize folder for copied emails
+    Dim objAgedFolder As Outlook.Folder
+    On Error Resume Next
+    Set objAgedFolder = objInbox.Parent.Folders("(1) AGED Internal")
+    On Error GoTo 0
+    If objAgedFolder Is Nothing Then
+        ' Create the folder if it doesn't exist
+        Set objAgedFolder = objInbox.Parent.Folders.Add("(1) AGED Internal")
+    End If
+    
+    ' Initialize folder for replied emails
+    Dim objRepliedFolder As Outlook.Folder
+    On Error Resume Next
+    Set objRepliedFolder = objInbox.Parent.Folders("(1) AGED Replied")
+    On Error GoTo 0
+    If objRepliedFolder Is Nothing Then
+        ' Create the folder if it doesn't exist
+        Set objRepliedFolder = objInbox.Parent.Folders.Add("(1) AGED Replied")
+    End If
+
+    ' Create Excel objects
+    Set objExcelApplication = CreateObject("Excel.Application")
+    Set objExcelWorkbook = objExcelApplication.Workbooks.Add
+    Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
+
+    ' Set headers in the Excel worksheet
+    With objExcelWorksheet
+        .Cells(1, 1) = "Subject"
+        .Cells(1, 1).Font.Bold = True
+        .Cells(1, 2) = "Received"
+        .Cells(1, 2).Font.Bold = True
+        .Cells(1, 3) = "Sender"
+        .Cells(1, 3).Font.Bold = True
+        .Cells(1, 4) = "Excerpts"
+        .Cells(1, 4).Font.Bold = True
+    End With
+
+    ' Make Excel visible
+    objExcelApplication.Visible = True
+    objExcelWorkbook.Activate
+
+    ' Format Excel worksheet
+    With objExcelWorksheet
+        .Columns("A:C").AutoFit
+        .Rows.RowHeight = 15
+        .Columns("D").ColumnWidth = 100
+        .Columns("D").WrapText = False
+    End With
+
+    ' Initialize the stack with the inbox folder
+    objStack.Add objInbox
+
+    ' Process folders and emails iteratively
+    Do While objStack.Count > 0
+        Call ProcessFolders(objStack(1), objAgedFolder, objRepliedFolder)
+        objStack.Remove 1
+    Loop
+End Sub
+
+Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder As Outlook.Folder, ByVal objRepliedFolder As Outlook.Folder)
+    Dim i As Long
+    Dim objMail As Outlook.MailItem
+    Dim strReplied As String
+    Dim nDateDiff As Integer
+    Dim objExistingMail As Outlook.MailItem
+    Dim isDuplicate As Boolean
+
+    ' Check if the current folder is the Inbox or a subfolder of the Inbox
+    If objCurrentFolder = objInbox Or objCurrentFolder.Parent = objInbox Then
+        For i = objCurrentFolder.Items.Count To 1 Step -1
+            If objCurrentFolder.Items(i).Class = olMail Then
+                Set objMail = objCurrentFolder.Items(i)
+                strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+                
+                ' Calculate the time difference in hours (48 hours = 2 days)
+                nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
+                
+                If (Not (strReplied = 102)) And (Not (strReplied = 103)) And (nDateDiff >= 2 And nDateDiff <= 5) Then
+                    ' Check if an email with the same subject already exists in the AGED folder
+                    isDuplicate = False
+                    For Each objExistingMail In objAgedFolder.Items
+                        If objExistingMail.Subject = objMail.Subject Then
+                            isDuplicate = True
+                            Exit For
+                        End If
+                    Next
+                    
+                    ' Check if the email is in the "(1) AGED Internal" folder
+                    Dim isInternal As Boolean
+                    isInternal = (objCurrentFolder = objAgedFolder)
+                    
+                    ' If it's not a duplicate, then copy the email to the appropriate folder
+                    If Not isDuplicate Then
+                        ' Copy the email to the AGED folder
+                        objMail.Copy
+                        If isInternal Then
+                            objMail.Move objAgedFolder
+                        Else
+                            objMail.Move objRepliedFolder
+                        End If
+
+                        ' Late-bind Excel worksheet
+                        nLastRow = objExcelWorksheet.Cells(objExcelWorksheet.Rows.Count, "A").End(-4162).Row + 1
+                        With objExcelWorksheet
+                            .Cells(nLastRow, 1) = objMail.Subject
+                            .Cells(nLastRow, 2) = objMail.ReceivedTime
+                            .Cells(nLastRow, 3) = objMail.SenderName
+                            .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
+                        End With
+                    End If
+                End If
+            End If
+        Next
+    End If
+
+    ' Add subfolders to the stack for further processing
+    If objCurrentFolder.Folders.Count > 0 Then
+        For Each objSubfolder In objCurrentFolder.Folders
+            objStack.Add objSubfolder
+        Next
+    End If
+End Sub
