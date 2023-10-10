@@ -95,7 +95,8 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                     End With
                     
                     ' Copy the email to the AGED folder
-                    objMail.Copy objAgedFolder
+                    objMail.Copy
+                    objMail.Save objAgedFolder
                 End If
             End If
         End If
