@@ -86,8 +86,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
     Dim nDateDiff As Integer
     Dim objExistingMail As Outlook.MailItem
     Dim isDuplicate As Boolean
-    Dim dictEmails As Object
-    Set dictEmails = CreateObject("Scripting.Dictionary")
+    Dim latestMail As Outlook.MailItem
 
     ' Check if the current folder is the Inbox or a subfolder of the Inbox
     If objCurrentFolder = objInbox Or objCurrentFolder.Parent = objInbox Then
@@ -105,14 +104,16 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                     For Each objExistingMail In objAgedFolder.Items
                         If objExistingMail.Subject = objMail.Subject Then
                             isDuplicate = True
-                            Exit For
+                            ' Check if this is the latest email among duplicates
+                            If latestMail Is Nothing Or objMail.ReceivedTime > latestMail.ReceivedTime Then
+                                ' Update the latestMail reference
+                                Set latestMail = objMail
+                            End If
                         End If
                     Next
 
-                    ' If it's not a duplicate, or if it's the latest email of the duplicates, then copy the email to the AGED folder
-                    If Not isDuplicate Or (isDuplicate And objMail.ReceivedTime > dictEmails(objMail.Subject)) Then
-                        dictEmails(objMail.Subject) = objMail.ReceivedTime ' Update the dictionary with the latest received time for the subject
-
+                    ' If it's not a duplicate, or if it's the latest among duplicates, then copy the email to the AGED folder
+                    If Not isDuplicate Or objMail Is latestMail Then
                         ' Move the email to the AGED folder
                         objMail.Move objAgedFolder
 
@@ -130,6 +131,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
         Next
     End If
 End Sub
+
 
 Sub CheckRepliedEmails(ByVal objAgedInternalFolder As Outlook.Folder, ByVal objAgedRepliedFolder As Outlook.Folder)
     Dim objMail As Outlook.MailItem
