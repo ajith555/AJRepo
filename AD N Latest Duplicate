@@ -137,9 +137,6 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
     End If
 End Sub
 
-
-
-
 Sub CheckRepliedEmails(ByVal objAgedInternalFolder As Outlook.Folder, ByVal objAgedRepliedFolder As Outlook.Folder)
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
