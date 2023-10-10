@@ -6,6 +6,35 @@ Sub ExportEmailsNotReplied()
 
     ' Process folders and emails
     Call ProcessFolders(objInbox)
+
+    ' Create Excel objects
+    Set objExcelApplication = CreateObject("Excel.Application")
+    Set objExcelWorkbook = objExcelApplication.Workbooks.Add
+    Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
+
+    ' Set headers in the Excel worksheet
+    With objExcelWorksheet
+        .Cells(1, 1) = "Subject"
+        .Cells(1, 1).Font.Bold = True
+        .Cells(1, 2) = "Received"
+        .Cells(1, 2).Font.Bold = True
+        .Cells(1, 3) = "Sender"
+        .Cells(1, 3).Font.Bold = True
+        .Cells(1, 4) = "Excerpts"
+        .Cells(1, 4).Font.Bold = True
+    End With
+
+    ' Make Excel visible
+    objExcelApplication.Visible = True
+    objExcelWorkbook.Activate
+
+    ' Format Excel worksheet
+    With objExcelWorksheet
+        .Columns("A:C").AutoFit
+        .Rows.RowHeight = 15
+        .Columns("D").ColumnWidth = 100
+        .Columns("D").WrapText = False
+    End With
 End Sub
 
 Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
@@ -24,7 +53,14 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
             nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
             
             If (Not (strReplied = 102)) And (Not (strReplied = 103)) And (nDateDiff >= 2 And nDateDiff <= 72) Then
-
+                ' Late-bind Excel worksheet
+                nLastRow = objExcelWorksheet.Cells(objExcelWorksheet.Rows.Count, "A").End(-4162).Row + 1
+                With objExcelWorksheet
+                    .Cells(nLastRow, 1) = objMail.Subject
+                    .Cells(nLastRow, 2) = objMail.ReceivedTime
+                    .Cells(nLastRow, 3) = objMail.SenderName
+                    .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
+                End With
             End If
         End If
     Next
