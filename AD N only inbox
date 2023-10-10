@@ -75,7 +75,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                 ' Calculate the time difference in hours (48 hours = 2 days)
                 nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
                 
-                If (Not (strReplied = 102)) And (Not (strReplied = 103)) And (nDateDiff >= 0 And nDateDiff <= 5) Then
+                If (Not (strReplied = 102)) And (Not (strReplied = 103)) And (nDateDiff >= 2 And nDateDiff <= 5) Then
                     ' Check if an email with the same subject already exists in the AGED folder
                     isDuplicate = False
                     For Each objExistingMail In objAgedFolder.Items
@@ -87,6 +87,10 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                     
                     ' If it's not a duplicate, then copy the email to the AGED folder
                     If Not isDuplicate Then
+                        ' Copy the email to the AGED folder
+                        objMail.Copy
+                        objMail.Move objAgedFolder
+
                         ' Late-bind Excel worksheet
                         nLastRow = objExcelWorksheet.Cells(objExcelWorksheet.Rows.Count, "A").End(-4162).Row + 1
                         With objExcelWorksheet
@@ -95,10 +99,6 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                             .Cells(nLastRow, 3) = objMail.SenderName
                             .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
                         End With
-                        
-                        ' Copy the email to the AGED folder
-                        objMail.Copy
-                        objMail.Save objAgedFolder
                     End If
                 End If
             End If
