@@ -2,6 +2,7 @@ Dim objExcelApplication As Object ' Use Object type to late-bind Excel
 Dim objExcelWorkbook As Object
 Dim objExcelWorksheet As Object
 Dim objInbox As Outlook.Folder
+Dim objStack As New Collection
 
 Sub ExportEmailsNotReplied()
     ' Initialize Outlook objects
@@ -36,8 +37,14 @@ Sub ExportEmailsNotReplied()
         .Columns("D").WrapText = False
     End With
 
-    ' Process folders and emails
-    Call ProcessFolders(objInbox)
+    ' Initialize the stack with the inbox folder
+    objStack.Add objInbox
+
+    ' Process folders and emails iteratively
+    Do While objStack.Count > 0
+        Call ProcessFolders(objStack(1))
+        objStack.Remove 1
+    Loop
 End Sub
 
 Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
@@ -45,7 +52,6 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
     Dim nDateDiff As Integer
-    Dim nLastRow As Integer
 
     For i = objCurrentFolder.Items.Count To 1 Step -1
         If objCurrentFolder.Items(i).Class = olMail Then
@@ -68,10 +74,10 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
         End If
     Next
 
-    ' Recursively process subfolders
+    ' Add subfolders to the stack for further processing
     If objCurrentFolder.Folders.Count > 0 Then
         For Each objSubfolder In objCurrentFolder.Folders
-            Call ProcessFolders(objSubfolder)
+            objStack.Add objSubfolder
         Next
     End If
 End Sub
