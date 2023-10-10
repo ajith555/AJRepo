@@ -104,11 +104,13 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                     Set latestMail = Nothing
 
                     For Each objExistingMail In objAgedFolder.Items
-                        If objExistingMail.Subject = objMail.Subject Then
-                            isDuplicate = True
-                            ' Check if the current email is the latest one
-                            If latestMail Is Nothing Or objExistingMail.ReceivedTime > latestMail.ReceivedTime Then
-                                Set latestMail = objExistingMail
+                        If objExistingMail.Class = olMail Then ' Ensure objExistingMail is a MailItem
+                            If objExistingMail.Subject = objMail.Subject Then
+                                isDuplicate = True
+                                ' Check if the current email is the latest one
+                                If latestMail Is Nothing Or objExistingMail.ReceivedTime > latestMail.ReceivedTime Then
+                                    Set latestMail = objExistingMail
+                                End If
                             End If
                         End If
                     Next
@@ -132,6 +134,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
         Next
     End If
 End Sub
+
 
 
 Sub CheckRepliedEmails(ByVal objAgedInternalFolder As Outlook.Folder, ByVal objAgedRepliedFolder As Outlook.Folder)
