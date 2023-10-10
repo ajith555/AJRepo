@@ -88,9 +88,6 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
     Dim isDuplicate As Boolean
     Dim latestMail As Outlook.MailItem
 
-    ' Initialize latestMail to Nothing
-    Set latestMail = Nothing
-
     ' Check if the current folder is the Inbox or a subfolder of the Inbox
     If objCurrentFolder = objInbox Or objCurrentFolder.Parent = objInbox Then
         For i = objCurrentFolder.Items.Count To 1 Step -1
@@ -134,7 +131,6 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
         Next
     End If
 End Sub
-
 
 
 Sub CheckRepliedEmails(ByVal objAgedInternalFolder As Outlook.Folder, ByVal objAgedRepliedFolder As Outlook.Folder)
