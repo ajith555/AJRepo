@@ -81,8 +81,13 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                     .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
                 End With
                 
-                ' Copy the email to the AGED folder
-                objMail.Copy objAgedFolder
+                ' Create a copy of the email
+                Dim objMailCopy As Outlook.MailItem
+                Set objMailCopy = objMail.Copy
+                objMailCopy.Move objAgedFolder
+                
+                ' Optionally, you can also delete the original email
+                ' objMail.Delete
             End If
         End If
     Next
