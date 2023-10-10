@@ -1,3 +1,6 @@
+Dim objExcelApplication As Object ' Use Object type to late-bind Excel
+Dim objExcelWorkbook As Object
+Dim objExcelWorksheet As Object
 Dim objInbox As Outlook.Folder
 
 Sub ExportEmailsNotReplied()
