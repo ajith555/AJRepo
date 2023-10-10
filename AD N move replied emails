@@ -17,7 +17,7 @@ Sub ExportEmailsNotReplied()
         ' Create the folder if it doesn't exist
         Set objAgedFolder = objInbox.Parent.Folders.Add("(1) AGED Internal")
     End If
-    
+
     ' Initialize folder for replied emails
     Dim objRepliedFolder As Outlook.Folder
     On Error Resume Next
@@ -57,8 +57,8 @@ Sub ExportEmailsNotReplied()
         .Columns("D").WrapText = False
     End With
 
-    ' Initialize the stack with the AGED Internal folder
-    objStack.Add objAgedFolder
+    ' Initialize the stack with the inbox folder
+    objStack.Add objInbox
 
     ' Process folders and emails iteratively
     Do While objStack.Count > 0
@@ -75,8 +75,8 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
     Dim objExistingMail As Outlook.MailItem
     Dim isDuplicate As Boolean
 
-    ' Check if the current folder is the AGED Internal folder
-    If objCurrentFolder = objAgedFolder Then
+    ' Check if the current folder is the Inbox or a subfolder of the Inbox
+    If objCurrentFolder = objInbox Or objCurrentFolder.Parent = objInbox Then
         For i = objCurrentFolder.Items.Count To 1 Step -1
             If objCurrentFolder.Items(i).Class = olMail Then
                 Set objMail = objCurrentFolder.Items(i)
@@ -88,17 +88,18 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                 If (Not (strReplied = 102)) And (Not (strReplied = 103)) And (nDateDiff >= 2 And nDateDiff <= 5) Then
                     ' Check if an email with the same subject already exists in the AGED folder
                     isDuplicate = False
-                    For Each objExistingMail In objRepliedFolder.Items
+                    For Each objExistingMail In objAgedFolder.Items
                         If objExistingMail.Subject = objMail.Subject Then
                             isDuplicate = True
                             Exit For
                         End If
                     Next
                     
-                    ' If it's not a duplicate, then move the email to the AGED Replied folder
+                    ' If it's not a duplicate, then copy the email to the AGED folder
                     If Not isDuplicate Then
-                        ' Move the email to the AGED Replied folder
-                        objMail.Move objRepliedFolder
+                        ' Copy the email to the AGED folder
+                        objMail.Copy
+                        objMail.Move objAgedFolder
 
                         ' Late-bind Excel worksheet
                         nLastRow = objExcelWorksheet.Cells(objExcelWorksheet.Rows.Count, "A").End(-4162).Row + 1
@@ -108,6 +109,33 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                             .Cells(nLastRow, 3) = objMail.SenderName
                             .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
                         End With
+                    End If
+                End If
+            End If
+        Next
+    End If
+
+    ' Check if the current folder is "(1) AGED Internal"
+    If objCurrentFolder = objAgedFolder Then
+        For i = objCurrentFolder.Items.Count To 1 Step -1
+            If objCurrentFolder.Items(i).Class = olMail Then
+                Set objMail = objCurrentFolder.Items(i)
+                strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+                
+                If (strReplied = 102 Or strReplied = 103) Then
+                    ' Check if an email with the same subject already exists in the AGED Replied folder
+                    isDuplicate = False
+                    For Each objExistingMail In objRepliedFolder.Items
+                        If objExistingMail.Subject = objMail.Subject Then
+                            isDuplicate = True
+                            Exit For
+                        End If
+                    Next
+                    
+                    ' If it's not a duplicate, then move the replied email to the AGED Replied folder
+                    If Not isDuplicate Then
+                        ' Move the email to the AGED Replied folder
+                        objMail.Move objRepliedFolder
                     End If
                 End If
             End If
