@@ -1,0 +1,228 @@
+Dim objExcelApplication As Object ' Use Object type to late-bind Excel
+Dim objExcelWorkbook As Object
+Dim objExcelWorksheet As Object
+Dim objInbox As Outlook.Folder
+Dim objStack As New Collection
+
+Sub ExportEmailsNotReplied()
+    ' Initialize Outlook objects
+    Set objInbox = Application.Session.GetDefaultFolder(olFolderInbox)
+
+    ' Initialize folder for copied emails
+    Dim objAgedFolder As Outlook.Folder
+    On Error Resume Next
+    Set objAgedFolder = objInbox.Parent.Folders("(1) AGED Internal")
+    On Error GoTo 0
+    If objAgedFolder Is Nothing Then
+        ' Create the folder if it doesn't exist
+        Set objAgedFolder = objInbox.Parent.Folders.Add("(1) AGED Internal")
+    End If
+
+    ' Initialize folder for replied emails
+    Dim objRepliedFolder As Outlook.Folder
+    On Error Resume Next
+    Set objRepliedFolder = objInbox.Parent.Folders("(1) AGED Replied")
+    On Error GoTo 0
+    If objRepliedFolder Is Nothing Then
+        ' Create the folder if it doesn't exist
+        Set objRepliedFolder = objInbox.Parent.Folders.Add("(1) AGED Replied")
+    End If
+
+    ' Initialize folder for external emails
+    Dim objExternalFolder As Outlook.Folder
+    On Error Resume Next
+    Set objExternalFolder = objInbox.Parent.Folders("(1) AGED External")
+    On Error GoTo 0
+    If objExternalFolder Is Nothing Then
+        ' Create the folder if it doesn't exist
+        Set objExternalFolder = objInbox.Parent.Folders.Add("(1) AGED External")
+    End If
+
+    ' Check for replied emails in the "(1) AGED Internal" folder and move them to the "(1) AGED Replied" folder
+    CheckRepliedEmails objAgedFolder, objRepliedFolder
+
+    ' Create Excel objects
+    Set objExcelApplication = CreateObject("Excel.Application")
+    Set objExcelWorkbook = objExcelApplication.Workbooks.Add
+    Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
+
+    ' Set headers in the Excel worksheet
+    With objExcelWorksheet
+        .Cells(1, 1) = "Subject"
+        .Cells(1, 1).Font.Bold = True
+        .Cells(1, 2) = "Received"
+        .Cells(1, 2).Font.Bold = True
+        .Cells(1, 3) = "Sender"
+        .Cells(1, 3).Font.Bold = True
+        .Cells(1, 4) = "Excerpts"
+        .Cells(1, 4).Font.Bold = True
+    End With
+
+    ' Make Excel visible
+    objExcelApplication.Visible = True
+    objExcelWorkbook.Activate
+
+    ' Format Excel worksheet
+    With objExcelWorksheet
+        .Columns("A:C").AutoFit
+        .Rows.RowHeight = 15
+        .Columns("D").ColumnWidth = 100
+        .Columns("D").WrapText = False
+    End With
+
+    ' Initialize the stack with the inbox folder and its subfolders
+    objStack.Add objInbox
+    AddSubfoldersToStack objInbox, objStack
+
+    ' Process folders and emails iteratively
+    Do While objStack.Count > 0
+        Call ProcessFolders(objStack(1), objAgedFolder, objRepliedFolder)
+        objStack.Remove 1
+    Loop
+
+
+    ' Check for external emails in the "(1) AGED Internal" folder and move them to the "(1) AGED External" folder
+    CheckExternalEmailsInFolder objAgedFolder, objExternalFolder
+
+    ' Recursively check subfolders of "(1) AGED Internal" for external emails and move them
+    CheckExternalEmailsInSubfolders objAgedFolder, objExternalFolder
+
+End Sub
+
+Sub CheckExternalEmailsInFolder(ByVal objAgedInternalFolder As Outlook.Folder, ByVal objAgedExternalFolder As Outlook.Folder)
+    Dim objMail As Outlook.MailItem
+
+    For Each objMail In objAgedInternalFolder.Items
+        If objMail.Class = olMail Then
+            If Not objMail.SenderEmailType = "EX" Then
+                ' Check if sender's domain is not ubs.com (external)
+                If Right(objMail.SenderEmailAddress, 7) <> "ubs.com" Then
+                    objMail.Move objAgedExternalFolder
+                End If
+            End If
+        End If
+    Next
+End Sub
+
+Sub CheckExternalEmailsInSubfolders(ByVal objFolder As Outlook.Folder, ByVal objAgedExternalFolder As Outlook.Folder)
+    Dim objSubfolder As Outlook.Folder
+
+    For Each objSubfolder In objFolder.Folders
+        CheckExternalEmailsInFolder objSubfolder, objAgedExternalFolder
+        CheckExternalEmailsInSubfolders objSubfolder, objAgedExternalFolder
+    Next
+End Sub
+
+
+Sub AddSubfoldersToStack(ByVal objFolder As Outlook.Folder, ByRef objStack As Collection)
+    Dim objSubfolder As Outlook.Folder
+    For Each objSubfolder In objFolder.Folders
+        objStack.Add objSubfolder
+        AddSubfoldersToStack objSubfolder, objStack
+    Next
+End Sub
+
+Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder As Outlook.Folder, ByVal objRepliedFolder As Outlook.Folder)
+    Dim i As Long
+    Dim objMail As Outlook.MailItem
+    Dim strReplied As String
+    Dim nDateDiff As Integer
+    Dim objExistingMail As Outlook.MailItem
+    Dim isDuplicate As Boolean
+    Dim objLatestMail As Outlook.MailItem
+
+    ' Check if the current folder is the Inbox or a subfolder of the Inbox
+    If objCurrentFolder = objInbox Or objCurrentFolder.Parent = objInbox Then
+        For i = objCurrentFolder.Items.Count To 1 Step -1
+            If objCurrentFolder.Items(i).Class = olMail Then
+                Set objMail = objCurrentFolder.Items(i)
+                strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+
+                ' Calculate the time difference in hours (48 hours = 2 days)
+                nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
+
+                If (Not (strReplied = "102")) And (Not (strReplied = "103")) And (nDateDiff >= 0 And nDateDiff <= 5) Then
+                    ' Check if an email with the same subject already exists in the AGED folder
+                    isDuplicate = False
+                    Set objLatestMail = Nothing ' Initialize objLatestMail
+
+                    For Each objExistingMail In objAgedFolder.Items
+                        If objExistingMail.Subject = objMail.Subject Then
+                            isDuplicate = True
+                            ' Compare the ReceivedTime to determine the latest email
+                            If objLatestMail Is Nothing Then
+                                Set objLatestMail = objExistingMail
+                            ElseIf objExistingMail.ReceivedTime > objLatestMail.ReceivedTime Then
+                                Set objLatestMail = objExistingMail
+                            End If
+                        End If
+                    Next
+
+                    ' If it's not a duplicate, then try to move the email to the AGED folder
+                    If Not isDuplicate Then
+                        On Error Resume Next
+                        objMail.Move objAgedFolder
+                        If Err.Number <> 0 Then
+                            ' Handle any error during move, and log the error details
+                            Debug.Print "Error moving email: " & objMail.Subject
+                            Debug.Print "Error description: " & Err.Description
+                            On Error GoTo 0 ' Reset error handling
+                        End If
+                        On Error GoTo 0
+                    Else
+                        ' Check if the latest email should be kept in AGED folder
+                        If Not objLatestMail Is Nothing And objLatestMail.Subject = objMail.Subject And objMail.ReceivedTime > objLatestMail.ReceivedTime Then
+                            On Error Resume Next
+                            objMail.Move objAgedFolder
+                            If Err.Number <> 0 Then
+                                ' Handle any error during move, and log the error details
+                                Debug.Print "Error moving email: " & objMail.Subject
+                                Debug.Print "Error description: " & Err.Description
+                                On Error GoTo 0 ' Reset error handling
+                            End If
+                            On Error GoTo 0
+
+                            ' Move the older email back to its source folder
+                            On Error Resume Next
+                            objLatestMail.Move objCurrentFolder
+                            If Err.Number <> 0 Then
+                                ' Handle any error during move, and log the error details
+                                Debug.Print "Error moving email: " & objLatestMail.Subject
+                                Debug.Print "Error description: " & Err.Description
+                                On Error GoTo 0 ' Reset error handling
+                            End If
+                            On Error GoTo 0
+                        Else
+                            On Error Resume Next
+                            ' Move the older email back to its source folder
+                            objMail.Move objCurrentFolder
+                            If Err.Number <> 0 Then
+                                ' Handle any error during move, and log the error details
+                                Debug.Print "Error moving email: " & objMail.Subject
+                                Debug.Print "Error description: " & Err.Description
+                                On Error GoTo 0 ' Reset error handling
+                            End If
+                            On Error GoTo 0
+                        End If
+                    End If
+                End If
+            End If
+        Next
+    End If
+End Sub
+
+
+Sub CheckRepliedEmails(ByVal objAgedInternalFolder As Outlook.Folder, ByVal objAgedRepliedFolder As Outlook.Folder)
+    Dim objMail As Outlook.MailItem
+    Dim strReplied As String
+
+    For Each objMail In objAgedInternalFolder.Items
+        If objMail.Class = olMail Then
+            strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+            If strReplied = "102" Or strReplied = "103" Then
+                ' Move the replied email to the "(1) AGED Replied" folder
+                objMail.Move objAgedRepliedFolder
+            End If
+        End If
+    Next
+End Sub
