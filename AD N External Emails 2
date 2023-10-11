@@ -108,14 +108,10 @@ End Sub
 Function IsInternalDomain(ByVal emailAddress As String) As Boolean
     ' Define the internal domain
     Dim internalDomain As String
-    internalDomain = "ubs.com"
+    internalDomain = "@ubs.com" ' Note that we include the "@" sign
 
-    ' Extract the sender's domain from the email address
-    Dim senderDomain As String
-    senderDomain = Split(Split(emailAddress, "@")(1), ".")(0)
-
-    ' Check if the sender's domain is the internal domain
-    IsInternalDomain = (LCase(senderDomain) = LCase(internalDomain))
+    ' Check if the email address contains the internal domain
+    IsInternalDomain = (InStr(LCase(emailAddress), LCase(internalDomain)) > 0)
 End Function
 
 
