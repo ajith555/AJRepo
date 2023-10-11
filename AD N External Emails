@@ -88,6 +88,8 @@ Sub CheckExternalEmails(ByVal objAgedInternalFolder As Outlook.Folder, ByVal obj
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
     Dim strSenderEmailAddress As String
+    Dim ubsDomain As String
+    ubsDomain = "ubs.com"
 
     For Each objMail In objAgedInternalFolder.Items
         If objMail.Class = olMail Then
@@ -95,13 +97,14 @@ Sub CheckExternalEmails(ByVal objAgedInternalFolder As Outlook.Folder, ByVal obj
             strSenderEmailAddress = objMail.SenderEmailAddress
 
             ' Check if the sender's email address does not contain "ubs.com" and the email is not already replied
-            If strReplied <> "102" And strReplied <> "103" And InStr(strSenderEmailAddress, "ubs.com") = 0 Then
+            If strReplied <> "102" And strReplied <> "103" And InStr(1, strSenderEmailAddress, ubsDomain, vbTextCompare) = 0 Then
                 ' Move the external email to the "(1) AGED External" folder
                 objMail.Move objAgedExternalFolder
             End If
         End If
     Next
 End Sub
+
 
 Sub AddSubfoldersToStack(ByVal objFolder As Outlook.Folder, ByRef objStack As Collection)
     Dim objSubfolder As Outlook.Folder
