@@ -103,6 +103,7 @@ Sub CheckExternalEmails(ByVal objAgedInternalFolder As Outlook.Folder, ByVal obj
     Next
 End Sub
 
+
 Function IsUbsDomain(ByVal emailAddress As String) As Boolean
     ' Check if the email address is from ubs.com domain
     If InStr(emailAddress, "@ubs.com") > 0 Then
