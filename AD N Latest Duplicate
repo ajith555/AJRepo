@@ -28,9 +28,6 @@ Sub ExportEmailsNotReplied()
         Set objRepliedFolder = objInbox.Parent.Folders.Add("(1) AGED Replied")
     End If
 
-    ' Check for replied emails in the "(1) AGED Internal" folder and move them to the "(1) AGED Replied" folder
-    CheckRepliedEmails objAgedFolder, objRepliedFolder
-
     ' Create Excel objects
     Set objExcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
@@ -70,6 +67,8 @@ Sub ExportEmailsNotReplied()
         objStack.Remove 1
     Loop
 
+    ' Check for replied emails in the "(1) AGED Internal" folder and move them to the "(1) AGED Replied" folder
+    CheckRepliedEmails objAgedFolder, objRepliedFolder
 End Sub
 
 Sub AddSubfoldersToStack(ByVal objFolder As Outlook.Folder, ByRef objStack As Collection)
@@ -99,7 +98,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                 ' Calculate the time difference in hours (48 hours = 2 days)
                 nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
 
-                If (Not (strReplied = "102")) And (Not (strReplied = "103")) And (nDateDiff >= 0 And nDateDiff <= 5) Then
+                If (Not (strReplied = "102")) And (Not (strReplied = "103")) And (nDateDiff >= 0 And nDateDiff <= 2) Then
                     ' Initialize variables for duplicate check
                     isDuplicate = False
                     Set latestMail = Nothing
@@ -139,8 +138,6 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
         Next
     End If
 End Sub
-
-
 
 
 Sub CheckRepliedEmails(ByVal objAgedInternalFolder As Outlook.Folder, ByVal objAgedRepliedFolder As Outlook.Folder)
