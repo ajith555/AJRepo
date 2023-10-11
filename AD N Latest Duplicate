@@ -115,29 +115,40 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                         End If
                     Next
 
-                    ' If it's not a duplicate, then copy the email to the AGED folder
+                    ' If it's not a duplicate, then try to move the email to the AGED folder
                     If Not isDuplicate Then
-                        ' Move the email to the AGED folder
+                        On Error Resume Next
                         objMail.Move objAgedFolder
-
-                        ' Late-bind Excel worksheet
-                        nLastRow = objExcelWorksheet.Cells(objExcelWorksheet.Rows.Count, "A").End(-4162).Row + 1
-                        With objExcelWorksheet
-                            .Cells(nLastRow, 1) = objMail.Subject
-                            .Cells(nLastRow, 2) = objMail.ReceivedTime
-                            .Cells(nLastRow, 3) = objMail.SenderName
-                            .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
-                        End With
+                        If Err.Number <> 0 Then
+                            ' Handle any error during move, and log the error details
+                            Debug.Print "Error moving email: " & objMail.Subject
+                            Debug.Print "Error description: " & Err.Description
+                            On Error GoTo 0 ' Reset error handling
+                        End If
+                        On Error GoTo 0
                     Else
                         ' Check if the latest email should be kept in AGED folder
                         If Not objLatestMail Is Nothing And objLatestMail.Subject = objMail.Subject And objMail.ReceivedTime > objLatestMail.ReceivedTime Then
-                            ' Move the older email back to its source folder
+                            On Error Resume Next
                             objLatestMail.Move objCurrentFolder
-                            ' Update the latest email
+                            If Err.Number <> 0 Then
+                                ' Handle any error during move, and log the error details
+                                Debug.Print "Error moving email: " & objLatestMail.Subject
+                                Debug.Print "Error description: " & Err.Description
+                                On Error GoTo 0 ' Reset error handling
+                            End If
+                            On Error GoTo 0
                             Set objLatestMail = objMail
                         Else
-                            ' Move the email back to its source folder
+                            On Error Resume Next
                             objMail.Move objCurrentFolder
+                            If Err.Number <> 0 Then
+                                ' Handle any error during move, and log the error details
+                                Debug.Print "Error moving email: " & objMail.Subject
+                                Debug.Print "Error description: " & Err.Description
+                                On Error GoTo 0 ' Reset error handling
+                            End If
+                            On Error GoTo 0
                         End If
                     End If
                 End If
@@ -145,7 +156,6 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
         Next
     End If
 End Sub
-
 
 
 
