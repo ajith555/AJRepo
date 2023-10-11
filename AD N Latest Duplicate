@@ -102,12 +102,14 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                     ' Check if an email with the same subject already exists in the AGED folder
                     isDuplicate = False
                     Set objLatestMail = Nothing ' Initialize objLatestMail
+
                     For Each objExistingMail In objAgedFolder.Items
                         If objExistingMail.Subject = objMail.Subject Then
                             isDuplicate = True
                             ' Compare the ReceivedTime to determine the latest email
-                            If objLatestMail Is Nothing Or objExistingMail.ReceivedTime > objLatestMail.ReceivedTime Then
-                                ' Keep track of the latest email
+                            If objLatestMail Is Nothing Then
+                                Set objLatestMail = objExistingMail
+                            ElseIf objExistingMail.ReceivedTime > objLatestMail.ReceivedTime Then
                                 Set objLatestMail = objExistingMail
                             End If
                         End If
@@ -143,6 +145,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
         Next
     End If
 End Sub
+
 
 
 
