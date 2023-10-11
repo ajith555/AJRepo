@@ -124,32 +124,18 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                         End With
                     ElseIf Not subjectMatchedEmails Is Nothing Then
                         ' Sort the emails by ReceivedTime in descending order
-                        Dim arrEmails() As Object
-                        ReDim arrEmails(1 To subjectMatchedEmails.Count)
                         Dim emailCounter As Long
+                        Dim tempEmail As Outlook.MailItem
                         For emailCounter = 1 To subjectMatchedEmails.Count
-                            Set arrEmails(emailCounter) = subjectMatchedEmails(emailCounter)
-                        Next emailCounter
-
-                        ' Sort the emails by ReceivedTime in descending order
-                        Dim j As Long
-                        Dim tempEmail As Object
-                        For i = LBound(arrEmails) To UBound(arrEmails)
-                            For j = i + 1 To UBound(arrEmails)
-                                If arrEmails(i).ReceivedTime < arrEmails(j).ReceivedTime Then
-                                    Set tempEmail = arrEmails(i)
-                                    Set arrEmails(i) = arrEmails(j)
-                                    Set arrEmails(j) = tempEmail
-                                End If
-                            Next j
-                        Next i
-
-                        ' Move the latest email with the same subject to AGED folder
-                        objMail.Move objAgedFolder
-
-                        ' Move the older emails to the source folder
-                        For emailCounter = 2 To UBound(arrEmails)
-                            arrEmails(emailCounter).Move objCurrentFolder
+                            Set tempEmail = subjectMatchedEmails(emailCounter)
+                            If tempEmail.ReceivedTime > objMail.ReceivedTime Then
+                                ' Swap the latest email with the older one
+                                tempEmail.Move objCurrentFolder
+                                objMail.Move objAgedFolder
+                            Else
+                                ' Move the older email to the source folder
+                                tempEmail.Move objCurrentFolder
+                            End If
                         Next emailCounter
                     End If
                 End If
@@ -157,8 +143,6 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
         Next
     End If
 End Sub
-
-
 
 
 Sub CheckRepliedEmails(ByVal objAgedInternalFolder As Outlook.Folder, ByVal objAgedRepliedFolder As Outlook.Folder)
