@@ -122,8 +122,8 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                         For Each replaceMail In objAgedFolder.Items
                             If replaceMail.Subject = objMail.Subject Then
                                 ' Swap the existing email with the new one
-                                objMail.Move objAgedFolder
-                                replaceMail.Move objCurrentFolder
+                                objMail.Copy objAgedFolder
+                                objMail.Delete
                                 Exit For
                             End If
                         Next
@@ -138,7 +138,8 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                         End With
                     ElseIf Not latestMail Is Nothing And objMail.ReceivedTime > latestMail.ReceivedTime Then
                         ' Move the latest email with the same subject to AGED folder
-                        latestMail.Move objAgedFolder
+                        latestMail.Copy objAgedFolder
+                        latestMail.Delete
                         Set latestMail = objMail ' Update latestMail to the current email
                     End If
                 End If
@@ -146,6 +147,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
         Next
     End If
 End Sub
+
 
 
 
