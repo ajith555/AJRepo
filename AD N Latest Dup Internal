@@ -136,16 +136,17 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                             .Cells(nLastRow, 3) = objMail.SenderName
                             .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
                         End With
+                    ElseIf Not latestMail Is Nothing And objMail.ReceivedTime > latestMail.ReceivedTime Then
+                        ' Move the latest email with the same subject to AGED folder
+                        latestMail.Move objAgedFolder
+                        Set latestMail = objMail ' Update latestMail to the current email
                     End If
-                ElseIf Not latestMail Is Nothing And objMail.ReceivedTime > latestMail.ReceivedTime Then
-                    ' Move the latest email with the same subject to AGED folder
-                    latestMail.Move objAgedFolder
-                    Set latestMail = objMail ' Update latestMail to the current email
                 End If
             End If
         Next
     End If
 End Sub
+
 
 
 
