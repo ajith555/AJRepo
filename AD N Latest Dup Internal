@@ -28,6 +28,9 @@ Sub ExportEmailsNotReplied()
         Set objRepliedFolder = objInbox.Parent.Folders.Add("(1) AGED Replied")
     End If
 
+    ' Check for replied emails in the "(1) AGED Internal" folder and move them to the "(1) AGED Replied" folder
+    CheckRepliedEmails objAgedFolder, objRepliedFolder
+
     ' Create Excel objects
     Set objExcelApplication = CreateObject("Excel.Application")
     Set objExcelWorkbook = objExcelApplication.Workbooks.Add
@@ -67,8 +70,7 @@ Sub ExportEmailsNotReplied()
         objStack.Remove 1
     Loop
 
-    ' Check for replied emails in the "(1) AGED Internal" folder and move them to the "(1) AGED Replied" folder
-    CheckRepliedEmails objAgedFolder, objRepliedFolder
+
 End Sub
 
 Sub AddSubfoldersToStack(ByVal objFolder As Outlook.Folder, ByRef objStack As Collection)
