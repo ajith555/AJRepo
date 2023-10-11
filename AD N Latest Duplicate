@@ -86,34 +86,37 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
     Dim nDateDiff As Integer
     Dim objExistingMail As Outlook.MailItem
     Dim isDuplicate As Boolean
-    Dim latestMail As Outlook.MailItem
+    Dim objLatestMail As Outlook.MailItem
 
+    ' Check if the current folder is the Inbox or a subfolder of the Inbox
     If objCurrentFolder = objInbox Or objCurrentFolder.Parent = objInbox Then
         For i = objCurrentFolder.Items.Count To 1 Step -1
             If objCurrentFolder.Items(i).Class = olMail Then
                 Set objMail = objCurrentFolder.Items(i)
                 strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
+
+                ' Calculate the time difference in hours (48 hours = 2 days)
                 nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
 
-                If (Not (strReplied = "102")) And (Not (strReplied = "103")) And (nDateDiff >= 0 And nDateDiff <= 2) Then
+                If (Not (strReplied = "102")) And (Not (strReplied = "103")) And (nDateDiff >= 0 And nDateDiff <= 5) Then
+                    ' Check if an email with the same subject already exists in the AGED folder
                     isDuplicate = False
-                    Set latestMail = Nothing
-
+                    Set objLatestMail = Nothing
                     For Each objExistingMail In objAgedFolder.Items
-                        If objExistingMail.Class = olMail Then ' Check if it's a mail item
-                            If objExistingMail.Subject = objMail.Subject Then
-                                isDuplicate = True
-                                If latestMail Is Nothing Then
-                                    Set latestMail = objExistingMail
-                                ElseIf objExistingMail.ReceivedTime > latestMail.ReceivedTime Then
-                                    Set latestMail = objExistingMail
-                                End If
+                        If objExistingMail.Subject = objMail.Subject Then
+                            isDuplicate = True
+                            ' Compare the ReceivedTime to determine the latest email
+                            If objLatestMail Is Nothing Or objExistingMail.ReceivedTime > objLatestMail.ReceivedTime Then
+                                ' Keep track of the latest email
+                                Set objLatestMail = objExistingMail
                             End If
                         End If
                     Next
 
+                    ' If it's not a duplicate, then copy the email to the AGED folder
                     If Not isDuplicate Then
-                        objMail.Move objAgedFolder ' Move the email to the AGED folder
+                        ' Move the email to the AGED folder
+                        objMail.Move objAgedFolder
 
                         ' Late-bind Excel worksheet
                         nLastRow = objExcelWorksheet.Cells(objExcelWorksheet.Rows.Count, "A").End(-4162).Row + 1
@@ -123,15 +126,23 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                             .Cells(nLastRow, 3) = objMail.SenderName
                             .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
                         End With
-                    ElseIf Not latestMail Is Nothing And objMail.ReceivedTime > latestMail.ReceivedTime Then
-                        latestMail.Move objAgedFolder ' Move the latest email with the same subject to AGED folder
+                    Else
+                        ' Check if the latest email should be kept in AGED folder
+                        If Not objLatestMail Is Nothing And objLatestMail.Subject = objMail.Subject And objMail.ReceivedTime > objLatestMail.ReceivedTime Then
+                            ' Move the older email back to its source folder
+                            objLatestMail.Move objCurrentFolder
+                            ' Update the latest email
+                            Set objLatestMail = objMail
+                        Else
+                            ' Move the email back to its source folder
+                            objMail.Move objCurrentFolder
+                        End If
                     End If
                 End If
             End If
         Next
     End If
 End Sub
-
 
 
 Sub CheckRepliedEmails(ByVal objAgedInternalFolder As Outlook.Folder, ByVal objAgedRepliedFolder As Outlook.Folder)
