@@ -132,6 +132,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                         Next emailCounter
 
                         ' Sort the emails by ReceivedTime in descending order
+                        Dim j As Long
                         For i = LBound(arrEmails) To UBound(arrEmails)
                             For j = i + 1 To UBound(arrEmails)
                                 If arrEmails(i).ReceivedTime < arrEmails(j).ReceivedTime Then
@@ -155,6 +156,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
         Next
     End If
 End Sub
+
 
 
 Sub CheckRepliedEmails(ByVal objAgedInternalFolder As Outlook.Folder, ByVal objAgedRepliedFolder As Outlook.Folder)
