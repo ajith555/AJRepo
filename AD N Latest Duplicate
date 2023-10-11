@@ -141,7 +141,21 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                             Set objLatestMail = objMail
                         Else
                             On Error Resume Next
-                            objMail.Move objCurrentFolder
+                            ' Check if there is a duplicate in AGED Internal folder
+                            Dim objDuplicateInAged As Outlook.MailItem
+                            For Each objDuplicateInAged In objAgedFolder.Items
+                                If objDuplicateInAged.Subject = objMail.Subject Then
+                                    ' Check which one is the latest
+                                    If objDuplicateInAged.ReceivedTime > objMail.ReceivedTime Then
+                                        ' Move the older email back to its source folder
+                                        objMail.Move objCurrentFolder
+                                    Else
+                                        ' Move the older email to AGED folder
+                                        objMail.Move objAgedFolder
+                                    End If
+                                    Exit For
+                                End If
+                            Next
                             If Err.Number <> 0 Then
                                 ' Handle any error during move, and log the error details
                                 Debug.Print "Error moving email: " & objMail.Subject
@@ -156,7 +170,6 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
         Next
     End If
 End Sub
-
 
 
 Sub CheckRepliedEmails(ByVal objAgedInternalFolder As Outlook.Folder, ByVal objAgedRepliedFolder As Outlook.Folder)
