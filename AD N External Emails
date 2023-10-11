@@ -4,7 +4,7 @@ Dim objExcelWorksheet As Object
 Dim objInbox As Outlook.Folder
 Dim objStack As New Collection
 
-Sub ExportEmailsNotReplied()
+Sub ExportEmailsNotRepliedAndCheckExternal()
     ' Initialize Outlook objects
     Set objInbox = Application.Session.GetDefaultFolder(olFolderInbox)
 
@@ -84,36 +84,24 @@ Sub ExportEmailsNotReplied()
     Loop
 End Sub
 
-
 Sub CheckExternalEmails(ByVal objAgedInternalFolder As Outlook.Folder, ByVal objAgedExternalFolder As Outlook.Folder)
     Dim objMail As Outlook.MailItem
     Dim strReplied As String
+    Dim strSenderEmailAddress As String
 
     For Each objMail In objAgedInternalFolder.Items
         If objMail.Class = olMail Then
             strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
-            If strReplied <> "102" And strReplied <> "103" Then
-                ' Check if the sender's email address is not from ubs.com domain
-                If Not IsUbsDomain(objMail.SenderEmailAddress) Then
-                    ' Move the external email to the "(1) AGED External" folder
-                    objMail.Move objAgedExternalFolder
-                End If
+            strSenderEmailAddress = objMail.SenderEmailAddress
+
+            ' Check if the sender's email address does not contain "ubs.com" and the email is not already replied
+            If strReplied <> "102" And strReplied <> "103" And InStr(strSenderEmailAddress, "ubs.com") = 0 Then
+                ' Move the external email to the "(1) AGED External" folder
+                objMail.Move objAgedExternalFolder
             End If
         End If
     Next
 End Sub
-
-
-Function IsUbsDomain(ByVal emailAddress As String) As Boolean
-    ' Check if the email address is from ubs.com domain
-    If InStr(emailAddress, "@ubs.com") > 0 Then
-        IsUbsDomain = True
-    Else
-        IsUbsDomain = False
-    End If
-End Function
-
-
 
 Sub AddSubfoldersToStack(ByVal objFolder As Outlook.Folder, ByRef objStack As Collection)
     Dim objSubfolder As Outlook.Folder
