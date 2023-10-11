@@ -101,7 +101,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                 If (Not (strReplied = "102")) And (Not (strReplied = "103")) And (nDateDiff >= 0 And nDateDiff <= 5) Then
                     ' Check if an email with the same subject already exists in the AGED folder
                     isDuplicate = False
-                    Set objLatestMail = Nothing
+                    Set objLatestMail = Nothing ' Initialize objLatestMail
                     For Each objExistingMail In objAgedFolder.Items
                         If objExistingMail.Subject = objMail.Subject Then
                             isDuplicate = True
@@ -143,6 +143,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
         Next
     End If
 End Sub
+
 
 
 Sub CheckRepliedEmails(ByVal objAgedInternalFolder As Outlook.Folder, ByVal objAgedRepliedFolder As Outlook.Folder)
