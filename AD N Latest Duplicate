@@ -127,7 +127,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                             .Cells(nLastRow, 3) = objMail.SenderName
                             .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
                         End With
-                    ElseIf objMail.ReceivedTime > latestMail.ReceivedTime Then
+                    ElseIf Not latestMail Is Nothing And objMail.ReceivedTime > latestMail.ReceivedTime Then
                         ' Move the latest email with the same subject to AGED folder
                         latestMail.Move objAgedFolder
                     End If
@@ -136,6 +136,7 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
         Next
     End If
 End Sub
+
 
 
 Sub CheckRepliedEmails(ByVal objAgedInternalFolder As Outlook.Folder, ByVal objAgedRepliedFolder As Outlook.Folder)
