@@ -130,6 +130,17 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                         ' Check if the latest email should be kept in AGED folder
                         If Not objLatestMail Is Nothing And objLatestMail.Subject = objMail.Subject And objMail.ReceivedTime > objLatestMail.ReceivedTime Then
                             On Error Resume Next
+                            objMail.Move objAgedFolder
+                            If Err.Number <> 0 Then
+                                ' Handle any error during move, and log the error details
+                                Debug.Print "Error moving email: " & objMail.Subject
+                                Debug.Print "Error description: " & Err.Description
+                                On Error GoTo 0 ' Reset error handling
+                            End If
+                            On Error GoTo 0
+
+                            ' Move the older email back to its source folder
+                            On Error Resume Next
                             objLatestMail.Move objCurrentFolder
                             If Err.Number <> 0 Then
                                 ' Handle any error during move, and log the error details
@@ -138,24 +149,10 @@ Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder
                                 On Error GoTo 0 ' Reset error handling
                             End If
                             On Error GoTo 0
-                            Set objLatestMail = objMail
                         Else
                             On Error Resume Next
-                            ' Check if there is a duplicate in AGED Internal folder
-                            Dim objDuplicateInAged As Outlook.MailItem
-                            For Each objDuplicateInAged In objAgedFolder.Items
-                                If objDuplicateInAged.Subject = objMail.Subject Then
-                                    ' Check which one is the latest
-                                    If objDuplicateInAged.ReceivedTime > objMail.ReceivedTime Then
-                                        ' Move the older email back to its source folder
-                                        objMail.Move objCurrentFolder
-                                    Else
-                                        ' Move the older email to AGED folder
-                                        objMail.Move objAgedFolder
-                                    End If
-                                    Exit For
-                                End If
-                            Next
+                            ' Move the older email back to its source folder
+                            objMail.Move objCurrentFolder
                             If Err.Number <> 0 Then
                                 ' Handle any error during move, and log the error details
                                 Debug.Print "Error moving email: " & objMail.Subject
