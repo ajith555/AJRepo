@@ -75,8 +75,10 @@ Sub ExportEmailsNotReplied()
         .Cells(1, 2).Font.Bold = True
         .Cells(1, 3) = "Sender"
         .Cells(1, 3).Font.Bold = True
-        .Cells(1, 4) = "Excerpts"
+        .Cells(1, 4) = "Recipients"
         .Cells(1, 4).Font.Bold = True
+        .Cells(1, 5) = "Excerpts"
+        .Cells(1, 5).Font.Bold = True
     End With
 
     ' Make Excel visible
@@ -85,10 +87,10 @@ Sub ExportEmailsNotReplied()
 
     ' Format Excel worksheet
     With objExcelWorksheet
-        .Columns("A:C").AutoFit
+        .Columns("A:D").AutoFit
         .Rows.RowHeight = 15
-        .Columns("D").ColumnWidth = 100
-        .Columns("D").WrapText = False
+        .Columns("E").ColumnWidth = 100
+        .Columns("E").WrapText = False
     End With
 
     FetchEmailsToExcel objAgedFolder
@@ -270,11 +272,13 @@ Sub FetchEmailsToExcel(objAgedFolder As Outlook.Folder)
             ' Populate Excel cells with email information
             objExcelWorksheet.Cells(row, 1).Value = objMail.Subject
             objExcelWorksheet.Cells(row, 2).Value = objMail.ReceivedTime
-            objExcelWorksheet.Cells(row, 3).Value = objMail.SenderEmailAddress
-            objExcelWorksheet.Cells(row, 4).Value = objMail.Body
+            objExcelWorksheet.Cells(row, 3).Value = objMail.SenderName ' Use SenderName for sender's name
+            objExcelWorksheet.Cells(row, 4).Value = objMail.To ' Add a new column for recipients
+            objExcelWorksheet.Cells(row, 5).Value = objMail.Body
 
             ' Increment the row counter for the next email
             row = row + 1
         End If
     Next objMail
 End Sub
+
