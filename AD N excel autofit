@@ -90,8 +90,8 @@ Sub ExportEmailsNotReplied()
     ' Format Excel worksheet
     With objExcelWorksheet
         .Columns("A:D").AutoFit
-        .Columns("E").EntireColumn.AutoFit ' Use EntireColumn.AutoFit for column E
         .Rows.RowHeight = 15
+        .Columns("E").ColumnWidth = 100
         .Columns("E").WrapText = False
     End With
 
