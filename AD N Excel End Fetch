@@ -91,7 +91,7 @@ Sub ExportEmailsNotReplied()
         .Columns("D").WrapText = False
     End With
 
-    FetchEmailsToExcel
+    FetchEmailsToExcel objAgedFolder
 
 End Sub
 
@@ -257,14 +257,14 @@ Sub CheckRepliedEmails(ByVal objAgedInternalFolder As Outlook.Folder, ByVal objA
     Next
 End Sub
 
-Sub FetchEmailsToExcel()
+Sub FetchEmailsToExcel(objAgedFolder As Outlook.Folder)
     Dim objMail As Outlook.MailItem
     Dim row As Long
 
     ' Initialize the row to start populating the Excel worksheet
     row = 2 ' Start from row 2 to avoid overwriting headers
 
-    ' Loop through the emails in the "(1) AGED Internal" folder
+    ' Loop through the emails in the specified folder
     For Each objMail In objAgedFolder.Items
         If objMail.Class = olMail Then
             ' Populate Excel cells with email information
