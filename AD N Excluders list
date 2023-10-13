@@ -5,14 +5,9 @@ Dim objInbox As Outlook.Folder
 Dim objStack As New Collection
 Dim IgnoreSenderNames As Collection ' Collection to store sender names to ignore
 
-Sub InitializeIgnoreList()
-    Set IgnoreSenderNames = New Collection
-    IgnoreSenderNames.Add "Sender Name 1"
-    IgnoreSenderNames.Add "Sender Name 2"
-    ' Add more names as needed
-End Sub
 
 Sub ExportEmailsNotReplied()
+    InitializeIgnoreList
     ' Define the target email address
     Dim targetEmail As String
     targetEmail = "kushal-ajith.shetty@ubs.com" ' Change this to the desired email address
@@ -103,6 +98,13 @@ Sub ExportEmailsNotReplied()
     FetchEmailsToExcel objAgedFolder
 
 End Sub
+Sub InitializeIgnoreList()
+    Set IgnoreSenderNames = New Collection
+    IgnoreSenderNames.Add "Sender Name 1"
+    IgnoreSenderNames.Add "Sender Name 2"
+    ' Add more names as needed
+End Sub
+
 
 Function GetInboxForEmail(ByVal email As String) As Outlook.Folder
     ' This function retrieves the Inbox folder for the specified email address
