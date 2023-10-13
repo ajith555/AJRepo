@@ -4,34 +4,13 @@ Dim objExcelWorksheet As Object
 Dim objInbox As Outlook.Folder
 Dim objStack As New Collection
 
-Sub SetDefaultEmailAccount(ByVal targetEmail As String)
-    Dim olApp As Outlook.Application
-    Dim olNamespace As Outlook.NameSpace
-    Dim olAccount As Outlook.Account
-
-    ' Get the Outlook application and namespace
-    Set olApp = Outlook.Application
-    Set olNamespace = olApp.GetNamespace("MAPI")
-
-    ' Loop through the accounts and set the default account
-    For Each olAccount In olNamespace.Accounts
-        If olAccount.SmtpAddress = targetEmail Then
-            olNamespace.CurrentProfileName = olAccount.DeliveryStore.GetProfileName
-            Exit For
-        End If
-    Next olAccount
-End Sub
-
 Sub ExportEmailsNotReplied()
-    ' Specify the target email address (change this as needed)
+    ' Define the target email address
     Dim targetEmail As String
-    targetEmail = "kushal-ajith.shetty@ubs.com"
-
-    ' Call the procedure to set the default email account
-    Call SetDefaultEmailAccount(targetEmail)
+    targetEmail = "kushal-ajith.shetty@ubs.com" ' Change this to the desired email address
 
     ' Initialize Outlook objects
-    Set objInbox = Application.Session.GetDefaultFolder(olFolderInbox)
+    Set objInbox = GetInboxForEmail(targetEmail)
 
     ' Initialize folder for copied emails
     Dim objAgedFolder As Outlook.Folder
@@ -112,6 +91,28 @@ Sub ExportEmailsNotReplied()
     CheckExternalEmailsInSubfolders objAgedFolder, objExternalFolder
 
 End Sub
+
+Function GetInboxForEmail(ByVal email As String) As Outlook.Folder
+    ' This function retrieves the Inbox folder for the specified email address
+
+    Dim olNamespace As Outlook.NameSpace
+    Dim accounts As Outlook.Accounts
+    Dim account As Outlook.Account
+    Dim folder As Outlook.Folder
+
+    Set olNamespace = Outlook.Application.GetNamespace("MAPI")
+    Set accounts = olNamespace.Accounts
+
+    For Each account In accounts
+        If account.SmtpAddress = email Then
+            ' Retrieve the Inbox folder for the specified email address
+            Set folder = account.DeliveryStore.GetDefaultFolder(olFolderInbox)
+            Exit For
+        End If
+    Next account
+
+    Set GetInboxForEmail = folder
+End Function
 
 Sub CheckExternalEmailsInFolder(ByVal objAgedInternalFolder As Outlook.Folder, ByVal objAgedExternalFolder As Outlook.Folder)
     Dim objMail As Outlook.MailItem
