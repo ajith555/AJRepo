@@ -1,36 +1,39 @@
-Sub RemoveDuplicatesFromWorkbook(ByVal wb As Excel.Workbook)
-    Dim lastRow As Long
-    Dim ws As Excel.Worksheet
-    Dim rngSubject As Excel.Range
-    Dim rngReceived As Excel.Range
-    Dim subjectDict As Object ' Dictionary to track subjects and their latest received date
-    
-    Set ws = wb.Worksheets(1)
-    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
-    Set rngSubject = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, 1)) ' Subject column (Column A)
-    Set rngReceived = ws.Range(ws.Cells(1, 2), ws.Cells(lastRow, 2)) ' Received column (Column B)
+In Power BI, you can achieve your goal of connecting three data sources with similar columns but different names, adding new columns, and then appending them into a single column as follows:
 
-    ' Create a Dictionary to track subjects and their latest received date
-    Set subjectDict = CreateObject("Scripting.Dictionary")
-    
-    Dim subjectCell As Range
-    Dim receivedCell As Range
-    Dim rowIndex As Long
-    For rowIndex = lastRow To 2 Step -1 ' Start from the last row and loop backward
-        Set subjectCell = rngSubject.Cells(rowIndex, 1)
-        Set receivedCell = rngReceived.Cells(rowIndex, 1)
-        If Not subjectCell.Value = "" Then
-            If Not subjectDict.Exists(subjectCell.Value) Then
-                ' Add subject and its received date to the dictionary if it doesn't exist
-                subjectDict.Add subjectCell.Value, receivedCell.Value
-            Else
-                ' If the subject is already in the dictionary, compare received dates and update if necessary
-                If receivedCell.Value > subjectDict(subjectCell.Value) Then
-                    subjectDict(subjectCell.Value) = receivedCell.Value
-                End If
-                ' Delete the entire row since we're keeping the latest occurrence
-                ws.Rows(subjectCell.Row).Delete
-            End If
-        End If
-    Next rowIndex
-End Sub
+Connect Data Sources:
+
+Connect your three data sources (swc, swci, swci id) to Power BI.
+Transform Data:
+
+For each data source, perform the necessary data transformations to add columns bbs, arp, and bbs2. The values for these columns should be the same as their column names. You can do this using the Power Query Editor in Power BI.
+For example, you can use the "Add Custom Column" feature in Power Query and use a formula like this:
+
+M
+Copy code
+Table.AddColumn(Source, "bbs", each [bbs])
+Table.AddColumn(Source, "arp", each [arp])
+Table.AddColumn(Source, "bbs2", each [bbs2])
+Combine Data Sources:
+
+Once you have added the required columns in each of your data sources, you can combine them into a single table. To do this, you can use the "Append Queries" feature in Power Query. Here's how:
+a. Go to the Power Query Editor.
+b. Select the first data source (e.g., swc).
+c. Go to the "Home" tab and click on "Append Queries."
+d. Choose the second data source (e.g., swci) and repeat this for the third data source (e.g., swci id).
+e. This will combine the data from all three data sources into a single table.
+
+Create a New Column (SWC1):
+
+After combining the data sources, you can create a new column called SWC1 to consolidate the data. You can use the "Add Custom Column" feature to do this:
+M
+Copy code
+Table.AddColumn(CombinedTable, "SWC1", each [swc] & [swci] & [swci id])
+Load Data:
+
+Once you've added the SWC1 column, click the "Close & Apply" button to load the data into Power BI.
+Now, you should have a single table in Power BI with the combined data from your three data sources, and a new column SWC1 containing the concatenated values of swc, swci, and swci id.
+
+
+
+
+
