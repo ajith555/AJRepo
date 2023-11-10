@@ -1,8 +1,9 @@
-Strengths and Achievements:
-This year, your accomplishments showcase a diverse skill set. Your completion of the Alteryx project demonstrated problem-solving and analytical abilities. Building complex macros with multiple versions highlighted your adaptability and attention to user needs. Despite challenges in the ServiceWorks API project, your innovative approach to data fetching using HTML, Chrome, and Selenium drivers displayed perseverance and creativity. Creating a one-pager test version on SharePoint showcased effective communication and collaboration skills. Your eagerness to explore Power BI dashboards and current involvement in the challenging BCA project underline your commitment to continuous learning and handling complex tasks.
-
-Development Areas:
-While you have excelled in various projects, there is room for growth. Opportunities for improvement include refining your approach to overcome project limitations, as seen in the ServiceWorks API project. Enhancing collaboration and communication, especially in sharing project updates and progress, can contribute to a more impactful team environment. Focusing on optimizing workflows in Alteryx and other automation tools can streamline processes further. Additionally, embracing a proactive stance in addressing project challenges can enhance your problem-solving capabilities.
-
-UBS Behaviors:
-Your strengths align with UBS behaviors, such as problem-solving in completing the Alteryx project and adapting to user requirements in macro development. Collaboration was evident in creating a test version on SharePoint. To better demonstrate UBS behaviors, consider providing more transparent project updates, enhancing communication channels with the team, and fostering an environment that encourages creativity and problem-solving. Emphasize proactive engagement in overcoming project hurdles and share insights gained from the challenging BCA project to inspire and guide team members.
+IF [jno] = 'J03' THEN
+    IF ATTR([swci id from datasource]) = ATTR([swci]) THEN
+        IF ATTR([status]) = 'Active' THEN
+            [status]
+        END
+    END
+ELSE
+    ATTR([status])
+END
