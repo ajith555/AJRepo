@@ -1,28 +1,60 @@
-addGrid
-It takes a parameter currentBook which is an excel workbook, initialises variables prevEntry, sheetNo, and over30.
-If the workbook is named "WEEKLY" and a sheet named "30 Day and Older" doesn't exist, it copies data from the "ETR TRADES" sheet to create a new sheet named "30 Day and Older"
-It clears contents of the active sheet and copies headers from another sheet and scans through specific sheets for data older than 30 days and copies relevant rows to the "30 Day and Older" sheet
-sorts data
-repeats the steps with next sheet in workbook.
+pureName 
+pureName takes a security name (secName) as a parameter and processes it to extract a cleaner or "pure"data
+Checks for "WTS" in secName:
+If the position of "WTS" is greater than 2, the part before "WTS" and after it (excluding "WTS") is retained.
+If "WTS" is at position 2 or earlier, the part after "WTS" (excluding "WTS") is retained.
+Similar actions as above is done on RIS, OTH, UNTS, SCROW etc
+and at last returns the processed secName as the result of the function
 
 
+nameGames
+it searches for a matching name based on certain criteria in a workbook named "NAMES.xls
+it takes a secName (security name) as input
+If the ASCII value is less than 65 (A), it sets it to 65. If it's greater than 90 (Z), it sets it to 90
+Sets the DEPT variable to "BUYINS
+Initializes variables for the search process: searchRow, nameMatch, startRange, and endRange
+Initializes loop until a match name is found
+Checks if the cell in the workbook "NAMES.xls" in the specified row and column 3 (or 4) is not empty. If not, it sets startRange (or endRange) to the ASCII value of the character
+If the cell in column 2 matches the DEPT and the ASCII value of the letter falls within the range defined by startRange and endRange, it sets nameGames to the value in column 1 of the matching row, and nameMatch is set to True
+If no match is found in the loop, it checks if the next row has an empty value in column 1. If so, it sets nameGames to "NO MATCH FOUND," and nameMatch is set to True
+function returns the found name or NO MATCH FOUND
 
-addFooter 
-checks if the currentBook is equal to "WEEKLY" and assigns a  value to the failCtg variable.
-initializes currentRow to 2 and iterates through rows until an empty cell is found in column 1
-Within the loop, it checks if the value in column 10 is less than 0. If true, it subtracts that value from the exposure.
-calculates the count of non-empty cells in column G using the COUNTA function and assigns the result to a cell in column 7
-It calculates the sum of values in column I and assigns the result to a cell in column 9 and calculates the negative value of the exposure and assigns it to a cell in column 10
+getToThePoint 
+It extracts the last word from a given comment
 
 
-closeAndFormat
-formats the current date in different ways shortDate, longDate, thisMonth.
-creates many directories
-calls the addGrid function with different arguments
+prevDate
+It calculates the previous date based on the input date (thisDay)
+function takes a date (thisDay) as input
+Declares two variables: tempDay (to store the formatted previous date) and prevDay (to store the calculated previous date)
+Calculates the previous day by subtracting 1 from the input date: prevDay = thisDay - 1
+Checks if the month of the previous day is less than 10. If so, it adds a leading zero to the month
+Checks if the day of the previous day is less than 10. If so, it adds a leading zero to the day
+Formats the year to include only the last two digits
+Concatenates the formatted month, day, and year into the tempDay variable
+Returns the formatted previous date stored in tempDay
 
-timeLine 
-this function takes an integer parameter currentRow
-checks for multiple conditions and if conditions are met, increments counters in specific cells of another workbook (FAIL REPORTING2) and sheet (Sheet 1)
-Counters are incremented based on different categories and are categorized based on the values in column 4 of the current row and specific ranges ( 1-7 days, 8-14 days etc)
-code uses the reportDate to check conditions, it does not directly increment or modify the date
-uses Left function to extract a specified number of characters from the left side of a string
+posteros 
+it analyzes data in a worksheet named "All Fails" in a workbook specified by the variable prevZero. It seems to count occurrences of different conditions and then update another workbook named "FAIL REPORTING2" with the results
+
+
+otherReports 
+it calls subroutines (verlThreshold, cnsShorts, createNSreport, and reStrictedRepor)
+
+doItAll
+It calls subroutines: merge and otherReports
+
+pullUnique
+It processes data in a worksheet starting from row 3. It sets the number format of column 25 to text (@). It searches for the string "UNIQUE #:" in column 24 and extracts the 12 characters following it to column 25. If the length of the content in column 24 is 12, it checks if it's numeric. If so, it prepends an "I" to the content in column 25; otherwise, it copies the content from column 24 to column 25.
+
+isAffiliate
+function takes a parameter bkr (a broker code) and returns True if it matches either "0642" or "0652", indicating that it's an affiliate. Otherwise, it returns False
+
+in642Range
+takes a parameter firstChar (the first character of something) and returns True if it is "6". Otherwise, it returns False
+
+oldEnough
+It takes a parameter unique ( a unique identifier) and returns True if the conditions specified are met. It checks whether the leftmost two characters of the identifier are "13", and if the numeric value represented by characters 3 to 6 is greater than or equal to 711. Alternatively, if the numeric value of the leftmost two characters is greater than 13, it returns True. Otherwise, it returns False
+
+newRegSho
+It changes the directory name specifying semicolon and datatype
