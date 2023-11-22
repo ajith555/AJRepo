@@ -1,0 +1,28 @@
+addGrid
+It takes a parameter currentBook which is an excel workbook, initialises variables prevEntry, sheetNo, and over30.
+If the workbook is named "WEEKLY" and a sheet named "30 Day and Older" doesn't exist, it copies data from the "ETR TRADES" sheet to create a new sheet named "30 Day and Older"
+It clears contents of the active sheet and copies headers from another sheet and scans through specific sheets for data older than 30 days and copies relevant rows to the "30 Day and Older" sheet
+sorts data
+repeats the steps with next sheet in workbook.
+
+
+
+addFooter 
+checks if the currentBook is equal to "WEEKLY" and assigns a  value to the failCtg variable.
+initializes currentRow to 2 and iterates through rows until an empty cell is found in column 1
+Within the loop, it checks if the value in column 10 is less than 0. If true, it subtracts that value from the exposure.
+calculates the count of non-empty cells in column G using the COUNTA function and assigns the result to a cell in column 7
+It calculates the sum of values in column I and assigns the result to a cell in column 9 and calculates the negative value of the exposure and assigns it to a cell in column 10
+
+
+closeAndFormat
+formats the current date in different ways shortDate, longDate, thisMonth.
+creates many directories
+calls the addGrid function with different arguments
+
+timeLine 
+this function takes an integer parameter currentRow
+checks for multiple conditions and if conditions are met, increments counters in specific cells of another workbook (FAIL REPORTING2) and sheet (Sheet 1)
+Counters are incremented based on different categories and are categorized based on the values in column 4 of the current row and specific ranges ( 1-7 days, 8-14 days etc)
+code uses the reportDate to check conditions, it does not directly increment or modify the date
+uses Left function to extract a specified number of characters from the left side of a string
