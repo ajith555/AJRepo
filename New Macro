@@ -17,3 +17,12 @@ checks for directories and creates them if not exists depending on year and mont
 uses the Shell function to execute batch files
 opens multiple text files and iterates every line and compies relavant data to new workbook column A
 saves and closes
+
+
+owCounts
+initializes reportDate based on the value in Sheet 2, Cell (2, 8). If empty, it defaults to yesterday's date
+opens two text files (FLOD860PVR02.IXT and FLOD700PVR01.TXT) as workbooks, performs sorting, and manipulates column
+it processses rows , calculates counts based on conditions, crates worksheet and adds data.
+checks for file path is correct and text exists in specific locations.
+opens two text files (FLOD860PVR02.IXT and FLOD700PVR01.TXT), manipulates columns, sets number formats, and formats borders. It also creates a new worksheet, sets some formatting, and saves the workbook with a specific filename
+
