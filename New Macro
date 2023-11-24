@@ -8,3 +8,12 @@ opens many text files and processes them.
 new workbook is created (Workbooks.Add), and column headers are added
 slapChop function is called for each text file, copying data from the text file to the new workbook
 some columns are added depdnding on the conditions and finally the file is saved and closed.
+
+
+countOnshoreComparisons
+dds a new workbook Workbooks.Add
+iterates through sheets numbered from 1 to 12 (currentSheet variable). This loop runs until currentSheet reaches 13
+checks for directories and creates them if not exists depending on year and month
+uses the Shell function to execute batch files
+opens multiple text files and iterates every line and compies relavant data to new workbook column A
+saves and closes
