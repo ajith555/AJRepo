@@ -26,3 +26,8 @@ it processses rows , calculates counts based on conditions, crates worksheet and
 checks for file path is correct and text exists in specific locations.
 opens two text files (FLOD860PVR02.IXT and FLOD700PVR01.TXT), manipulates columns, sets number formats, and formats borders. It also creates a new worksheet, sets some formatting, and saves the workbook with a specific filename
 
+priorBusinessDay
+the function takes a date as input, subtracts one day from it, and then iteratively subtracts days until it finds the last business day (excluding Sundays and Saturdays). Date is returned at the end
+
+nextBusinessDay
+ the function takes a date as input, adds one day to it, and then iteratively adds days until it finds the next business day (excluding Sundays and Saturdays).
