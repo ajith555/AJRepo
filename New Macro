@@ -50,3 +50,15 @@ renames sheets.
 calculations and populates cells with formulas in the "DAILY FAIL STATS" sheet based on data from other sheets and workbooks
 applies formating to data, copies from sheets, adjusts sizing and saves
 
+cnsFileName 
+generate file names based on a dates
+
+nonCnsFileName 
+Generates a file name for non-CNS daily fails report
+primarily handle the formatting of the date components and concatenate them into a file path. There is no manipulation of the date itself (such as adding an extra day) in these functions; they only construct file names based on the given date
+
+failCount 
+it  counts the occurrences of specific fail type
+
+createCNSreport
+(Need to check)
