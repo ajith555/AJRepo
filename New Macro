@@ -1,1 +1,10 @@
 
+verlThreshold
+generates a formatted date string regDate in the "MMDDYY" format based on the current date
+It checks if specific directories exist and creates them if not.
+The first If checks for the existence of a directory based on the year. If not present, it creates the directory.
+The second If checks for the existence of a directory based on the year and month. If not present, it creates the directory
+opens many text files and processes them.
+new workbook is created (Workbooks.Add), and column headers are added
+slapChop function is called for each text file, copying data from the text file to the new workbook
+some columns are added depdnding on the conditions and finally the file is saved and closed.
