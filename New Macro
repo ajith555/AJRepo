@@ -31,3 +31,6 @@ the function takes a date as input, subtracts one day from it, and then iterativ
 
 nextBusinessDay
  the function takes a date as input, adds one day to it, and then iteratively adds days until it finds the next business day (excluding Sundays and Saturdays).
+
+reporting 
+sub function combines data from different workbooks, sorts it, processes it, and generates a report and updates values in specific cells
