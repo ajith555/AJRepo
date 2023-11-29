@@ -40,7 +40,7 @@ If not found or in case of errors, returns a predefined error message
 
 srilConvSymCusip : similar to convSymCusip function
 
-ensBuyIn
+cnsBuyIn
 eads data from a text file, organizes it into sheets within a new workbook, performs some data manipulations, updates counts in the original workbook, and sorts the data in one of the sheets
 
 
@@ -53,3 +53,24 @@ formatReport
 
 lastSheetLine 
  calculates the last non-empty row number in column A of the active sheet
+
+censShorts
+this performs several tasks related to processing data, creating reports, and saving files
+
+regShoCheck
+perforsm several tasks related to processing threshold data from different files and combining them into a single Excel workbook
+Checks and creates specific directories based on the current year and month.
+Defines file paths based on the current date and predefined file names.
+Prompts the user to enter the name of a Rumba session.
+Attempts to switch to a Rumba session using the provided window name.
+Reads data from multiple files (threshHold array).
+Process each line, determining whether to call carriageScan or pipeScan based on the presence of carriage return characters.
+Add data to it.
+Perform text-to-columns operation.
+Sort the data.
+Save the workbook with a specific file name.
+
+pipeScan
+
+
+
