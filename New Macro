@@ -92,3 +92,29 @@ checks if certain directories exist and creates them if not.
 It then saves the active workbook with a specific filename in the created directories.
 
 
+priorCusip
+function checks if a given CUSIP exists in a specified range across multiple sheets and returns True if found, and False otherwise
+
+codReporting
+code seems to be generating COD reports by processing rows in the "everything.x1s" workbook, creating directories, and saving reports with specific file names based on date criteria. The exact details of data processing and report generation would depend on the content of the "everything.x1s" workbook and the specifics of the printTo and printIo subroutines
+
+failLookup
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
