@@ -71,6 +71,24 @@ Sort the data.
 Save the workbook with a specific file name.
 
 pipeScan
+pipeScan function takes two string parameters, threshHold and sourceData. It scans the threshHold string, which is expected to contain data separated by pipe (|) characters. The function processes the data and outputs a formatted string
 
+carriageScan
+designed to process and scan a text string (threshHold) that contains carriage return characters (line breaks, represented by Chr(10)
+
+addBlanks
+function generates a string of blank spaces based on the specified number of spaces (needSpaces). It uses a loop to concatenate a space character (Chr(32)) to the temp string for the specified number of times, and the resulting string is then returned. it creates a string consisting of a certain number of  spaces
+
+restrictedReport
+The code reads the trade date from the text file at position 15 for a length of 8 characters.
+It uses this information to set the tradeDate variable.
+It checks if the 13th column of the current row contains a valid date (IsDate(Cells(currentRow, 13))).
+If true, it sets the settleDate variable to the date in column 13.
+It then calculates a new date, buyInDate, which is tradeDate + 35
+If the trade date is greater than the settle date and a specific condition is met (tradeDate > settleDate and a cell in the 15th column is empty), it updates the 15th column with the text "AS OF TRADE"
+The code formats dates for creating directories and naming files.
+It uses the formatted date information to create directory paths and filenames
+checks if certain directories exist and creates them if not.
+It then saves the active workbook with a specific filename in the created directories.
 
 
