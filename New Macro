@@ -99,15 +99,26 @@ codReporting
 code seems to be generating COD reports by processing rows in the "everything.x1s" workbook, creating directories, and saving reports with specific file names based on date criteria. The exact details of data processing and report generation would depend on the content of the "everything.x1s" workbook and the specifics of the printTo and printIo subroutines
 
 failLookup
+ seems to be designed to look up data in another workbook ("drilldata.xls") based on certain criteria and return a corresponding value
 
 
 
+matchPendNonCNSIntentLiab
+comparing data in the active sheet with data in another workbook ("drilldata.xls"). It appears to be iterating through rows in the active sheet, extracting certain values, and searching for a matching row in the "drilldata" workbook based on specific criteria
 
+compVsAll
+script is designed to compare data between two workbooks: "smart" and "fxm."
 
+bond
+function takes a secNum parameter (presumably a security number) and returns a Boolean value.
+It checks if the ASCII value of the first character of secNum is greater than 54.
+If true, it returns True, indicating that it's a bond; otherwise, it returns False
 
-
-
-
+account 
+This function takes an acco parameter (presumably an account string) and returns a modified string.
+It initializes account to "n".
+It iterates through each character of acco and appends non-space characters to the account string.
+The result is a string containing all non-space characters from the input acco
 
 
 
