@@ -49,4 +49,7 @@ function looks for certain keywords or abbreviations within the security name an
 
 
 formatReport
+ formatting a report on two sheets ("CNS DELIVERS" and "CNS RECEIVES") within the active workbook
 
+lastSheetLine 
+ calculates the last non-empty row number in column A of the active sheet
