@@ -3,3 +3,9 @@ createCNSreport
 it is processing data, generating reports, and managing files in the context of domestic settlement and buy-in department daily reporting
 generates a daily report related to stock loan threshold securities and CNS (Continuous Net Settlement) activity. It involves data manipulation, sorting, and creating a new workbook with organized information, handling various conditions and scenarios related to stock transactions
 
+
+drillDown
+automates the creation of a drill-down report related to stock transactions. It involves handling dates, creating directories, opening templates, and populating data from various files. The code calculates and summarizes counts and amounts for different transaction types, such as CD, CR, ED, FR, and others. Finally, it saves and closes the generated drill-down repor
+
+findRestricted 
+ takes an currentRow parameter as an input. its finding and marking cells in the specified workbook ("RSCD00VRO1.TXT") based on  conditions
