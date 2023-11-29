@@ -9,3 +9,33 @@ automates the creation of a drill-down report related to stock transactions. It 
 
 findRestricted 
  takes an currentRow parameter as an input. its finding and marking cells in the specified workbook ("RSCD00VRO1.TXT") based on  conditions
+
+top25:
+
+Activates the workbook "drilldata.x1s."
+Determines the last row with data in the specified range.
+Sorts the data in ascending order based on the values in column E.
+Creates a new sheet and sets headers.
+Identifies a specific date for reporting.
+Iterates through the data, organizes it by broker, and performs calculations.
+Deletes unnecessary rows, sorts the remaining data, and formats the sheet.
+
+rated:
+A function used within the top25 subroutine.
+Determines the rating for a given row based on certain conditions.
+Colors rows in the "drilldata.x1s" sheet based on the calculated rating.
+
+addOns:
+A subroutine that activates and processes data in a loop for a specific condition.
+Generates a file name based on the date in each row.
+Opens a workbook based on the generated file name.
+Calls the addOnsCodes subroutine with the current row as a parameter.
+Moves to the next row in the loop.
+
+convSymCusip
+extracts information from the screen content, such as CUSIP number, security number, and related details.
+Returns the extracted information as a string in the format "CUSIP;SECURITY;OTHER_DETAILS."
+If not found or in case of errors, returns a predefined error message
+
+
+srilConvSymCusip
