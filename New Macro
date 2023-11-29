@@ -38,4 +38,15 @@ Returns the extracted information as a string in the format "CUSIP;SECURITY;OTHE
 If not found or in case of errors, returns a predefined error message
 
 
-srilConvSymCusip
+srilConvSymCusip : similar to convSymCusip function
+
+ensBuyIn
+eads data from a text file, organizes it into sheets within a new workbook, performs some data manipulations, updates counts in the original workbook, and sorts the data in one of the sheets
+
+
+nameGameDupe
+function looks for certain keywords or abbreviations within the security name and uses a lookup table to determine "nameGame." 
+
+
+formatReport
+
