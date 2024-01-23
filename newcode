@@ -1,86 +1,42 @@
-Option Explicit
+# Install Selenium module
+Install-Module -Name Selenium -Force -AllowClobber
 
-Dim objExcelApplication As Excel.Application
-Dim objExcelWorkbook As Excel.Workbook
-Dim objExcelWorksheet As Excel.Worksheet
+# Define the URL of the website
+$url = "https://example.com"
 
-Sub ExportRepliedSentEmails()
-    Dim targetEmail As String
-    targetEmail = "abc@ubs.com" ' Replace with the target email address you want to fetch emails from
-    Dim numberOfDays As Integer
-    numberOfDays = 7 ' Change this number to the desired number of days
+# Specify the folder where you want to save the downloaded PDFs
+$downloadFolder = "C:\Path\To\Your\Folder"
 
-    ' Create Excel objects
-    Set objExcelApplication = New Excel.Application
-    objExcelApplication.Visible = True ' Set Excel application visible before working with columns
+# Create the folder if it doesn't exist
+if (-not (Test-Path -Path $downloadFolder -PathType Container)) {
+    New-Item -Path $downloadFolder -ItemType Directory
+}
 
-    Set objExcelWorkbook = objExcelApplication.Workbooks.Add
-    Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
+# Start a new Selenium WebDriver session
+$webDriver = Start-SeWebDriver -Browser Chrome
 
-    ' Set fixed row height for all rows in the worksheet
-    objExcelWorksheet.Rows.RowHeight = 20
+# Navigate to the website
+$webDriver.Navigate().GoToUrl($url)
 
-    With objExcelWorksheet
-        .Cells(1, 1) = "Subject"
-        .Cells(1, 1).Font.Bold = True
-        .Cells(1, 2) = "Sender"
-        .Cells(1, 2).Font.Bold = True
-        .Cells(1, 3) = "Recipient"
-        .Cells(1, 3).Font.Bold = True
-        .Cells(1, 4) = "Received Email Time"
-        .Cells(1, 4).Font.Bold = True
-        .Cells(1, 5) = "Replied Email Time"
-        .Cells(1, 5).Font.Bold = True
-    End With
+# Find all links on the page
+$links = $webDriver.FindElementsByTagname("a")
 
-    ' Get the specified email account and its Sent Items folder
-    Dim objNamespace As Outlook.Namespace
-    Dim objRootFolder As Outlook.Folder
-    Set objNamespace = Outlook.GetNamespace("MAPI")
-    Set objRootFolder = objNamespace.Folders(targetEmail)
-    Dim objSentItemsFolder As Outlook.Folder
-    Set objSentItemsFolder = objRootFolder.Folders("Sent Items")
+# Iterate through each link and download PDF files
+foreach ($link in $links) {
+    $href = $link.GetAttribute("href")
 
-    ' Process the Sent Items folder, including only replied emails within the specified number of days
-    ProcessSentItemsFolder objSentItemsFolder, numberOfDays
+    if ($href -match '\.pdf$') {
+        $pdfFileName = [System.IO.Path]::GetFileName($href)
+        $pdfFilePath = Join-Path -Path $downloadFolder -ChildPath $pdfFileName
 
-    ' Format the Excel columns and rows
-    With objExcelWorksheet
-        .Columns("A:E").AutoFit
-        .Columns("E").ColumnWidth = 20
-        .Columns("E").WrapText = False
-    End With
+        Write-Host "Downloading $pdfFileName..."
+        
+        # Download PDF file using Invoke-WebRequest
+        Invoke-WebRequest -Uri $href -OutFile $pdfFilePath
 
-    MsgBox "Complete!", vbExclamation
-End Sub
+        Write-Host "Downloaded to $pdfFilePath"
+    }
+}
 
-Sub ProcessSentItemsFolder(ByVal objSentItemsFolder As Outlook.Folder, ByVal numberOfDays As Integer)
-    Dim objMail As Outlook.MailItem
-    Dim nLastRow As Integer
-
-    On Error Resume Next
-
-    For Each objMail In objSentItemsFolder.Items
-        ' Check if the email is within the specified number of days
-        Dim nDateDiff As Integer
-        nDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
-
-        ' Check if the email is not from the target email address and is within the specified number of days
-        If nDateDiff <= numberOfDays And objMail.SenderEmailAddress <> "abc@ubs.com" Then
-            ' Check if the email has been replied to
-            If objMail.ReceivedByName <> objMail.SentOnBehalfOfName Then
-                nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-
-                With objExcelWorksheet
-                    .Cells(nLastRow, 1) = objMail.Subject
-                    .Cells(nLastRow, 2) = objMail.SenderName
-                    .Cells(nLastRow, 3) = objMail.To
-                    .Cells(nLastRow, 4) = objMail.ReceivedTime
-                    .Cells(nLastRow, 5) = objMail.RepliedTime
-                End With
-            End If
-        End If
-    Next objMail
-
-    On Error GoTo 0
-End Sub
+# Close the WebDriver session
+Stop-SeWebDriver -WebDriver $webDriver
