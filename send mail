@@ -30,35 +30,21 @@ End Sub
 
 Function GetRuleConditions(rule As Outlook.Rule) As String
     ' Function to get rule conditions as a string
-    Dim condition As Outlook.RuleCondition
+    Dim action As Outlook.RuleAction
     Dim conditionsString As String
     
-    For Each condition In rule.Conditions
-        conditionsString = conditionsString & GetConditionDetails(condition) & "; "
-    Next condition
+    For Each action In rule.Actions
+        If action.Enabled Then
+            If action.ActionType = olRuleActionAssignToCategory Then
+                conditionsString = conditionsString & "Assign to Category: " & action.AssignToCategory & "; "
+            ElseIf action.ActionType = olRuleActionMoveToFolder Then
+                conditionsString = conditionsString & "Move to Folder: " & action.Folder.FolderPath & "; "
+            ' Add more cases for other actions as needed
+            End If
+        End If
+    Next action
     
     GetRuleConditions = conditionsString
-End Function
-
-Function GetConditionDetails(condition As Outlook.RuleCondition) As String
-    ' Function to get condition details as a string
-    Select Case condition.ConditionType
-        Case olConditionSubject
-            If TypeOf condition Is Outlook.TextRuleCondition Then
-                GetConditionDetails = "Subject: " & CType(condition, Outlook.TextRuleCondition).Text
-            Else
-                GetConditionDetails = "Subject: Unknown"
-            End If
-        Case olConditionBody
-            If TypeOf condition Is Outlook.TextRuleCondition Then
-                GetConditionDetails = "Body: " & CType(condition, Outlook.TextRuleCondition).Text
-            Else
-                GetConditionDetails = "Body: Unknown"
-            End If
-        ' Add more cases for other conditions as needed
-        Case Else
-            GetConditionDetails = "Unknown Condition"
-    End Select
 End Function
 
 Function GetRuleActions(rule As Outlook.Rule) As String
@@ -80,6 +66,8 @@ Function GetActionDetails(action As Outlook.RuleAction) As String
             GetActionDetails = "Move to Folder: " & action.Folder.FolderPath
         Case olRuleActionDelete
             GetActionDetails = "Delete"
+        Case olRuleActionAssignToCategory
+            GetActionDetails = "Assign to Category: " & action.AssignToCategory
         ' Add more cases for other actions as needed
         Case Else
             GetActionDetails = "Unknown Action"
