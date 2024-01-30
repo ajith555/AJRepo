@@ -26,7 +26,7 @@ Sub ListRules()
             ' Display conditions
             Debug.Print "Conditions:"
             For Each condition In olRule.Conditions
-                Debug.Print "    " & condition.Description
+                Debug.Print "    " & condition.Text
             Next condition
             
             ' Display actions
