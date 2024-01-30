@@ -33,12 +33,29 @@ Function GetRuleDescription(rule As Outlook.Rule) As String
     Dim conditionsString As String
     
     For Each condition In rule.Conditions
-        If condition.ConditionType = olConditionSubject Or condition.ConditionType = olConditionBody Then
-            If TypeOf condition Is Outlook.TextRuleCondition Then
-                conditionsString = conditionsString & CType(condition, Outlook.TextRuleCondition).Text & "; "
-            End If
-        End If
+        conditionsString = conditionsString & GetConditionDescription(condition) & "; "
     Next condition
     
     GetRuleDescription = conditionsString
+End Function
+
+Function GetConditionDescription(condition As Outlook.RuleCondition) As String
+    ' Function to get condition details as a string
+    Select Case condition.ConditionType
+        Case olConditionSubject
+            If TypeOf condition Is Outlook.TextRuleCondition Then
+                GetConditionDescription = "Subject: " & CType(condition, Outlook.TextRuleCondition).Text
+            Else
+                GetConditionDescription = "Subject: Unknown"
+            End If
+        Case olConditionBody
+            If TypeOf condition Is Outlook.TextRuleCondition Then
+                GetConditionDescription = "Body: " & CType(condition, Outlook.TextRuleCondition).Text
+            Else
+                GetConditionDescription = "Body: Unknown"
+            End If
+        ' Add more cases for other conditions as needed
+        Case Else
+            GetConditionDescription = "Unknown Condition"
+    End Select
 End Function
