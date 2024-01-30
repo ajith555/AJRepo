@@ -59,42 +59,32 @@ Sub ExportRulesToTXT(rules As Outlook.Rules, filePath As String)
 End Sub
 
 Function GetRuleConditions(rule As Outlook.Rule) As String
-    ' Customize this function to extract and format rule conditions
-    ' Example: "From: JohnDoe@domain.com, Subject contains 'Important'"
-    ' This function assumes the conditions are from the "from" and "subject" fields for simplicity
-    
     Dim condition As String
     condition = ""
     
     ' Check if there are conditions
-    If rule.Conditions.From.Enabled Then
-        condition = "From: " & rule.Conditions.From.Recipients(1).Address
-    End If
-    
-    If rule.Conditions.Subject.Enabled Then
-        If condition <> "" Then condition = condition & ", "
-        condition = condition & "Subject contains '" & rule.Conditions.Subject.Text & "'"
+    If rule.Conditions.Enabled Then
+        Dim i As Integer
+        For i = 1 To rule.Conditions.Count
+            If condition <> "" Then condition = condition & ", "
+            condition = condition & rule.Conditions(i).Text
+        Next i
     End If
     
     GetRuleConditions = condition
 End Function
 
 Function GetRuleActions(rule As Outlook.Rule) As String
-    ' Customize this function to extract and format rule actions
-    ' Example: "Move to folder 'Important Emails', Mark as read"
-    ' This function assumes the actions are moving to a folder and marking as read for simplicity
-    
     Dim action As String
     action = ""
     
     ' Check if there are actions
-    If rule.Actions.CopyToFolder.Enabled Then
-        action = "Move to folder '" & rule.Actions.CopyToFolder.Folder & "'"
-    End If
-    
-    If rule.Actions.MarkAsRead = True Then
-        If action <> "" Then action = action & ", "
-        action = action & "Mark as read"
+    If rule.Actions.Enabled Then
+        Dim i As Integer
+        For i = 1 To rule.Actions.Count
+            If action <> "" Then action = action & ", "
+            action = action & rule.Actions(i).ActionType & ": " & rule.Actions(i).Text
+        Next i
     End If
     
     GetRuleActions = action
