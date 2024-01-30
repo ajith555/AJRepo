@@ -1,42 +1,53 @@
-# Install Selenium module
-Install-Module -Name Selenium -Force -AllowClobber
+Sub ExportRules()
+    Dim rules As Outlook.Rules
+    Dim rule As Outlook.Rule
+    Dim exportFile As String
+    Dim fileNumber As Integer
+    
+    ' Specify the file path for export
+    exportFile = "C:\Path\To\ExportedRules.csv" ' Change the path and filename as needed
+    
+    ' Open a file for writing
+    fileNumber = FreeFile
+    Open exportFile For Output As fileNumber
+    
+    ' Set a reference to the Rules collection
+    Set rules = Application.Session.DefaultStore.GetRules
+    
+    ' Loop through each rule and export information
+    For Each rule In rules
+        Print #fileNumber, "Rule Name: " & rule.Name
+        Print #fileNumber, "Conditions: " & GetRuleConditions(rule)
+        Print #fileNumber, "Actions: " & GetRuleActions(rule)
+        Print #fileNumber, "----------------------"
+    Next rule
+    
+    ' Close the file
+    Close fileNumber
+    
+    MsgBox "Rules exported successfully!", vbInformation
+End Sub
 
-# Define the URL of the website
-$url = "https://example.com"
+Function GetRuleConditions(rule As Outlook.Rule) As String
+    ' Function to get rule conditions as a string
+    Dim condition As Outlook.RuleCondition
+    Dim conditionsString As String
+    
+    For Each condition In rule.Conditions
+        conditionsString = conditionsString & condition.ConditionType & "; "
+    Next condition
+    
+    GetRuleConditions = conditionsString
+End Function
 
-# Specify the folder where you want to save the downloaded PDFs
-$downloadFolder = "C:\Path\To\Your\Folder"
-
-# Create the folder if it doesn't exist
-if (-not (Test-Path -Path $downloadFolder -PathType Container)) {
-    New-Item -Path $downloadFolder -ItemType Directory
-}
-
-# Start a new Selenium WebDriver session
-$webDriver = Start-SeWebDriver -Browser Chrome
-
-# Navigate to the website
-$webDriver.Navigate().GoToUrl($url)
-
-# Find all links on the page
-$links = $webDriver.FindElementsByTagname("a")
-
-# Iterate through each link and download PDF files
-foreach ($link in $links) {
-    $href = $link.GetAttribute("href")
-
-    if ($href -match '\.pdf$') {
-        $pdfFileName = [System.IO.Path]::GetFileName($href)
-        $pdfFilePath = Join-Path -Path $downloadFolder -ChildPath $pdfFileName
-
-        Write-Host "Downloading $pdfFileName..."
-        
-        # Download PDF file using Invoke-WebRequest
-        Invoke-WebRequest -Uri $href -OutFile $pdfFilePath
-
-        Write-Host "Downloaded to $pdfFilePath"
-    }
-}
-
-# Close the WebDriver session
-Stop-SeWebDriver -WebDriver $webDriver
+Function GetRuleActions(rule As Outlook.Rule) As String
+    ' Function to get rule actions as a string
+    Dim action As Outlook.RuleAction
+    Dim actionsString As String
+    
+    For Each action In rule.Actions
+        actionsString = actionsString & action.ActionType & "; "
+    Next action
+    
+    GetRuleActions = actionsString
+End Function
