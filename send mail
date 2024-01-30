@@ -17,8 +17,6 @@ Sub ExportRules()
     ' Loop through each rule and export information
     For Each rule In rules
         Print #fileNumber, "Rule Name: " & rule.Name
-        Print #fileNumber, "Conditions: " & GetRuleConditions(rule)
-        Print #fileNumber, "Actions: " & GetRuleActions(rule)
         Print #fileNumber, "----------------------"
     Next rule
     
@@ -27,49 +25,3 @@ Sub ExportRules()
     
     MsgBox "Rules exported successfully!", vbInformation
 End Sub
-
-Function GetRuleConditions(rule As Outlook.Rule) As String
-    ' Function to get rule conditions as a string
-    Dim action As Outlook.RuleAction
-    Dim conditionsString As String
-    
-    For Each action In rule.Actions
-        If action.Enabled Then
-            If action.ActionType = olRuleActionAssignToCategory Then
-                conditionsString = conditionsString & "Assign to Category: " & action.AssignToCategory & "; "
-            ElseIf action.ActionType = olRuleActionMoveToFolder Then
-                conditionsString = conditionsString & "Move to Folder: " & action.Folder.FolderPath & "; "
-            ' Add more cases for other actions as needed
-            End If
-        End If
-    Next action
-    
-    GetRuleConditions = conditionsString
-End Function
-
-Function GetRuleActions(rule As Outlook.Rule) As String
-    ' Function to get rule actions as a string
-    Dim action As Outlook.RuleAction
-    Dim actionsString As String
-    
-    For Each action In rule.Actions
-        actionsString = actionsString & GetActionDetails(action) & "; "
-    Next action
-    
-    GetRuleActions = actionsString
-End Function
-
-Function GetActionDetails(action As Outlook.RuleAction) As String
-    ' Function to get action details as a string
-    Select Case action.ActionType
-        Case olRuleActionMoveToFolder
-            GetActionDetails = "Move to Folder: " & action.Folder.FolderPath
-        Case olRuleActionDelete
-            GetActionDetails = "Delete"
-        Case olRuleActionAssignToCategory
-            GetActionDetails = "Assign to Category: " & action.AssignToCategory
-        ' Add more cases for other actions as needed
-        Case Else
-            GetActionDetails = "Unknown Action"
-    End Select
-End Function
