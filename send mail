@@ -67,11 +67,11 @@ Function GetRuleConditions(rule As Outlook.Rule) As String
     condition = ""
     
     ' Check if there are conditions
-    If rule.Conditions.From.Recipients.Count > 0 Then
+    If rule.Conditions.From.Enabled Then
         condition = "From: " & rule.Conditions.From.Recipients(1).Address
     End If
     
-    If rule.Conditions.Subject.Text <> "" Then
+    If rule.Conditions.Subject.Enabled Then
         If condition <> "" Then condition = condition & ", "
         condition = condition & "Subject contains '" & rule.Conditions.Subject.Text & "'"
     End If
@@ -88,8 +88,8 @@ Function GetRuleActions(rule As Outlook.Rule) As String
     action = ""
     
     ' Check if there are actions
-    If rule.Actions.MoveToFolder.Folder <> "" Then
-        action = "Move to folder '" & rule.Actions.MoveToFolder.Folder & "'"
+    If rule.Actions.CopyToFolder.Enabled Then
+        action = "Move to folder '" & rule.Actions.CopyToFolder.Folder & "'"
     End If
     
     If rule.Actions.MarkAsRead = True Then
