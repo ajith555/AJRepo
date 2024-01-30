@@ -17,6 +17,7 @@ Sub ExportRules()
     ' Loop through each rule and export information
     For Each rule In rules
         Print #fileNumber, "Rule Name: " & rule.Name
+        Print #fileNumber, "Rule Description: " & GetRuleDescription(rule)
         Print #fileNumber, "----------------------"
     Next rule
     
@@ -25,3 +26,15 @@ Sub ExportRules()
     
     MsgBox "Rules exported successfully!", vbInformation
 End Sub
+
+Function GetRuleDescription(rule As Outlook.Rule) As String
+    ' Function to get a basic rule description
+    Dim condition As Outlook.RuleCondition
+    Dim conditionsString As String
+    
+    For Each condition In rule.Conditions
+        conditionsString = conditionsString & condition.ConditionType & "; "
+    Next condition
+    
+    GetRuleDescription = conditionsString
+End Function
