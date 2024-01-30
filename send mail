@@ -3,6 +3,8 @@ Sub ListRules()
     Dim olSession As Outlook.NameSpace
     Dim olRules As Outlook.Rules
     Dim olRule As Outlook.Rule
+    Dim condition As Outlook.RuleCondition
+    Dim action As Outlook.RuleAction
     
     ' Create Outlook application and session objects
     Set olApp = New Outlook.Application
@@ -20,14 +22,26 @@ Sub ListRules()
             ' Print rule information (you can customize this part)
             Debug.Print "Rule Name: " & olRule.Name
             Debug.Print "Enabled: " & olRule.Enabled
-            Debug.Print "Execution Order: " & olRule.ExecutionOrder
-            Debug.Print "Conditions: " & olRule.Conditions.Description
-            Debug.Print "Actions: " & olRule.Actions.Description
+            
+            ' Display conditions
+            Debug.Print "Conditions:"
+            For Each condition In olRule.Conditions
+                Debug.Print "    " & condition.Description
+            Next condition
+            
+            ' Display actions
+            Debug.Print "Actions:"
+            For Each action In olRule.Actions
+                Debug.Print "    " & action.Description
+            Next action
+            
             Debug.Print "==============================="
         Next olRule
     End If
     
     ' Clean up objects
+    Set condition = Nothing
+    Set action = Nothing
     Set olRule = Nothing
     Set olRules = Nothing
     Set olSession = Nothing
