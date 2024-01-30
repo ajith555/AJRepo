@@ -1,90 +1,101 @@
-Sub ExportRules()
+Sub ExportOutlookRules()
     Dim rules As Outlook.Rules
     Dim rule As Outlook.Rule
-    Dim exportFile As String
-    Dim fileNumber As Integer
+    Dim exportFilePath As String
     
-    ' Specify the file path for export
-    exportFile = "C:\Path\To\ExportedRules.csv" ' Change the path and filename as needed
+    ' Set the export file path
+    exportFilePath = "C:\Path\To\Export\Rules"
     
-    ' Open a file for writing
-    fileNumber = FreeFile
-    Open exportFile For Output As fileNumber
-    
-    ' Set a reference to the Rules collection
+    ' Get the Rules object
     Set rules = Application.Session.DefaultStore.GetRules
     
-    ' Loop through each rule and export information
-    For Each rule In rules
-        Print #fileNumber, "Rule Name: " & rule.Name
-        Print #fileNumber, "Conditions: " & GetRuleConditions(rule)
-        Print #fileNumber, "Actions: " & GetRuleActions(rule)
-        Print #fileNumber, "----------------------"
-    Next rule
+    ' Export rules to CSV
+    ExportRulesToCSV rules, exportFilePath & ".csv"
     
-    ' Close the file
-    Close fileNumber
+    ' Export rules to TXT
+    ExportRulesToTXT rules, exportFilePath & ".txt"
     
     MsgBox "Rules exported successfully!", vbInformation
 End Sub
 
-Function GetRuleConditions(rule As Outlook.Rule) As String
-    ' Function to get rule conditions as a string
-    Dim condition As Outlook.RuleCondition
-    Dim conditionsString As String
+Sub ExportRulesToCSV(rules As Outlook.Rules, filePath As String)
+    Dim rule As Outlook.Rule
+    Dim fileNumber As Integer
     
-    For Each condition In rule.Conditions
-        conditionsString = conditionsString & GetConditionDetails(condition) & "; "
-    Next condition
+    ' Open a text file for writing
+    fileNumber = FreeFile
+    Open filePath For Output As fileNumber
     
-    GetRuleConditions = conditionsString
-End Function
+    ' Write header to CSV file
+    Print #fileNumber, "Rule Name, Conditions, Actions"
+    
+    ' Loop through each rule and write to CSV file
+    For Each rule In rules
+        Print #fileNumber, """" & rule.Name & """,""" & GetRuleConditions(rule) & """,""" & GetRuleActions(rule) & """"
+    Next rule
+    
+    ' Close the file
+    Close fileNumber
+End Sub
 
-Function GetConditionDetails(condition As Outlook.RuleCondition) As String
-    ' Function to get details of a rule condition
-    Dim conditionString As String
+Sub ExportRulesToTXT(rules As Outlook.Rules, filePath As String)
+    Dim rule As Outlook.Rule
+    Dim fileNumber As Integer
     
-    Select Case condition.ConditionType
-        Case OlRuleConditionType.olConditionFrom
-            conditionString = "From: " & condition.Text
-        Case OlRuleConditionType.olConditionSubject
-            conditionString = "Subject: " & condition.Text
-        Case OlRuleConditionType.olConditionBody
-            conditionString = "Body: " & condition.Text
-        ' Add more cases for other condition types as needed
-        Case Else
-            conditionString = "Unknown Condition Type"
-    End Select
+    ' Open a text file for writing
+    fileNumber = FreeFile
+    Open filePath For Output As fileNumber
     
-    GetConditionDetails = conditionString
+    ' Loop through each rule and write to TXT file
+    For Each rule In rules
+        Print #fileNumber, "Rule Name: " & rule.Name
+        Print #fileNumber, "Conditions: " & GetRuleConditions(rule)
+        Print #fileNumber, "Actions: " & GetRuleActions(rule)
+        Print #fileNumber, vbCrLf
+    Next rule
+    
+    ' Close the file
+    Close fileNumber
+End Sub
+
+Function GetRuleConditions(rule As Outlook.Rule) As String
+    ' Customize this function to extract and format rule conditions
+    ' Example: "From: JohnDoe@domain.com, Subject contains 'Important'"
+    ' This function assumes the conditions are from the "from" and "subject" fields for simplicity
+    
+    Dim condition As String
+    condition = ""
+    
+    ' Check if there are conditions
+    If rule.Conditions.From.Recipients.Count > 0 Then
+        condition = "From: " & rule.Conditions.From.Recipients(1).Address
+    End If
+    
+    If rule.Conditions.Subject.Text <> "" Then
+        If condition <> "" Then condition = condition & ", "
+        condition = condition & "Subject contains '" & rule.Conditions.Subject.Text & "'"
+    End If
+    
+    GetRuleConditions = condition
 End Function
 
 Function GetRuleActions(rule As Outlook.Rule) As String
-    ' Function to get rule actions as a string
-    Dim action As Outlook.RuleAction
-    Dim actionsString As String
+    ' Customize this function to extract and format rule actions
+    ' Example: "Move to folder 'Important Emails', Mark as read"
+    ' This function assumes the actions are moving to a folder and marking as read for simplicity
     
-    For Each action In rule.Actions
-        actionsString = actionsString & GetActionDetails(action) & "; "
-    Next action
+    Dim action As String
+    action = ""
     
-    GetRuleActions = actionsString
-End Function
-
-Function GetActionDetails(action As Outlook.RuleAction) As String
-    ' Function to get details of a rule action
-    Dim actionString As String
+    ' Check if there are actions
+    If rule.Actions.MoveToFolder.Folder <> "" Then
+        action = "Move to folder '" & rule.Actions.MoveToFolder.Folder & "'"
+    End If
     
-    Select Case action.ActionType
-        Case OlRuleActionType.olRuleActionMoveToFolder
-            Set folder = action.Folder
-            actionString = "Move to Folder: " & folder.FolderPath
-        Case OlRuleActionType.olRuleActionDelete
-            actionString = "Delete"
-        ' Add more cases for other action types as needed
-        Case Else
-            actionString = "Unknown Action Type"
-    End Select
+    If rule.Actions.MarkAsRead = True Then
+        If action <> "" Then action = action & ", "
+        action = action & "Mark as read"
+    End If
     
-    GetActionDetails = actionString
+    GetRuleActions = action
 End Function
