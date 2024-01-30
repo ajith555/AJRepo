@@ -1,50 +1,61 @@
-Sub ListRules()
-    Dim olApp As Outlook.Application
-    Dim olSession As Outlook.NameSpace
-    Dim olRules As Outlook.Rules
-    Dim olRule As Outlook.Rule
-    Dim condition As Object
-    Dim action As Outlook.RuleAction
+Sub ExportRules()
+    Dim rules As Outlook.Rules
+    Dim rule As Outlook.Rule
+    Dim exportFile As String
+    Dim fileNumber As Integer
     
-    ' Create Outlook application and session objects
-    Set olApp = New Outlook.Application
-    Set olSession = olApp.GetNamespace("MAPI")
+    ' Specify the file path for export
+    exportFile = "C:\Path\To\ExportedRules.csv" ' Change the path and filename as needed
     
-    ' Get the Rules collection
-    Set olRules = olSession.DefaultStore.GetRules
+    ' Open a file for writing
+    fileNumber = FreeFile
+    Open exportFile For Output As fileNumber
     
-    ' Check if there are any rules
-    If olRules.Count = 0 Then
-        MsgBox "No rules found in your Outlook account."
-    Else
-        ' Loop through each rule
-        For Each olRule In olRules
-            ' Print rule information (you can customize this part)
-            Debug.Print "Rule Name: " & olRule.Name
-            Debug.Print "Enabled: " & olRule.Enabled
-            
-            ' Display conditions
-            Debug.Print "Conditions:"
-            For Each condition In olRule.Conditions.RuleConditions
-                ' Access the specific properties of the condition based on your Outlook version
-                Debug.Print "    " & condition.Property & ": " & condition.Value
-            Next condition
-            
-            ' Display actions
-            Debug.Print "Actions:"
-            For Each action In olRule.Actions
-                Debug.Print "    " & action.Description
-            Next action
-            
-            Debug.Print "==============================="
-        Next olRule
-    End If
+    ' Set a reference to the Rules collection
+    Set rules = Application.Session.DefaultStore.GetRules
     
-    ' Clean up objects
-    Set condition = Nothing
-    Set action = Nothing
-    Set olRule = Nothing
-    Set olRules = Nothing
-    Set olSession = Nothing
-    Set olApp = Nothing
+    ' Loop through each rule and export information
+    For Each rule In rules
+        Print #fileNumber, "Rule Name: " & rule.Name
+        Print #fileNumber, "Conditions: " & GetRuleConditions(rule)
+        Print #fileNumber, "Actions: " & GetRuleActions(rule)
+        Print #fileNumber, "----------------------"
+    Next rule
+    
+    ' Close the file
+    Close fileNumber
+    
+    MsgBox "Rules exported successfully!", vbInformation
 End Sub
+
+Function GetRuleConditions(rule As Outlook.Rule) As String
+    ' Function to get rule conditions as a string
+    Dim condition As Outlook.RuleCondition
+    Dim conditionsString As String
+    
+    For Each condition In rule.Conditions
+        Select Case condition.ConditionType
+            Case olConditionFrom
+                conditionsString = conditionsString & "From: " & condition.Text & "; "
+            Case olConditionSubject
+                conditionsString = conditionsString & "Subject: " & condition.Text & "; "
+            ' Add more cases for other condition types as needed
+            Case Else
+                conditionsString = conditionsString & "Unknown Condition Type: " & condition.ConditionType & "; "
+        End Select
+    Next condition
+    
+    GetRuleConditions = conditionsString
+End Function
+
+Function GetRuleActions(rule As Outlook.Rule) As String
+    ' Function to get rule actions as a string
+    Dim action As Outlook.RuleAction
+    Dim actionsString As String
+    
+    For Each action In rule.Actions
+        actionsString = actionsString & action.ActionType & "; "
+    Next action
+    
+    GetRuleActions = actionsString
+End Function
