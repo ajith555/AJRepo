@@ -4,19 +4,23 @@ Sub ExportRules()
     Dim exportFile As String
     Dim fileNumber As Integer
     
-
-    exportFile = "\ExportRuleNames.csv" ' Change the path and filename as needed
+    ' Specify the file path for export
+    exportFile = "C:\Path\To\ExportedRules.csv" ' Change the path and filename as needed
     
+    ' Open a file for writing
     fileNumber = FreeFile
     Open exportFile For Output As fileNumber
     
+    ' Set a reference to the Rules collection
     Set rules = Application.Session.DefaultStore.GetRules
     
+    ' Loop through each rule and export information
     For Each rule In rules
         Print #fileNumber, "Rule Name: " & rule.Name
         Print #fileNumber, "----------------------"
     Next rule
-
+    
+    ' Close the file
     Close fileNumber
     
     MsgBox "Rules exported successfully!", vbInformation
