@@ -1,51 +1,35 @@
-Sub FetchOutlookRules()
-    Dim outlookApp As Object
-    Dim rules As Object
-    Dim rule As Object
+Sub ListRules()
+    Dim olApp As Outlook.Application
+    Dim olNS As Outlook.Namespace
+    Dim olRules As Outlook.Rules
+    Dim olRule As Outlook.Rule
     
-    On Error Resume Next
-    ' Create an instance of Outlook
-    Set outlookApp = CreateObject("Outlook.Application")
-    On Error GoTo 0
+    ' Create Outlook application and namespace objects
+    Set olApp = New Outlook.Application
+    Set olNS = olApp.GetNamespace("MAPI")
     
-    If outlookApp Is Nothing Then
-        MsgBox "Outlook is not running or installed.", vbExclamation
-        Exit Sub
-    End If
-    
-    On Error Resume Next
     ' Get the Rules collection
-    Set rules = outlookApp.Session.DefaultStore.GetRules()
-    On Error GoTo 0
+    Set olRules = olNS.Rules
     
-    If rules Is Nothing Then
-        MsgBox "No rules found in Outlook.", vbInformation
-        Exit Sub
+    ' Check if there are any rules
+    If olRules.Count = 0 Then
+        MsgBox "No rules found in your Outlook account."
+    Else
+        ' Loop through each rule
+        For Each olRule In olRules
+            ' Print rule information (you can customize this part)
+            Debug.Print "Rule Name: " & olRule.Name
+            Debug.Print "Enabled: " & olRule.Enabled
+            Debug.Print "Execution Order: " & olRule.ExecutionOrder
+            Debug.Print "Conditions: " & olRule.Conditions.Description
+            Debug.Print "Actions: " & olRule.Actions.Description
+            Debug.Print "==============================="
+        Next olRule
     End If
     
-    ' Loop through each rule
-    For Each rule In rules
-        ' Display rule information
-        DisplayRuleInfo rule
-    Next rule
-    
-    ' Release Outlook objects
-    Set rule = Nothing
-    Set rules = Nothing
-    Set outlookApp = Nothing
-End Sub
-
-Sub DisplayRuleInfo(rule As Object)
-    On Error Resume Next
-    ' Display rule information in MsgBox
-    MsgBox "Rule Name: " & rule.Name & vbCrLf & _
-           "Rule Conditions: " & rule.Conditions.Description & vbCrLf & _
-           "Rule Actions: " & rule.Actions.Description, vbInformation, "Outlook Rule"
-    On Error GoTo 0
-    
-    ' Display rule information in Immediate Window
-    Debug.Print "Rule Name: " & rule.Name
-    Debug.Print "Rule Conditions: " & rule.Conditions.Description
-    Debug.Print "Rule Actions: " & rule.Actions.Description
-    Debug.Print "----------------------------------------"
+    ' Clean up objects
+    Set olRule = Nothing
+    Set olRules = Nothing
+    Set olNS = Nothing
+    Set olApp = Nothing
 End Sub
