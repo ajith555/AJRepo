@@ -4,58 +4,20 @@ Sub ExportRules()
     Dim exportFile As String
     Dim fileNumber As Integer
     
-    ' Specify the file path for export
-    exportFile = "C:\Path\To\ExportedRules.csv" ' Change the path and filename as needed
+
+    exportFile = "\ExportRuleNames.csv" ' Change the path and filename as needed
     
-    ' Open a file for writing
     fileNumber = FreeFile
     Open exportFile For Output As fileNumber
     
-    ' Set a reference to the Rules collection
     Set rules = Application.Session.DefaultStore.GetRules
     
-    ' Loop through each rule and export information
     For Each rule In rules
         Print #fileNumber, "Rule Name: " & rule.Name
-        Print #fileNumber, "Rule Description: " & GetRuleDescription(rule)
         Print #fileNumber, "----------------------"
     Next rule
-    
-    ' Close the file
+
     Close fileNumber
     
     MsgBox "Rules exported successfully!", vbInformation
 End Sub
-
-Function GetRuleDescription(rule As Outlook.Rule) As String
-    ' Function to get a basic rule description
-    Dim condition As Outlook.RuleCondition
-    Dim conditionsString As String
-    
-    For Each condition In rule.Conditions
-        conditionsString = conditionsString & GetConditionDescription(condition) & "; "
-    Next condition
-    
-    GetRuleDescription = conditionsString
-End Function
-
-Function GetConditionDescription(condition As Outlook.RuleCondition) As String
-    ' Function to get condition details as a string
-    Select Case condition.ConditionType
-        Case olConditionSubject
-            If TypeOf condition Is Outlook.TextRuleCondition Then
-                GetConditionDescription = "Subject: " & CType(condition, Outlook.TextRuleCondition).Text
-            Else
-                GetConditionDescription = "Subject: Unknown"
-            End If
-        Case olConditionBody
-            If TypeOf condition Is Outlook.TextRuleCondition Then
-                GetConditionDescription = "Body: " & CType(condition, Outlook.TextRuleCondition).Text
-            Else
-                GetConditionDescription = "Body: Unknown"
-            End If
-        ' Add more cases for other conditions as needed
-        Case Else
-            GetConditionDescription = "Unknown Condition"
-    End Select
-End Function
