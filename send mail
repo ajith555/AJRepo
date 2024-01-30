@@ -34,18 +34,23 @@ Function GetRuleConditions(rule As Outlook.Rule) As String
     Dim conditionsString As String
     
     For Each condition In rule.Conditions
-        Select Case condition.ConditionType
-            Case olConditionFrom
-                conditionsString = conditionsString & "From: " & condition.Text & "; "
-            Case olConditionSubject
-                conditionsString = conditionsString & "Subject: " & condition.Text & "; "
-            ' Add more cases for other condition types as needed
-            Case Else
-                conditionsString = conditionsString & "Unknown Condition Type: " & condition.ConditionType & "; "
-        End Select
+        conditionsString = conditionsString & GetConditionDetails(condition) & "; "
     Next condition
     
     GetRuleConditions = conditionsString
+End Function
+
+Function GetConditionDetails(condition As Outlook.RuleCondition) As String
+    ' Function to get condition details as a string
+    Select Case condition.ConditionType
+        Case olConditionSubject
+            GetConditionDetails = "Subject: " & condition.Text
+        Case olConditionBody
+            GetConditionDetails = "Body: " & condition.Text
+        ' Add more cases for other conditions as needed
+        Case Else
+            GetConditionDetails = "Unknown Condition"
+    End Select
 End Function
 
 Function GetRuleActions(rule As Outlook.Rule) As String
@@ -54,8 +59,21 @@ Function GetRuleActions(rule As Outlook.Rule) As String
     Dim actionsString As String
     
     For Each action In rule.Actions
-        actionsString = actionsString & action.ActionType & "; "
+        actionsString = actionsString & GetActionDetails(action) & "; "
     Next action
     
     GetRuleActions = actionsString
+End Function
+
+Function GetActionDetails(action As Outlook.RuleAction) As String
+    ' Function to get action details as a string
+    Select Case action.ActionType
+        Case olRuleActionMoveToFolder
+            GetActionDetails = "Move to Folder: " & action.Folder.FolderPath
+        Case olRuleActionDelete
+            GetActionDetails = "Delete"
+        ' Add more cases for other actions as needed
+        Case Else
+            GetActionDetails = "Unknown Action"
+    End Select
 End Function
