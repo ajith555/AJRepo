@@ -1,99 +1,38 @@
-Sub ExportOutlookRules()
+Sub FetchOutlookRules()
+    Dim outlookApp As Outlook.Application
     Dim rules As Outlook.Rules
     Dim rule As Outlook.Rule
-    Dim exportFilePath As String
+    Dim ruleString As String
     
-    ' Set the export file path
-    exportFilePath = "C:\Path\To\Export\Rules"
+    ' Create an instance of Outlook
+    Set outlookApp = CreateObject("Outlook.Application")
     
-    ' Get the Rules object
-    Set rules = Application.Session.DefaultStore.GetRules
+    ' Get the Rules collection
+    Set rules = outlookApp.Session.DefaultStore.GetRules()
     
-    ' Export rules to CSV
-    ExportRulesToCSV rules, exportFilePath & ".csv"
-    
-    ' Export rules to TXT
-    ExportRulesToTXT rules, exportFilePath & ".txt"
-    
-    MsgBox "Rules exported successfully!", vbInformation
-End Sub
-
-Sub ExportRulesToCSV(rules As Outlook.Rules, filePath As String)
-    Dim rule As Outlook.Rule
-    Dim fileNumber As Integer
-    
-    ' Open a text file for writing
-    fileNumber = FreeFile
-    Open filePath For Output As fileNumber
-    
-    ' Write header to CSV file
-    Print #fileNumber, "Rule Name, Conditions, Actions"
-    
-    ' Loop through each rule and write to CSV file
-    For Each rule In rules
-        Print #fileNumber, """" & rule.Name & """,""" & GetRuleConditions(rule) & """,""" & GetRuleActions(rule) & """"
-    Next rule
-    
-    ' Close the file
-    Close fileNumber
-End Sub
-
-Sub ExportRulesToTXT(rules As Outlook.Rules, filePath As String)
-    Dim rule As Outlook.Rule
-    Dim fileNumber As Integer
-    
-    ' Open a text file for writing
-    fileNumber = FreeFile
-    Open filePath For Output As fileNumber
-    
-    ' Loop through each rule and write to TXT file
-    For Each rule In rules
-        Print #fileNumber, "Rule Name: " & rule.Name
-        Print #fileNumber, "Conditions: " & GetRuleConditions(rule)
-        Print #fileNumber, "Actions: " & GetRuleActions(rule)
-        Print #fileNumber, vbCrLf
-    Next rule
-    
-    ' Close the file
-    Close fileNumber
-End Sub
-
-Function GetRuleConditions(rule As Outlook.Rule) As String
-    Dim condition As String
-    condition = ""
-    
-    ' Check if there are conditions
-    If rule.Conditions.Enabled Then
-        Dim conditionArray() As String
-        ReDim conditionArray(1 To rule.Conditions.Count)
-        
-        Dim i As Integer
-        For i = 1 To rule.Conditions.Count
-            conditionArray(i) = rule.Conditions(i).Text
-        Next i
-        
-        condition = Join(conditionArray, ", ")
+    ' Check if there are any rules
+    If rules.Count = 0 Then
+        MsgBox "No rules found in Outlook."
+        Exit Sub
     End If
     
-    GetRuleConditions = condition
-End Function
-
-Function GetRuleActions(rule As Outlook.Rule) As String
-    Dim action As String
-    action = ""
-    
-    ' Check if there are actions
-    If rule.Actions.Enabled Then
-        Dim actionArray() As String
-        ReDim actionArray(1 To rule.Actions.Count)
+    ' Loop through each rule
+    For Each rule In rules
+        ' Display rule information in MsgBox
+        ruleString = "Rule Name: " & rule.Name & vbCrLf
+        ruleString = ruleString & "Rule Conditions: " & rule.Conditions.Description & vbCrLf
+        ruleString = ruleString & "Rule Actions: " & rule.Actions.Description & vbCrLf
+        MsgBox ruleString, vbInformation, "Outlook Rule"
         
-        Dim i As Integer
-        For i = 1 To rule.Actions.Count
-            actionArray(i) = rule.Actions(i).ActionType & ": " & rule.Actions(i).Text
-        Next i
-        
-        action = Join(actionArray, ", ")
-    End If
+        ' Display rule information in Immediate Window
+        Debug.Print "Rule Name: " & rule.Name
+        Debug.Print "Rule Conditions: " & rule.Conditions.Description
+        Debug.Print "Rule Actions: " & rule.Actions.Description
+        Debug.Print "----------------------------------------"
+    Next rule
     
-    GetRuleActions = action
-End Function
+    ' Release Outlook objects
+    Set rule = Nothing
+    Set rules = Nothing
+    Set outlookApp = Nothing
+End Sub
