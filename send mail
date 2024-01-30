@@ -64,11 +64,15 @@ Function GetRuleConditions(rule As Outlook.Rule) As String
     
     ' Check if there are conditions
     If rule.Conditions.Enabled Then
+        Dim conditionArray() As String
+        ReDim conditionArray(1 To rule.Conditions.Count)
+        
         Dim i As Integer
         For i = 1 To rule.Conditions.Count
-            If condition <> "" Then condition = condition & ", "
-            condition = condition & rule.Conditions(i).Text
+            conditionArray(i) = rule.Conditions(i).Text
         Next i
+        
+        condition = Join(conditionArray, ", ")
     End If
     
     GetRuleConditions = condition
@@ -80,11 +84,15 @@ Function GetRuleActions(rule As Outlook.Rule) As String
     
     ' Check if there are actions
     If rule.Actions.Enabled Then
+        Dim actionArray() As String
+        ReDim actionArray(1 To rule.Actions.Count)
+        
         Dim i As Integer
         For i = 1 To rule.Actions.Count
-            If action <> "" Then action = action & ", "
-            action = action & rule.Actions(i).ActionType & ": " & rule.Actions(i).Text
+            actionArray(i) = rule.Actions(i).ActionType & ": " & rule.Actions(i).Text
         Next i
+        
+        action = Join(actionArray, ", ")
     End If
     
     GetRuleActions = action
