@@ -44,9 +44,17 @@ Function GetConditionDetails(condition As Outlook.RuleCondition) As String
     ' Function to get condition details as a string
     Select Case condition.ConditionType
         Case olConditionSubject
-            GetConditionDetails = "Subject: " & condition.Text
+            If TypeOf condition Is Outlook.TextRuleCondition Then
+                GetConditionDetails = "Subject: " & CType(condition, Outlook.TextRuleCondition).Text
+            Else
+                GetConditionDetails = "Subject: Unknown"
+            End If
         Case olConditionBody
-            GetConditionDetails = "Body: " & condition.Text
+            If TypeOf condition Is Outlook.TextRuleCondition Then
+                GetConditionDetails = "Body: " & CType(condition, Outlook.TextRuleCondition).Text
+            Else
+                GetConditionDetails = "Body: Unknown"
+            End If
         ' Add more cases for other conditions as needed
         Case Else
             GetConditionDetails = "Unknown Condition"
