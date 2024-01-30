@@ -45,11 +45,11 @@ Function GetConditionDetails(condition As Outlook.RuleCondition) As String
     Dim conditionString As String
     
     Select Case condition.ConditionType
-        Case olConditionFrom
-            conditionString = "From: " & condition.From.Address
-        Case olConditionSubject
+        Case OlRuleConditionType.olConditionFrom
+            conditionString = "From: " & condition.Text
+        Case OlRuleConditionType.olConditionSubject
             conditionString = "Subject: " & condition.Text
-        Case olConditionBody
+        Case OlRuleConditionType.olConditionBody
             conditionString = "Body: " & condition.Text
         ' Add more cases for other condition types as needed
         Case Else
@@ -76,9 +76,10 @@ Function GetActionDetails(action As Outlook.RuleAction) As String
     Dim actionString As String
     
     Select Case action.ActionType
-        Case olRuleActionMoveToFolder
-            actionString = "Move to Folder: " & action.Folder.FolderPath
-        Case olRuleActionDelete
+        Case OlRuleActionType.olRuleActionMoveToFolder
+            Set folder = action.Folder
+            actionString = "Move to Folder: " & folder.FolderPath
+        Case OlRuleActionType.olRuleActionDelete
             actionString = "Delete"
         ' Add more cases for other action types as needed
         Case Else
