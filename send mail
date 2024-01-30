@@ -1,15 +1,15 @@
 Sub ListRules()
     Dim olApp As Outlook.Application
-    Dim olNS As Outlook.Namespace
+    Dim olSession As Outlook.NameSpace
     Dim olRules As Outlook.Rules
     Dim olRule As Outlook.Rule
     
-    ' Create Outlook application and namespace objects
+    ' Create Outlook application and session objects
     Set olApp = New Outlook.Application
-    Set olNS = olApp.GetNamespace("MAPI")
+    Set olSession = olApp.GetNamespace("MAPI")
     
     ' Get the Rules collection
-    Set olRules = olNS.Rules
+    Set olRules = olSession.DefaultStore.GetRules
     
     ' Check if there are any rules
     If olRules.Count = 0 Then
@@ -30,6 +30,6 @@ Sub ListRules()
     ' Clean up objects
     Set olRule = Nothing
     Set olRules = Nothing
-    Set olNS = Nothing
+    Set olSession = Nothing
     Set olApp = Nothing
 End Sub
