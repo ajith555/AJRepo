@@ -3,7 +3,7 @@ Sub ListRules()
     Dim olSession As Outlook.NameSpace
     Dim olRules As Outlook.Rules
     Dim olRule As Outlook.Rule
-    Dim condition As Outlook.RuleCondition
+    Dim condition As Object
     Dim action As Outlook.RuleAction
     
     ' Create Outlook application and session objects
@@ -25,8 +25,9 @@ Sub ListRules()
             
             ' Display conditions
             Debug.Print "Conditions:"
-            For Each condition In olRule.Conditions
-                Debug.Print "    " & condition.Text
+            For Each condition In olRule.Conditions.RuleConditions
+                ' Access the specific properties of the condition based on your Outlook version
+                Debug.Print "    " & condition.Property & ": " & condition.Value
             Next condition
             
             ' Display actions
