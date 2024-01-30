@@ -1,59 +1,89 @@
-<#
-.SYNOPSIS
-Send emails from Outlook client using PowerShell with personalized HTML body from a shared mailbox, to multiple recipients listed in a CSV file.
+Sub ExportRules()
+    Dim rules As Outlook.Rules
+    Dim rule As Outlook.Rule
+    Dim exportFile As String
+    Dim fileNumber As Integer
+    
+    ' Specify the file path for export
+    exportFile = "C:\Path\To\ExportedRules.csv" ' Change the path and filename as needed
+    
+    ' Open a file for writing
+    fileNumber = FreeFile
+    Open exportFile For Output As fileNumber
+    
+    ' Set a reference to the Rules collection
+    Set rules = Application.Session.DefaultStore.GetRules
+    
+    ' Loop through each rule and export information
+    For Each rule In rules
+        Print #fileNumber, "Rule Name: " & rule.Name
+        Print #fileNumber, "Conditions: " & GetRuleConditions(rule)
+        Print #fileNumber, "Actions: " & GetRuleActions(rule)
+        Print #fileNumber, "----------------------"
+    Next rule
+    
+    ' Close the file
+    Close fileNumber
+    
+    MsgBox "Rules exported successfully!", vbInformation
+End Sub
 
-.DESCRIPTION
-This PowerShell script sends emails from the Outlook client installed on the desktop. It reads recipient details from a CSV file, and sends individual emails to each recipient with a personalized HTML body that includes their name. The emails are sent from a shared mailbox.
+Function GetRuleConditions(rule As Outlook.Rule) As String
+    ' Function to get rule conditions as a string
+    Dim condition As Outlook.RuleCondition
+    Dim conditionsString As String
+    
+    For Each condition In rule.Conditions
+        conditionsString = conditionsString & GetConditionDetails(condition) & "; "
+    Next condition
+    
+    GetRuleConditions = conditionsString
+End Function
 
-.NOTES
-- The script requires Outlook client to be installed on the desktop and connected to a valid Exchange account with appropriate permissions to send emails from the shared mailbox.
-- The CSV file should contain the following columns: Recipient, Subject, FirstName. Replace the sample CSV file name and column names in the script with your actual values before running it.
-- Replace the sample HTML body string in the script with your actual HTML body, and use the placeholder `{0}` to represent the recipient's name, which will be replaced with the actual recipient's first name.
+Function GetConditionDetails(condition As Outlook.RuleCondition) As String
+    ' Function to get details of a rule condition
+    Dim conditionString As String
+    
+    Select Case condition.ConditionType
+        Case olConditionFrom
+            conditionString = "From: " & condition.From.Address
+        Case olConditionSubject
+            conditionString = "Subject: " & condition.Text
+        Case olConditionBody
+            conditionString = "Body: " & condition.Text
+        ' Add more cases for other condition types as needed
+        Case Else
+            conditionString = "Unknown Condition Type"
+    End Select
+    
+    GetConditionDetails = conditionString
+End Function
 
-.EXAMPLE
-Send-EmailsFromOutlook -CSVFilePath "C:\Recipients.csv" -SharedMailboxName "shared.mailbox@example.com"
+Function GetRuleActions(rule As Outlook.Rule) As String
+    ' Function to get rule actions as a string
+    Dim action As Outlook.RuleAction
+    Dim actionsString As String
+    
+    For Each action In rule.Actions
+        actionsString = actionsString & GetActionDetails(action) & "; "
+    Next action
+    
+    GetRuleActions = actionsString
+End Function
 
-#>
-
-# Function to send emails from Outlook
-Function Send-EmailsFromOutlook {
-    Param(
-        [Parameter(Mandatory=$true)]
-        [string]$CSVFilePath,
-        [Parameter(Mandatory=$true)]
-        [string]$SharedMailboxName
-    )
-
-    # Load Outlook COM assembly
-    Add-Type -AssemblyName "Microsoft.Office.Interop.Outlook" | Out-Null
-
-    # Create Outlook application object
-    $Outlook = New-Object -ComObject Outlook.Application
-
-    # Read recipient details from CSV file
-    $Recipients = Import-Csv -Path $CSVFilePath
-
-    # Loop through each recipient and send email
-    $Recipients | ForEach-Object {
-        $Recipient = $_
-        $Mail = $Outlook.CreateItem(0)
-
-        # Set email properties
-        $Mail.Subject = $Recipient.Subject
-        $Mail.BodyFormat = 2 # olFormatHTML
-        $Mail.HTMLBody = "<html><body><h1>Sample HTML Body</h1><p>Hello {0},</p><p>This is a sample HTML body for the email.</p></body></html>" -f $Recipient.FirstName # Replace with your actual HTML body and placeholder for recipient's name
-
-        # Set email recipient
-        $RecipientAddress = $Mail.Recipients.Add($Recipient.Recipient)
-        $RecipientAddress.Type = 1 # olTo
-
-        # Send email from shared mailbox
-        $SharedMailbox = $Outlook.Session.Stores | Where-Object { $_.DisplayName -eq $SharedMailboxName }
-        $Mail.SendUsingAccount = $SharedMailbox
-        $Mail.Send()
-
-        Write-Output "Email sent to $($Recipient.Recipient) with subject $($Recipient.Subject) from $SharedMailboxName."
-    }
-}
-
-# Usage: Send-EmailsFromOutlook -CSVFilePath "C:\Recipients.csv" -SharedMailboxName "shared.mailbox@example.com"
+Function GetActionDetails(action As Outlook.RuleAction) As String
+    ' Function to get details of a rule action
+    Dim actionString As String
+    
+    Select Case action.ActionType
+        Case olRuleActionMoveToFolder
+            actionString = "Move to Folder: " & action.Folder.FolderPath
+        Case olRuleActionDelete
+            actionString = "Delete"
+        ' Add more cases for other action types as needed
+        Case Else
+            actionString = "Unknown Action Type"
+    End Select
+    
+    GetActionDetails = actionString
+End Function
