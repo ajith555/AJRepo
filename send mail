@@ -34,7 +34,9 @@ Function GetRuleDescription(rule As Outlook.Rule) As String
     
     For Each condition In rule.Conditions
         If condition.ConditionType = olConditionSubject Or condition.ConditionType = olConditionBody Then
-            conditionsString = conditionsString & condition.Text & "; "
+            If TypeOf condition Is Outlook.TextRuleCondition Then
+                conditionsString = conditionsString & CType(condition, Outlook.TextRuleCondition).Text & "; "
+            End If
         End If
     Next condition
     
