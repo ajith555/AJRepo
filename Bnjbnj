@@ -1,9 +1,33 @@
-IF [jno] = 'J03' THEN
-    IF ATTR([swci id from datasource]) = ATTR([swci]) THEN
-        IF ATTR([status]) = 'Active' THEN
-            [status]
-        END
-    END
-ELSE
-    ATTR([status])
-END
+import requests
+from bs4 import BeautifulSoup
+import wget
+
+def download_pdfs(url):
+    # Send a GET request to the website
+    response = requests.get(url)
+
+    # Check if the request was successful (status code 200)
+    if response.status_code == 200:
+        # Parse the HTML content of the page
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # Find all links on the page
+        links = soup.find_all('a')
+
+        # Iterate through the links
+        for link in links:
+            href = link.get('href')
+
+            # Check if the link ends with '.pdf'
+            if href and href.endswith('.pdf'):
+                # Construct the full URL for the PDF document
+                pdf_url = url + href if href.startswith('/') else href
+
+                # Download the PDF using wget
+                wget.download(pdf_url, out='your_download_directory')
+
+    else:
+        print(f"Failed to retrieve the page. Status code: {response.status_code}")
+
+# Replace 'your_website_url' with the actual URL of your website
+download_pdfs('your_website_url')
