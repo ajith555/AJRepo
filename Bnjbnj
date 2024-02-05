@@ -3,19 +3,19 @@ from bs4 import BeautifulSoup
 import wget
 
 def download_pdfs_with_auth(url, username, password):
-    # Create a session to persist the login session
-    session = requests.Session()
+    try:
+        # Create a session to persist the login session
+        session = requests.Session()
 
-    # Login using your credentials
-    login_payload = {'username': username, 'password': password}
-    login_url = 'your_login_url'
-    session.post(login_url, data=login_payload)
+        # Login using your credentials
+        login_payload = {'username': username, 'password': password}
+        login_url = 'your_login_url'
+        session.post(login_url, data=login_payload)
 
-    # Send a GET request to the protected website
-    response = session.get(url)
+        # Send a GET request to the protected website
+        response = session.get(url)
+        response.raise_for_status()  # Raises HTTPError for bad responses
 
-    # Check if the request was successful (status code 200)
-    if response.status_code == 200:
         # Parse the HTML content of the page
         soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -34,8 +34,8 @@ def download_pdfs_with_auth(url, username, password):
                 # Download the PDF using wget
                 wget.download(pdf_url, out='your_download_directory')
 
-    else:
-        print(f"Failed to retrieve the page. Status code: {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        print(f"Error: {e}")
 
 # Replace 'your_website_url', 'your_login_url', 'your_username', and 'your_password'
 download_pdfs_with_auth('your_website_url', 'your_username', 'your_password')
