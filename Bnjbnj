@@ -18,3 +18,21 @@ $urls = $response.ParsedHtml.getElementsByTagName("a") | ForEach-Object {
 
 # Output the URLs
 $urls
+
+
+
+
+# Define the URL
+$url = "https://ubs.invisionapp.com"
+
+# Prompt the user for credentials
+$credential = Get-Credential
+
+# Make the request with Kerberos authentication
+$response = Invoke-WebRequest -Uri $url -Credential $credential -Authentication Negotiate
+
+# Extract the content or perform further actions
+$response.Content
+
+
+$response = Invoke-WebRequest -Uri $url -Credential $credential -Authentication NTLM
