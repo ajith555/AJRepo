@@ -1,12 +1,17 @@
-# Define the base URL and the endpoint
-$baseUrl = "https://ubs.invisionapp.com/overview/"
-$endpoint = "/exports/initiate/pdf?method=overviewMenu&sortBy=1&sortOrder=1&ViewLayout=2"
+# Define the base URL
+$baseUrl = "https://ubs.invisionapp.com"
 
-# Loop through all the files (assuming 100 files)
-for ($i = 1; $i -le 100; $i++) {
-    # Construct the URL
-    $url = $baseUrl + "file$i" + $endpoint
+# Fetch the content of the website
+$response = Invoke-WebRequest -Uri "$baseUrl" -UseBasicParsing
 
-    # Output the URL
-    Write-Output $url
+# Extract the URLs
+$urls = $response.ParsedHtml.getElementsByTagName("a") | ForEach-Object {
+    # Check if the href attribute contains the required pattern
+    if ($_.href -match "/overview/.*/exports/initiate/pdf\?method=overviewMenu&sortBy=1&sortOrder=1&ViewLayout=2") {
+        # Output the matched URL
+        $_.href
+    }
 }
+
+# Output the URLs
+$urls
