@@ -1,14 +1,12 @@
-$url = "https://ajith.com"
-$response = Invoke-WebRequest -Uri $url
-$html = $response.Content
+# Define the base URL and the endpoint
+$baseUrl = "https://ubs.invisionapp.com/overview/"
+$endpoint = "/exports/initiate/pdf?method=overviewMenu&sortBy=1&sortOrder=1&ViewLayout=2"
 
-# Define regex pattern to extract URLs
-$pattern = 'https:\/\/ajith\.com\/[\w-]+\/exports\/download'
+# Loop through all the files (assuming 100 files)
+for ($i = 1; $i -le 100; $i++) {
+    # Construct the URL
+    $url = $baseUrl + "file$i" + $endpoint
 
-# Extract URLs using regex
-$urls = [regex]::Matches($html, $pattern) | ForEach-Object { $_.Value }
-
-# Output the URLs
-foreach ($url in $urls) {
+    # Output the URL
     Write-Output $url
 }
