@@ -1,131 +1,53 @@
+Sub ExportRules()
+    Dim rules As Outlook.Rules
+    Dim rule As Outlook.Rule
+    Dim exportFile As String
+    Dim fileNumber As Integer
+    
+    ' Specify the file path for export
+    exportFile = "C:\Path\To\ExportedRules.csv" ' Change the path and filename as needed
+    
+    ' Open a file for writing
+    fileNumber = FreeFile
+    Open exportFile For Output As fileNumber
+    
+    ' Set a reference to the Rules collection
+    Set rules = Application.Session.DefaultStore.GetRules
+    
+    ' Loop through each rule and export information
+    For Each rule In rules
+        Print #fileNumber, "Rule Name: " & rule.Name
+        Print #fileNumber, "Conditions: " & GetRuleConditions(rule)
+        Print #fileNumber, "Actions: " & GetRuleActions(rule)
+        Print #fileNumber, "----------------------"
+    Next rule
+    
+    ' Close the file
+    Close fileNumber
+    
+    MsgBox "Rules exported successfully!", vbInformation
+End Sub
 
-createCNSreport 
-it is processing data, generating reports, and managing files in the context of domestic settlement and buy-in department daily reporting
-generates a daily report related to stock loan threshold securities and CNS (Continuous Net Settlement) activity. It involves data manipulation, sorting, and creating a new workbook with organized information, handling various conditions and scenarios related to stock transactions
+Function GetRuleConditions(rule As Outlook.Rule) As String
+    ' Function to get rule conditions as a string
+    Dim condition As Outlook.RuleCondition
+    Dim conditionsString As String
+    
+    For Each condition In rule.Conditions
+        conditionsString = conditionsString & condition.ConditionType & "; "
+    Next condition
+    
+    GetRuleConditions = conditionsString
+End Function
 
-
-drillDown
-automates the creation of a drill-down report related to stock transactions. It involves handling dates, creating directories, opening templates, and populating data from various files. The code calculates and summarizes counts and amounts for different transaction types, such as CD, CR, ED, FR, and others. Finally, it saves and closes the generated drill-down repor
-
-findRestricted 
- takes an currentRow parameter as an input. its finding and marking cells in the specified workbook ("RSCD00VRO1.TXT") based on  conditions
-
-top25:
-
-Activates the workbook "drilldata.x1s."
-Determines the last row with data in the specified range.
-Sorts the data in ascending order based on the values in column E.
-Creates a new sheet and sets headers.
-Identifies a specific date for reporting.
-Iterates through the data, organizes it by broker, and performs calculations.
-Deletes unnecessary rows, sorts the remaining data, and formats the sheet.
-
-rated:
-A function used within the top25 subroutine.
-Determines the rating for a given row based on certain conditions.
-Colors rows in the "drilldata.x1s" sheet based on the calculated rating.
-
-addOns:
-A subroutine that activates and processes data in a loop for a specific condition.
-Generates a file name based on the date in each row.
-Opens a workbook based on the generated file name.
-Calls the addOnsCodes subroutine with the current row as a parameter.
-Moves to the next row in the loop.
-
-convSymCusip
-extracts information from the screen content, such as CUSIP number, security number, and related details.
-Returns the extracted information as a string in the format "CUSIP;SECURITY;OTHER_DETAILS."
-If not found or in case of errors, returns a predefined error message
-
-
-srilConvSymCusip : similar to convSymCusip function
-
-cnsBuyIn
-eads data from a text file, organizes it into sheets within a new workbook, performs some data manipulations, updates counts in the original workbook, and sorts the data in one of the sheets
-
-
-nameGameDupe
-function looks for certain keywords or abbreviations within the security name and uses a lookup table to determine "nameGame." 
-
-
-formatReport
- formatting a report on two sheets ("CNS DELIVERS" and "CNS RECEIVES") within the active workbook
-
-lastSheetLine 
- calculates the last non-empty row number in column A of the active sheet
-
-censShorts
-this performs several tasks related to processing data, creating reports, and saving files
-
-regShoCheck
-perforsm several tasks related to processing threshold data from different files and combining them into a single Excel workbook
-Checks and creates specific directories based on the current year and month.
-Defines file paths based on the current date and predefined file names.
-Prompts the user to enter the name of a Rumba session.
-Attempts to switch to a Rumba session using the provided window name.
-Reads data from multiple files (threshHold array).
-Process each line, determining whether to call carriageScan or pipeScan based on the presence of carriage return characters.
-Add data to it.
-Perform text-to-columns operation.
-Sort the data.
-Save the workbook with a specific file name.
-
-pipeScan
-pipeScan function takes two string parameters, threshHold and sourceData. It scans the threshHold string, which is expected to contain data separated by pipe (|) characters. The function processes the data and outputs a formatted string
-
-carriageScan
-designed to process and scan a text string (threshHold) that contains carriage return characters (line breaks, represented by Chr(10)
-
-addBlanks
-function generates a string of blank spaces based on the specified number of spaces (needSpaces). It uses a loop to concatenate a space character (Chr(32)) to the temp string for the specified number of times, and the resulting string is then returned. it creates a string consisting of a certain number of  spaces
-
-restrictedReport
-The code reads the trade date from the text file at position 15 for a length of 8 characters.
-It uses this information to set the tradeDate variable.
-It checks if the 13th column of the current row contains a valid date (IsDate(Cells(currentRow, 13))).
-If true, it sets the settleDate variable to the date in column 13.
-It then calculates a new date, buyInDate, which is tradeDate + 35
-If the trade date is greater than the settle date and a specific condition is met (tradeDate > settleDate and a cell in the 15th column is empty), it updates the 15th column with the text "AS OF TRADE"
-The code formats dates for creating directories and naming files.
-It uses the formatted date information to create directory paths and filenames
-checks if certain directories exist and creates them if not.
-It then saves the active workbook with a specific filename in the created directories.
-
-
-priorCusip
-function checks if a given CUSIP exists in a specified range across multiple sheets and returns True if found, and False otherwise
-
-codReporting
-code seems to be generating COD reports by processing rows in the "everything.x1s" workbook, creating directories, and saving reports with specific file names based on date criteria. The exact details of data processing and report generation would depend on the content of the "everything.x1s" workbook and the specifics of the printTo and printIo subroutines
-
-failLookup
- seems to be designed to look up data in another workbook ("drilldata.xls") based on certain criteria and return a corresponding value
-
-
-
-matchPendNonCNSIntentLiab
-comparing data in the active sheet with data in another workbook ("drilldata.xls"). It appears to be iterating through rows in the active sheet, extracting certain values, and searching for a matching row in the "drilldata" workbook based on specific criteria
-
-compVsAll
-script is designed to compare data between two workbooks: "smart" and "fxm."
-
-bond
-function takes a secNum parameter (presumably a security number) and returns a Boolean value.
-It checks if the ASCII value of the first character of secNum is greater than 54.
-If true, it returns True, indicating that it's a bond; otherwise, it returns False
-
-account 
-This function takes an acco parameter (presumably an account string) and returns a modified string.
-It initializes account to "n".
-It iterates through each character of acco and appends non-space characters to the account string.
-The result is a string containing all non-space characters from the input acco
-
-
-
-
-
-
-
-
-
-
+Function GetRuleActions(rule As Outlook.Rule) As String
+    ' Function to get rule actions as a string
+    Dim action As Outlook.RuleAction
+    Dim actionsString As String
+    
+    For Each action In rule.Actions
+        actionsString = actionsString & action.ActionType & "; "
+    Next action
+    
+    GetRuleActions = actionsString
+End Function
