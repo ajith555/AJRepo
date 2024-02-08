@@ -1,124 +1,40 @@
-Option Explicit
+# Install Selenium module if not already installed
+if (-not (Get-Module -Name Selenium)) {
+    Install-Module -Name Selenium
+}
 
-Dim objExcelApplication As Excel.Application
-Dim objExcelWorkbook As Excel.Workbook
-Dim objExcelWorksheet As Excel.Worksheet
-Dim objinbox As Outlook.Folder
+# Import Selenium module
+Import-Module Selenium
 
-Sub ExportUnrepliedEmails()
-    Dim targetEmail As String
-    targetEmail = "kushal-ajith.shetty@ubs.com"
-    Dim objNamespace As Outlook.Namespace
-    Dim objRootFolder As Outlook.Folder
-    
-    ' Create Excel objects
-    Set objExcelApplication = New Excel.Application
-    objExcelApplication.Visible = True ' Set Excel application visible before working with columns
+# Path to chromedriver executable
+$ChromeDriverPath = "C:\path\to\chromedriver.exe"
 
-    Set objExcelWorkbook = objExcelApplication.Workbooks.Add
-    Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
-    
-    ' Set fixed row height for all rows in the worksheet
-    objExcelWorksheet.Rows.RowHeight = 20
+# Start a Selenium Chrome driver session
+$ChromeOptions = New-Object OpenQA.Selenium.Chrome.ChromeOptions
+$ChromeOptions.AddArgument("--headless") # Optional: Run headless to not show browser window
+$Driver = New-Object OpenQA.Selenium.Chrome.ChromeDriver($ChromeDriverPath, $ChromeOptions)
 
-    With objExcelWorksheet
-        .Cells(1, 1) = "Subject"
-        .Cells(1, 1).Font.Bold = True
-        .Cells(1, 2) = "Received"
-        .Cells(1, 2).Font.Bold = True
-        .Cells(1, 3) = "Sender"
-        .Cells(1, 3).Font.Bold = True
-        .Cells(1, 4) = "Recipients"
-        .Cells(1, 4).Font.Bold = True
-        .Cells(1, 5) = "Excerpts"
-        .Cells(1, 5).Font.Bold = True
-    End With
-    
-    ' Get the specified email account and its Inbox folder
-    Set objNamespace = Outlook.GetNamespace("MAPI")
-    Set objRootFolder = objNamespace.Folders(targetEmail)
-    Set objinbox = objRootFolder.Folders("Inbox")
-    
-    ' Check and process the folders
-    ProcessFolders objinbox
+# Navigate to the website
+$Driver.Url = "https://ubs.invisionapp.com"
 
-    ' Format the Excel columns and rows
-    With objExcelWorksheet
-        .Columns("A:D").AutoFit
-        .Columns("E").ColumnWidth = 100
-        .Columns("E").WrapText = False
-    End With
+# Add delay to allow time for page to load
+Start-Sleep -Seconds 5
 
-    RemoveDuplicatesFromWorkbook
+# Perform authentication using Selenium (add your own logic here)
+# For example, find username and password fields and input credentials, then submit
 
-    MsgBox "Complete!", vbExclamation
-End Sub
+# Wait for authentication to complete (add your own logic here)
+# For example, wait for certain element to appear indicating successful login
 
-Sub ProcessFolders(ByVal objCurrentfolder As Outlook.Folder)
-    Dim i As Long
-    Dim objMail As Outlook.MailItem
-    Dim strReplied As String
-    Dim nDateDiff As Integer
-    Dim nReplyDateDiff As Integer
-    Dim nLastRow As Integer
-    Dim Recipient As Outlook.Recipient
-    
-    On Error Resume Next
-    
-    For i = objCurrentfolder.Items.Count To 1 Step -1
-        If objCurrentfolder.Items(i).Class = olMail Then
-            Set objMail = objCurrentfolder.Items(i)
-            strReplied = objMail.propertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
-            
-            If (Not (strReplied = "102")) And (Not (strReplied = "103")) Then
-                nDateDiff = DateDiff("d", objMail.SentOn, Now)
-                nReplyDateDiff = DateDiff("d", objMail.ReceivedTime, Now)
-                
-                ' Check if email is from the last 3 days and not replied for more than 2 days
-                If nDateDiff <= 3 And nReplyDateDiff > 2 Then
-                    nLastRow = objExcelWorksheet.Range("A" & objExcelWorksheet.Rows.Count).End(xlUp).Row + 1
-                    
-                    With objExcelWorksheet
-                        .Cells(nLastRow, 1) = objMail.Subject
-                        .Cells(nLastRow, 2) = objMail.ReceivedTime
-                        .Cells(nLastRow, 3) = objMail.SenderName
-                    End With
-                    
-                    Dim recipients As String
-                    recipients = ""
-                    For Each Recipient In objMail.Recipients
-                        recipients = recipients & Recipient.Name & "; "
-                    Next Recipient
-                    recipients = Left(recipients, Len(recipients) - 2) ' Remove trailing "; "
-                    
-                    With objExcelWorksheet
-                        .Cells(nLastRow, 4) = recipients ' Add recipients' names to the new column
-                        .Cells(nLastRow, 5) = Left(Trim(objMail.Body), 100) & "..." ' Excerpts
-                    End With
-                End If
-            End If
-        End If
-    Next i
+# Fetch all URLs matching the pattern
+$URLs = $Driver.FindElementsByXPath("//a[contains(@href,'/overview/') and contains(@href,'/exports/initiate/pdf?method=overviewMenu&sortBy=1&sortOrder=1&ViewLayout=2')]")
+$URLList = @()
+foreach ($URL in $URLs) {
+    $URLList += $URL.GetAttribute("href")
+}
 
-    On Error GoTo 0
-    
-    If objCurrentfolder.Folders.Count > 0 Then
-        Dim objSubfolder As Outlook.Folder
-        For Each objSubfolder In objCurrentfolder.Folders
-            ProcessFolders objSubfolder
-        Next objSubfolder
-    End If
-End Sub
+# Close the Selenium Chrome driver session
+$Driver.Quit()
 
-Sub RemoveDuplicatesFromWorkbook()
-    Dim lastRow As Long
-    Dim lastCol As Long
-    Dim ws As Worksheet
-    Dim rng As Range
-    
-    Set ws = objExcelWorkbook.Worksheets(1)
-    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
-    lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
-    Set rng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
-    rng.RemoveDuplicates Columns:=Array(1, 2, 3, 4, 5), Header:=xlYes
-End Sub
+# Output the list of URLs
+$URLList
