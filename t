@@ -20,8 +20,16 @@ $Driver.Url = "https://ubs.invisionapp.com"
 # Add delay to allow time for page to load
 Start-Sleep -Seconds 5
 
-# Perform authentication using Selenium (add your own logic here)
-# For example, find username and password fields and input credentials, then submit
+# Find username and password fields and input credentials
+$UsernameField = $Driver.FindElementById("username") # Replace "username" with actual ID of username field
+$PasswordField = $Driver.FindElementById("password") # Replace "password" with actual ID of password field
+
+$UsernameField.SendKeys("your_username") # Replace "your_username" with actual username
+$PasswordField.SendKeys("your_password") # Replace "your_password" with actual password
+
+# Find login button and click
+$LoginButton = $Driver.FindElementById("loginButton") # Replace "loginButton" with actual ID of login button
+$LoginButton.Click()
 
 # Wait for authentication to complete (add your own logic here)
 # For example, wait for certain element to appear indicating successful login
