@@ -1,10 +1,10 @@
 # Install Selenium module if not already installed
-if (-not (Get-Module -Name Selenium)) {
-    Install-Module -Name Selenium
+if (-not (Get-Module -Name Selenium.WebDriver)) {
+    Install-Module -Name Selenium.WebDriver
 }
 
 # Import Selenium module
-Import-Module Selenium
+Import-Module Selenium.WebDriver
 
 # Path to chromedriver executable
 $ChromeDriverPath = "C:\path\to\chromedriver.exe"
