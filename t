@@ -13,12 +13,32 @@ foreach ($rule in $rules) {
     $description = "Rule Name: $($rule.Name)`n"
     $description += "Rule Description:`n"
 
-    # Access the rule's property to get the rule description
-    $ruleDescription = $rule.Description
+    # Access various properties of the rule
+    $description += "Rule Enabled: $($rule.Enabled)`n"
+    $description += "Rule Execution Order: $($rule.ExecutionOrder)`n"
+    $description += "Rule Is Local: $($rule.IsLocal)`n"
+    $description += "Rule Is Account Wide: $($rule.IsAccountWide)`n"
+
+    # Construct conditions part of the description
+    $description += "Conditions:`n"
+    foreach ($condition in $rule.Conditions) {
+        if ($condition.Enabled) {
+            $description += "Condition: $($condition.EnabledCondition.Text)`n"
+            # Add more conditions as needed
+        }
+    }
+
+    # Construct actions part of the description
+    $description += "Actions:`n"
+    foreach ($action in $rule.Actions) {
+        if ($action.Enabled) {
+            $description += "Action: $($action.ActionType)`n"
+            # Add more actions as needed
+        }
+    }
 
     # Write the rule description to the file
     $stream.WriteLine($description)
-    $stream.WriteLine($ruleDescription)
     $stream.WriteLine("`n")
 }
 
