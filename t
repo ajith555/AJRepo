@@ -7,14 +7,14 @@ def export_rule_settings():
     # Get Rules object
     rules = outlook_app.Session.DefaultStore.GetRules()
     
-    # Open a file to write the rule settings
-    with open("outlook_rule_settings.txt", "w") as output_file:
-        for rule in rules:
-            # Write rule name and description to the file
-            output_file.write(f"Rule Name: {rule.Name}\n")
-            output_file.write(f"Rules Description: {rule.Text}\n\n")
+    # Export rules to XML
+    rules_xml = rules.SaveAsXML()
     
-    print("Exported rule settings to outlook_rule_settings.txt")
+    # Write rules XML to a file
+    with open("outlook_rule_settings.xml", "w") as output_file:
+        output_file.write(rules_xml)
+    
+    print("Exported rule settings to outlook_rule_settings.xml")
 
 if __name__ == "__main__":
     export_rule_settings()
