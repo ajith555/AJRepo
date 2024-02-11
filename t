@@ -25,9 +25,7 @@ foreach ($rule in $rules) {
         $description += "No conditions defined`n"
     } else {
         foreach ($condition in $rule.Conditions) {
-            if ($condition.Enabled) {
-                $description += "Condition: $($condition.Text)`n"
-            }
+            $description += "Condition: $($condition.Text)`n"
         }
     }
 
@@ -37,9 +35,7 @@ foreach ($rule in $rules) {
         $description += "No actions defined`n"
     } else {
         foreach ($action in $rule.Actions) {
-            if ($action.Enabled) {
-                $description += "Action: $($action.Text)`n"
-            }
+            $description += "Action: $($action.Text)`n"
         }
     }
 
