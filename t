@@ -12,30 +12,14 @@ $stream = [System.IO.StreamWriter] $outfile
 foreach ($rule in $rules) {
     $description = "Rule Name: $($rule.Name)`n"
     $description += "Rule Description:`n"
-    
-    # Construct rule conditions
-    $conditions = ""
-    foreach ($condition in $rule.Conditions) {
-        if ($condition.Enabled) {
-            $conditions += "Condition: $($condition.EnabledCondition.Text)`n"
-            # Add more conditions as needed
-        }
-    }
-    
-    # Construct rule actions
-    $actions = ""
-    foreach ($action in $rule.Actions) {
-        if ($action.Enabled) {
-            $actions += "Action: $($action.ActionType)`n"
-            # Add more actions as needed
-        }
-    }
-    
-    # Combine conditions and actions
-    $description += $conditions
-    $description += $actions
-    
+
+    # Access the rule's property to get the rule description
+    $ruleDescription = $rule.Description
+
+    # Write the rule description to the file
     $stream.WriteLine($description)
+    $stream.WriteLine($ruleDescription)
+    $stream.WriteLine("`n")
 }
 
 # Close the file
