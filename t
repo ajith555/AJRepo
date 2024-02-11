@@ -24,18 +24,18 @@ foreach ($rule in $rules) {
     if ($rule.Conditions -eq $null) {
         $description += "No conditions defined`n"
     } else {
-        foreach ($condition in $rule.Conditions) {
+        foreach ($condition in $rule.Conditions | Where-Object { $_.Enabled }) {
             $description += "Condition: $($condition.Text)`n"
         }
     }
 
     # Construct actions part of the description
     $description += "Actions:`n"
-    if ($rule.Actions.Count -eq 0) {
+    if ($rule.Actions -eq $null) {
         $description += "No actions defined`n"
     } else {
-        foreach ($action in $rule.Actions) {
-            $description += "Action: $($action.Text)`n"
+        foreach ($action in $rule.Actions | Where-Object { $_.Enabled }) {
+            $description += "Action: $($action.Name)`n"
         }
     }
 
