@@ -10,10 +10,16 @@ def export_rules():
     # Open a file to write the rules
     with open("outlook_rules.txt", "w") as file:
         for rule in rules:
+            # Print available attributes
+            print(dir(rule))
+            
             # Write rule name and description to the file
             file.write(f"Rule Name: {rule.Name}\n")
-            file.write(f"Description: {rule.Description}\n\n")
-            # You can add more details like conditions and actions if needed
+            # Use a try-except block to handle the case where Description attribute doesn't exist
+            try:
+                file.write(f"Description: {rule.Description}\n\n")
+            except AttributeError:
+                file.write("Description: Not available\n\n")
     
     print("Exported rules to outlook_rules.txt")
 
