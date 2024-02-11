@@ -1,48 +1,27 @@
-# Provide the path to the .rwz file
-$rwzFilePath = "C:\path\to\your\rules.rwz"
+import win32com.client
 
-# Check if the file exists
-if (Test-Path $rwzFilePath) {
-    # Load the Outlook rules from the .rwz file
-    $outlook = New-Object -ComObject Outlook.Application
-    $rules = $outlook.Session.CreateObjectFromOutlookTemplate($rwzFilePath).Rules
+# Create an instance of the Outlook application
+outlook = win32com.client.Dispatch("Outlook.Application")
 
-    # Open a file to write the rule settings
-    $outfile = "outlook_rule_settings.txt"
-    $stream = [System.IO.StreamWriter] $outfile
+# Access the Rules collection
+rules = outlook.Session.DefaultStore.GetRules()
 
-    # Loop through each rule and write the name, conditions, and actions to the file
-    foreach ($rule in $rules) {
-        $description = "Rule Name: $($rule.Name)`n"
-        $description += "Rule Description:`n"
+# Iterate through the rules and print their names
+for rule in rules:
+    print("Rule Name:", rule.Name)
+    print("Rule Enabled:", rule.Enabled)
+    print("Rule Execution Order:", rule.ExecutionOrder)
+    print("Rule Is Local:", rule.IsLocal)
+    print("Rule Is Account Wide:", rule.IsAccountWide)
+    
+    # Print conditions
+    print("Conditions:")
+    for condition in rule.Conditions:
+        print("- Condition:", condition.Text)
 
-        # Access various properties of the rule
-        $description += "Rule Enabled: $($rule.Enabled)`n"
-        $description += "Rule Execution Order: $($rule.ExecutionOrder)`n"
-        $description += "Rule Is Local: $($rule.IsLocal)`n"
-        $description += "Rule Is Account Wide: $($rule.IsAccountWide)`n"
+    # Print actions
+    print("Actions:")
+    for action in rule.Actions:
+        print("- Action:", action.Name)
 
-        # Construct conditions part of the description
-        $description += "Conditions:`n"
-        foreach ($condition in $rule.Conditions) {
-            $description += "Condition: $($condition.Text)`n"
-        }
-
-        # Construct actions part of the description
-        $description += "Actions:`n"
-        foreach ($action in $rule.Actions) {
-            $description += "Action: $($action.Text)`n"
-        }
-
-        # Write the rule description to the file
-        $stream.WriteLine($description)
-        $stream.WriteLine("`n")
-    }
-
-    # Close the file
-    $stream.Close()
-
-    Write-Host "Exported rule settings to $outfile"
-} else {
-    Write-Host "File not found at specified location: $rwzFilePath"
-}
+    print()
