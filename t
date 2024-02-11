@@ -1,27 +1,35 @@
 import win32com.client
 
-# Create an instance of the Outlook application
-outlook = win32com.client.Dispatch("Outlook.Application")
+def export_rules_to_text():
+    # Create an instance of the Outlook application
+    outlook = win32com.client.Dispatch("Outlook.Application")
 
-# Access the Rules collection
-rules = outlook.Session.DefaultStore.GetRules()
+    # Access the Rules collection
+    rules = outlook.Session.DefaultStore.GetRules()
 
-# Iterate through the rules and print their names
-for rule in rules:
-    print("Rule Name:", rule.Name)
-    print("Rule Enabled:", rule.Enabled)
-    print("Rule Execution Order:", rule.ExecutionOrder)
-    print("Rule Is Local:", rule.IsLocal)
-    print("Rule Is Account Wide:", rule.IsAccountWide)
-    
-    # Print conditions
-    print("Conditions:")
-    for condition in rule.Conditions:
-        print("- Condition:", condition.Text)
+    # Open a text file to write the rule settings
+    with open("outlook_rule_settings.txt", "w") as file:
+        # Loop through each rule and write the name, conditions, and actions to the file
+        for rule in rules:
+            file.write(f"Rule Name: {rule.Name}\n")
+            file.write(f"Rule Enabled: {rule.Enabled}\n")
+            file.write(f"Rule Execution Order: {rule.ExecutionOrder}\n")
+            file.write(f"Rule Is Local: {rule.IsLocal}\n")
+            file.write(f"Rule Is Account Wide: {rule.IsAccountWide}\n")
 
-    # Print actions
-    print("Actions:")
-    for action in rule.Actions:
-        print("- Action:", action.Name)
+            # Write conditions to the file
+            file.write("Conditions:\n")
+            for condition in rule.Conditions:
+                file.write(f"- Condition: {condition.Text}\n")
 
-    print()
+            # Write actions to the file
+            file.write("Actions:\n")
+            for action in rule.Actions:
+                file.write(f"- Action: {action.Name}\n")
+
+            file.write("\n")
+
+    print("Exported rule settings to outlook_rule_settings.txt")
+
+if __name__ == "__main__":
+    export_rules_to_text()
