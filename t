@@ -21,28 +21,26 @@ foreach ($rule in $rules) {
 
     # Construct conditions part of the description
     $description += "Conditions:`n"
-    if ($rule.Conditions.Count -gt 0) {
+    if ($rule.RuleType -eq 0) {
+        $description += "No conditions defined`n"
+    } else {
         foreach ($condition in $rule.Conditions) {
             if ($condition.Enabled) {
-                $description += "Condition: $($condition.EnabledCondition.Text)`n"
-                # Add more conditions as needed
+                $description += "Condition: $($condition.Text)`n"
             }
         }
-    } else {
-        $description += "No conditions defined`n"
     }
 
     # Construct actions part of the description
     $description += "Actions:`n"
-    if ($rule.Actions.Count -gt 0) {
+    if ($rule.Actions.Count -eq 0) {
+        $description += "No actions defined`n"
+    } else {
         foreach ($action in $rule.Actions) {
             if ($action.Enabled) {
-                $description += "Action: $($action.ActionType)`n"
-                # Add more actions as needed
+                $description += "Action: $($action.EnabledAction.Text)`n"
             }
         }
-    } else {
-        $description += "No actions defined`n"
     }
 
     # Write the rule description to the file
