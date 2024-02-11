@@ -1,78 +1,27 @@
-Option Explicit
+import win32com.client
 
-Dim objExcelApplication As Excel.Application
-Dim objExcelWorkbook As Excel.Workbook
-Dim objExcelWorksheet As Excel.Worksheet
-Dim objNamespace As Outlook.Namespace
-Dim objSentItemsFolder As Outlook.Folder
-Dim HoursToFetch As Integer ' Number of hours to fetch emails
-
-Sub FetchEmailsFromSentItems()
-    ' Set the number of hours to fetch emails
-    HoursToFetch = 24 ' Change this value to the desired number of hours
+def export_rules():
+    # Create Outlook Application object
+    outlook_app = win32com.client.Dispatch("Outlook.Application")
     
-    ' Create Excel objects
-    Set objExcelApplication = New Excel.Application
-    objExcelApplication.Visible = True ' Set Excel application visible before working with columns
-
-    Set objExcelWorkbook = objExcelApplication.Workbooks.Add
-    Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
+    # Get Rules object
+    rules = outlook_app.Session.DefaultStore.GetRules()
     
-    ' Set fixed row height for all rows in the worksheet
-    objExcelWorksheet.Rows.RowHeight = 20
-
-    With objExcelWorksheet
-        .Cells(1, 1) = "Subject"
-        .Cells(1, 1).Font.Bold = True
-        .Cells(1, 2) = "Sent Time"
-        .Cells(1, 2).Font.Bold = True
-        .Cells(1, 3) = "Received Time"
-        .Cells(1, 3).Font.Bold = True
-        .Cells(1, 4) = "Sender"
-        .Cells(1, 4).Font.Bold = True
-    End With
-    
-    ' Get the Outlook Namespace and "Sent Items" folder
-    Set objNamespace = Outlook.GetNamespace("MAPI")
-    Set objSentItemsFolder = objNamespace.GetDefaultFolder(olFolderSentMail)
-
-    ' Fetch and display emails from "Sent Items" folder
-    FetchAndDisplayEmails objSentItemsFolder
-
-    ' Format the Excel columns and rows
-    With objExcelWorksheet
-        .Columns("A:D").AutoFit
-    End With
-
-    ' Clean up
-    Set objExcelWorksheet = Nothing
-    Set objExcelWorkbook = Nothing
-End Sub
-
-Sub FetchAndDisplayEmails(ByVal objFolder As Outlook.Folder)
-    Dim objItem As Object
-    Dim rowIndex As Integer
-    
-    rowIndex = 2 ' Start from the second row (first row is for headers)
-    
-    For Each objItem In objFolder.Items
-        If TypeOf objItem Is Outlook.MailItem Then ' Check if the item is a mail item
-            Dim objMail As Outlook.MailItem
-            Set objMail = objItem ' Cast the item to a mail item
-            ' Calculate the time difference in hours
-            Dim timeDiff As Double
-            timeDiff = DateDiff("h", objMail.ReceivedTime, Now)
+    # Open a file to write the rules
+    with open("outlook_rules.txt", "w") as file:
+        for rule in rules:
+            # Print available attributes
+            print(dir(rule))
             
-            ' Check if the email is within the specified number of hours
-            If timeDiff <= HoursToFetch Then
-                With objExcelWorksheet
-                    .Cells(rowIndex, 1) = objMail.Subject
-                    .Cells(rowIndex, 2) = objMail.SentOn ' Display Sent Time
-                    .Cells(rowIndex, 3) = objMail.ReceivedTime
-                    .Cells(rowIndex, 4) = objMail.SenderName
-                End With
-                rowIndex = rowIndex + 1
-            End If
-        End If
-    Next objItem
-End Sub
+            # Write rule name and description to the file
+            file.write(f"Rule Name: {rule.Name}\n")
+            # Use a try-except block to handle the case where Description attribute doesn't exist
+            try:
+                file.write(f"Description: {rule.Description}\n\n")
+            except AttributeError:
+                file.write("Description: Not available\n\n")
+    
+    print("Exported rules to outlook_rules.txt")
+
+if __name__ == "__main__":
+    export_rules()
