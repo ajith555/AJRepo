@@ -1,49 +1,35 @@
-import win32com.client
+import os
+import re
 
-def construct_rule_description(rule):
-    description = f"Apply this rule after message arrives"
+def export_rule_settings():
+    # Get the Outlook data directory
+    outlook_data_dir = os.path.join(os.getenv('APPDATA'), 'Microsoft', 'Outlook')
     
-    # Construct conditions part of the description
-    conditions = getattr(rule, "Conditions", None)
-    if conditions:
-        for condition in conditions:
-            # Example: Add condition for subject
-            if condition.Enabled:
-                if condition.ConditionType == 0:  # Subject
-                    description += f" with '{condition.Text}' in the subject"
-                # Add more conditions as needed
-            
-    # Construct actions part of the description
-    actions = getattr(rule, "Actions", None)
-    if actions:
-        for action in actions:
-            # Example: Add action for moving to a folder
-            if action.Enabled:
-                if action.ActionType == 0:  # Move to folder
-                    description += f" move it to '{action.Folder.Name}' folder"
-                # Add more actions as needed
-                
-    # Add any additional rule settings
-    if rule.StopProcessingRule:
-        description += " and stop processing more rules"
+    # Look for the rules file
+    rules_file_path = None
+    for file_name in os.listdir(outlook_data_dir):
+        if file_name.lower().startswith('outlook') and file_name.lower().endswith('.dat'):
+            rules_file_path = os.path.join(outlook_data_dir, file_name)
+            break
     
-    return description
-
-def export_rules():
-    # Create Outlook Application object
-    outlook_app = win32com.client.Dispatch("Outlook.Application")
+    if not rules_file_path:
+        print("Outlook rules file not found.")
+        return
     
-    # Get Rules object
-    rules = outlook_app.Session.DefaultStore.GetRules()
+    # Read the rules file
+    with open(rules_file_path, 'rb') as file:
+        rules_data = file.read().decode('utf-16-le')
     
-    # Open a file to write the rules
-    with open("outlook_rules.txt", "w") as file:
-        for rule in rules:
-            # Write rule name and constructed description to the file
-            file.write(f"Rule Name: {rule.Name}\n")
-            file.write(f"Rules Description: {construct_rule_description(rule)}\n\n")
+    # Extract rule settings
+    rule_settings = re.findall(r'\[RULE\].*?\[/RULE\]', rules_data, re.DOTALL)
     
-    print("Exported rules to outlook_rules.txt")
+    # Write rule settings to a text file
+    with open("outlook_rule_settings.txt", "w") as output_file:
+        for rule_setting in rule_settings:
+            output_file.write(rule_setting)
+            output_file.write("\n\n")
+    
+    print("Exported rule settings to outlook_rule_settings.txt")
 
 if __name__ == "__main__":
-    export_rules()
+    export_rule_settings()
