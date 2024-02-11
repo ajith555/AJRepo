@@ -10,10 +10,26 @@ def export_rules():
     # Open a file to write the rules
     with open("outlook_rules.txt", "w") as file:
         for rule in rules:
-            # Print available properties and methods
+            # Write rule name to the file
             file.write(f"Rule Name: {rule.Name}\n")
-            file.write("Available Properties and Methods:\n")
-            file.write("\n".join(dir(rule)))
+            
+            # Print Conditions
+            file.write("\nConditions:\n")
+            conditions = getattr(rule, "Conditions", None)
+            if conditions:
+                file.write(f"{conditions}\n")
+            else:
+                file.write("No conditions found.\n")
+            
+            # Print Actions
+            file.write("\nActions:\n")
+            actions = getattr(rule, "Actions", None)
+            if actions:
+                for action in actions:
+                    file.write(f"{action}\n")
+            else:
+                file.write("No actions found.\n")
+            
             file.write("\n\n")
     
     print("Exported rules to outlook_rules.txt")
