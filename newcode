@@ -1,60 +1,30 @@
-# Set the path to your CSV file
-$csvPath = "C:\path\to\your\file.csv"
+# Path to the CSV file
+$csvFilePath = "C:\path\to\your\file.csv"
 
-# Open the CSV file
-Invoke-Item $csvPath
+# Import CSV
+$urls = Import-Csv -Path $csvFilePath
 
-# Read the CSV file
-$urls = Import-Csv -Path $csvPath
+# Loop through each URL
+for ($i = 0; $i -lt $urls.Count; $i++) {
+    # Open URL in Chrome
+    Start-Process "chrome.exe" -ArgumentList $urls[$i].Url
 
-# Define the Chrome executable path
-$chromePath = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+    # Wait for the download to complete
+    Start-Sleep -Seconds 20  # Adjust this time according to your download speed and file sizes
 
-# Define the download directory
-$downloadDirectory = "C:\Users\shettyka\Downloads"  # Adjust as per your system
+    # Get the downloaded file name
+    $downloadedFile = Get-ChildItem -Path $env:USERPROFILE\Downloads | Sort-Object -Property LastWriteTime -Descending | Select-Object -First 1
 
-# Define the batch size for opening URLs
-$batchSize = 50
+    # Update the CSV with the downloaded file name
+    $urls[$i].D = $downloadedFile.Name
+    $urls | Export-Csv -Path $csvFilePath -NoTypeInformation
 
-# Loop through URLs in batches
-for ($i = 0; $i -lt $urls.Count; $i += $batchSize) {
-    $batch = $urls[$i..($i + $batchSize - 1)]
-
-    # Open Chrome with the first URL in the batch
-    Start-Process -FilePath $chromePath -ArgumentList $batch[0].url
-
-    # Loop through each URL in the batch, starting from the second one
-    foreach ($url in $batch[1..($batch.Count - 1)]) {
-        # Wait for 10 seconds
-        Start-Sleep -Seconds 10
-
-        # Check if a file has been downloaded
-        $downloadedFiles = Get-ChildItem -Path $downloadDirectory
-        $fileDownloaded = $false
-        $downloadedFileName = $null
-        foreach ($file in $downloadedFiles) {
-            if ($file.Extension -eq ".crdownload" -or $file.Extension -eq ".tmp") {
-                # Skip files being currently downloaded
-                continue
-            }
-            elseif ($file.LastWriteTime -ge (Get-Date).AddSeconds(-10)) {
-                # File has been downloaded within the last 10 seconds
-                $fileDownloaded = $true
-                $downloadedFileName = $file.Name
-                break
-            }
-        }
-
-        # If file downloaded, update CSV with the downloaded file name
-        if ($fileDownloaded) {
-            # Add file name to the D column
-            $url | Add-Member -MemberType NoteProperty -Name "DownloadedFile" -Value $downloadedFileName
-            $url | Export-Csv -Path $csvPath -NoTypeInformation -Append
-        }
-    }
-
-    # Close the Chrome session after opening the batch
-    Start-Sleep -Seconds 10  # Wait for 10 seconds before closing
-    taskkill /IM "chrome.exe" /F /T  # Terminate Chrome process forcefully
-    Start-Sleep -Seconds 2   # Additional delay to ensure Chrome is fully terminated
+    # Wait for 10 seconds before moving to the next URL
+    Start-Sleep -Seconds 10
 }
+
+# Wait for 5 seconds before killing Chrome
+Start-Sleep -Seconds 5
+
+# Kill Chrome
+Stop-Process -Name "chrome" -Force
