@@ -7,6 +7,9 @@ $urls = Import-Csv -Path $csvPath
 # Define the Chrome executable path
 $chromePath = "C:\Program Files\Google\Chrome\Application\chrome.exe"
 
+# Define the download directory
+$downloadDirectory = "C:\Users\YourUsername\Downloads"  # Adjust as per your system
+
 # Open Chrome once
 $chromeProcess = Start-Process -FilePath $chromePath -ArgumentList "--new-window", $urls[0].C -PassThru
 
@@ -18,6 +21,30 @@ foreach ($url in $urls[1..$urls.Count]) {
     # Wait for 30 seconds
     Start-Sleep -Seconds 30
 
-    # Close the previous window
-    $chromeProcess.CloseMainWindow()
+    # Check if a file has been downloaded
+    $downloadedFiles = Get-ChildItem -Path $downloadDirectory
+    $fileDownloaded = $false
+    $downloadedFileName = $null
+    foreach ($file in $downloadedFiles) {
+        if ($file.Extension -eq ".crdownload" -or $file.Extension -eq ".tmp") {
+            # Skip files being currently downloaded
+            continue
+        }
+        elseif ($file.LastWriteTime -ge (Get-Date).AddSeconds(-30)) {
+            # File has been downloaded within the last 30 seconds
+            $fileDownloaded = $true
+            $downloadedFileName = $file.Name
+            break
+        }
+    }
+
+    # If file downloaded, close the previous window and update Excel
+    if ($fileDownloaded) {
+        # Close the previous window
+        $chromeProcess.CloseMainWindow()
+        
+        # Update Excel with the downloaded file name
+        $url | Add-Member -MemberType NoteProperty -Name "DownloadedFile" -Value $downloadedFileName
+        $url | Export-Csv -Path $csvPath -NoTypeInformation -Append
+    }
 }
