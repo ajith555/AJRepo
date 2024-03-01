@@ -1,5 +1,23 @@
-console.log("Window size and position:");
-console.log("Left: " + window.screenX);
-console.log("Right: " + (window.screen.width - window.outerWidth - window.screenX));
-console.log("Top: " + window.screenY);
-console.log("Bottom: " + (window.screen.height - window.outerHeight - window.screenY));
+# Set the path to your CSV file
+$csvPath = "C:\path\to\your\file.csv"
+
+# Read the CSV file
+$urls = Import-Csv -Path $csvPath
+
+# Define the Chrome executable path
+$chromePath = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+
+# Open Chrome once
+$chromeProcess = Start-Process -FilePath $chromePath -ArgumentList "--new-window", $urls[0].C -PassThru
+
+# Loop through each URL in the CSV, starting from the second one
+foreach ($url in $urls[1..$urls.Count]) {
+    # Open new window with the URL
+    Start-Process -FilePath $chromePath -ArgumentList "--new-window", $url.C -PassThru
+
+    # Wait for 30 seconds
+    Start-Sleep -Seconds 30
+
+    # Close the previous window
+    $chromeProcess.CloseMainWindow()
+}
