@@ -8,15 +8,15 @@ $urls = Import-Csv -Path $csvPath
 $chromePath = "C:\Program Files\Google\Chrome\Application\chrome.exe"
 
 # Define the download directory
-$downloadDirectory = "C:\Users\YourUsername\Downloads"  # Adjust as per your system
+$downloadDirectory = "C:\Users\shettyka\Downloads"  # Adjust as per your system
 
 # Open Chrome with the first URL
-Start-Process -FilePath $chromePath -ArgumentList $urls[0].C
+Start-Process -FilePath $chromePath -ArgumentList $urls[0].url
 
 # Loop through each URL in the CSV, starting from the second one
 foreach ($url in $urls[1..$urls.Count]) {
     # Wait for 30 seconds
-    Start-Sleep -Seconds 30
+    Start-Sleep -Seconds 10
 
     # Check if a file has been downloaded
     $downloadedFiles = Get-ChildItem -Path $downloadDirectory
@@ -27,7 +27,7 @@ foreach ($url in $urls[1..$urls.Count]) {
             # Skip files being currently downloaded
             continue
         }
-        elseif ($file.LastWriteTime -ge (Get-Date).AddSeconds(-30)) {
+        elseif ($file.LastWriteTime -ge (Get-Date).AddSeconds(-10)) {
             # File has been downloaded within the last 30 seconds
             $fileDownloaded = $true
             $downloadedFileName = $file.Name
@@ -42,5 +42,5 @@ foreach ($url in $urls[1..$urls.Count]) {
     }
 
     # Navigate to the next URL in the same Chrome window
-    Start-Process -FilePath $chromePath -ArgumentList "--new-tab", $url.C
+    Start-Process -FilePath $chromePath -ArgumentList $url.url
 }
