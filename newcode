@@ -51,5 +51,6 @@ for ($i = 0; $i -lt $urls.Count; $i += $batchSize) {
 
     # Close the Chrome session after opening the batch
     Start-Sleep -Seconds 10  # Wait for 10 seconds before closing
-    Stop-Process -Name chrome -Force
+    taskkill /IM "chrome.exe" /F /T  # Terminate Chrome process forcefully
+    Start-Sleep -Seconds 2   # Additional delay to ensure Chrome is fully terminated
 }
