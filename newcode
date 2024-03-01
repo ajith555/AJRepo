@@ -13,6 +13,37 @@ $downloadDirectory = "C:\Users\shettyka\Downloads"  # Adjust as per your system
 # Open Chrome with the first URL
 Start-Process -FilePath $chromePath -ArgumentList $urls[0].url
 
+# Function to navigate to URL in the same Chrome tab
+function NavigateToUrlInSameTab {
+    param(
+        [string]$url
+    )
+
+    # Get Chrome processes
+    $chromeProcesses = Get-Process -Name "chrome"
+
+    # Loop through Chrome processes
+    foreach ($process in $chromeProcesses) {
+        # Get main window handle
+        $hwnd = $process.MainWindowHandle
+
+        # Check if handle is valid
+        if ($hwnd -ne 0) {
+            # Load URL in the existing tab
+            $scriptBlock = {
+                param($hwnd, $url)
+                $ie = New-Object -ComObject InternetExplorer.Application
+                $ie.Navigate($url)
+                $ie.Visible = $true
+            }
+            Invoke-Command -ScriptBlock $scriptBlock -ArgumentList $hwnd, $url
+            return $true
+        }
+    }
+
+    return $false
+}
+
 # Loop through each URL in the CSV, starting from the second one
 foreach ($url in $urls[1..$urls.Count]) {
     # Wait for 10 seconds
@@ -42,23 +73,8 @@ foreach ($url in $urls[1..$urls.Count]) {
     }
 
     # Navigate to the next URL in the same Chrome tab
-    $chromeProcess = Get-Process -Name "chrome" | Select-Object -First 1
-    $windowHandle = $chromeProcess.MainWindowHandle
-    $chromeWindow = [System.Diagnostics.Process]::GetProcesses() | Where-Object { $_.MainWindowHandle -eq $windowHandle }
-    $chromeProcessId = $chromeWindow.Id
-    $scriptBlock = {
-        param($chromeProcessId, $url)
-        $chrome = [System.Diagnostics.Process]::GetProcessById($chromeProcessId)
-        $webBrowser = $chrome.MainWindowHandle
-        $navigateScript = @"
-            var chromeTab = window.open("$url", "_self");
-            chromeTab.location.reload();
-"@
-        Add-Type -AssemblyName System.Windows.Forms
-        $webBrowser.GetType().InvokeMember("ExecWB", [System.Reflection.BindingFlags]::InvokeMethod, $null, $webBrowser, 270, $null, $null, $null) | Out-Null
-        Start-Sleep -Milliseconds 500
-        $webBrowser.Document.parentWindow.execScript($navigateScript, "javascript")
+    $success = NavigateToUrlInSameTab $url.url
+    if (-not $success) {
+        Write-Host "Failed to navigate to URL: $($url.url)"
     }
-    Start-Sleep -Milliseconds 1000
-    Invoke-Command -ScriptBlock $scriptBlock -ArgumentList $chromeProcessId, $url.url
 }
