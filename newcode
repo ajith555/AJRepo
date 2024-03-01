@@ -44,8 +44,9 @@ for ($i = 0; $i -lt $urls.Count; $i += $batchSize) {
 
         # If file downloaded, update Excel with the downloaded file name
         if ($fileDownloaded) {
-            $url | Add-Member -MemberType NoteProperty -Name "DownloadedFile" -Value $downloadedFileName
-            $url | Export-Csv -Path $csvPath -NoTypeInformation -Append
+            # Update the CSV with the downloaded file name
+            $url.DownloadedFile = $downloadedFileName
+            $urls | Export-Csv -Path $csvPath -NoTypeInformation
         }
     }
 
