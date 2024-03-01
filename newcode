@@ -1,6 +1,9 @@
 # Set the path to your CSV file
 $csvPath = "C:\path\to\your\file.csv"
 
+# Open the CSV file
+Invoke-Item $csvPath
+
 # Read the CSV file
 $urls = Import-Csv -Path $csvPath
 
@@ -42,11 +45,11 @@ for ($i = 0; $i -lt $urls.Count; $i += $batchSize) {
             }
         }
 
-        # If file downloaded, update Excel with the downloaded file name
+        # If file downloaded, update CSV with the downloaded file name
         if ($fileDownloaded) {
-            # Update the CSV with the downloaded file name
-            $url.DownloadedFile = $downloadedFileName
-            $urls | Export-Csv -Path $csvPath -NoTypeInformation
+            # Add file name to the D column
+            $url | Add-Member -MemberType NoteProperty -Name "DownloadedFile" -Value $downloadedFileName
+            $url | Export-Csv -Path $csvPath -NoTypeInformation -Append
         }
     }
 
