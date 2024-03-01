@@ -10,15 +10,11 @@ $chromePath = "C:\Program Files\Google\Chrome\Application\chrome.exe"
 # Define the download directory
 $downloadDirectory = "C:\Users\YourUsername\Downloads"  # Adjust as per your system
 
-# Open Chrome
-$chromeProcess = Start-Process -FilePath $chromePath -ArgumentList $urls[0].C -PassThru
+# Open Chrome with the first URL
+Start-Process -FilePath $chromePath -ArgumentList $urls[0].C
 
 # Loop through each URL in the CSV, starting from the second one
 foreach ($url in $urls[1..$urls.Count]) {
-    # Navigate to the URL in the same Chrome window
-    $chromeProcess.WaitForInputIdle()
-    $chromeProcess.MainWindowHandle | ForEach-Object { (New-Object -ComObject Shell.Application).Windows() | Where-Object { $_.HWND -eq $_ } | ForEach-Object { $_.Navigate($url.C) } }
-    
     # Wait for 30 seconds
     Start-Sleep -Seconds 30
 
@@ -44,4 +40,7 @@ foreach ($url in $urls[1..$urls.Count]) {
         $url | Add-Member -MemberType NoteProperty -Name "DownloadedFile" -Value $downloadedFileName
         $url | Export-Csv -Path $csvPath -NoTypeInformation -Append
     }
+
+    # Navigate to the next URL in the same Chrome window
+    Start-Process -FilePath $chromePath -ArgumentList "--new-tab", $url.C
 }
