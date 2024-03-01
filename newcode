@@ -10,14 +10,15 @@ $chromePath = "C:\Program Files\Google\Chrome\Application\chrome.exe"
 # Define the download directory
 $downloadDirectory = "C:\Users\YourUsername\Downloads"  # Adjust as per your system
 
-# Open Chrome once
-$chromeProcess = Start-Process -FilePath $chromePath -ArgumentList "--new-window", $urls[0].C -PassThru
+# Open Chrome
+$chromeProcess = Start-Process -FilePath $chromePath -ArgumentList $urls[0].C -PassThru
 
 # Loop through each URL in the CSV, starting from the second one
 foreach ($url in $urls[1..$urls.Count]) {
-    # Open new window with the URL
-    Start-Process -FilePath $chromePath -ArgumentList "--new-window", $url.C -PassThru
-
+    # Navigate to the URL in the same Chrome window
+    $chromeProcess.WaitForInputIdle()
+    $chromeProcess.MainWindowHandle | ForEach-Object { (New-Object -ComObject Shell.Application).Windows() | Where-Object { $_.HWND -eq $_ } | ForEach-Object { $_.Navigate($url.C) } }
+    
     # Wait for 30 seconds
     Start-Sleep -Seconds 30
 
@@ -38,12 +39,8 @@ foreach ($url in $urls[1..$urls.Count]) {
         }
     }
 
-    # If file downloaded, close the previous window and update Excel
+    # If file downloaded, update Excel with the downloaded file name
     if ($fileDownloaded) {
-        # Close the previous window
-        $chromeProcess.CloseMainWindow()
-        
-        # Update Excel with the downloaded file name
         $url | Add-Member -MemberType NoteProperty -Name "DownloadedFile" -Value $downloadedFileName
         $url | Export-Csv -Path $csvPath -NoTypeInformation -Append
     }
