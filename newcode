@@ -28,7 +28,7 @@ foreach ($url in $urls[1..$urls.Count]) {
             continue
         }
         elseif ($file.LastWriteTime -ge (Get-Date).AddSeconds(-10)) {
-            # File has been downloaded within the last 30 seconds
+            # File has been downloaded within the last 10 seconds
             $fileDownloaded = $true
             $downloadedFileName = $file.Name
             break
@@ -41,6 +41,15 @@ foreach ($url in $urls[1..$urls.Count]) {
         $url | Export-Csv -Path $csvPath -NoTypeInformation -Append
     }
 
+    # Close the oldest Chrome tab within 10 seconds
+    Start-Sleep -Seconds 10
+    $processes = Get-Process | Where-Object {$_.ProcessName -eq "chrome"}
+    $process = $processes | Sort-Object StartTime | Select-Object -First 1
+    $hwnd = $process.MainWindowHandle
+    $sig = '[DllImport("user32.dll")] public static extern int SendMessage(int hWnd, int Msg, int wParam, int lParam);'
+    $signature = Add-Type -MemberDefinition $sig -Name "Win32SendMessage" -Namespace Win32Functions -PassThru
+    $signature::SendMessage($hwnd, 0x0010, 0, 0)
+    
     # Navigate to the next URL in the same Chrome window
     Start-Process -FilePath $chromePath -ArgumentList $url.url
 }
