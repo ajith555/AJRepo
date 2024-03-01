@@ -21,10 +21,13 @@ for ($i = 0; $i -lt $urls.Count; $i++) {
 
     # Wait for 10 seconds before moving to the next URL
     Start-Sleep -Seconds 10
+
+    # Kill Chrome after processing every 50 URLs
+    if (($i + 1) % 50 -eq 0) {
+        # Wait for 5 seconds before killing Chrome
+        Start-Sleep -Seconds 5
+
+        # Kill Chrome
+        Stop-Process -Name "chrome" -Force
+    }
 }
-
-# Wait for 5 seconds before killing Chrome
-Start-Sleep -Seconds 5
-
-# Kill Chrome
-Stop-Process -Name "chrome" -Force
