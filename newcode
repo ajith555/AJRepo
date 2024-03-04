@@ -6,11 +6,8 @@ $excel = New-Object -ComObject Excel.Application
 $workbook = $excel.Workbooks.Open($excelFilePath)
 $worksheet = $workbook.Worksheets.Item(1)
 
-# Get the last row in the Excel worksheet
-$rowCount = ($worksheet.UsedRange.Rows).Count
-
 # Loop through each URL
-for ($i = 1; $i -le $rowCount; $i++) {
+for ($i = 1; $i -le $worksheet.UsedRange.Rows.Count; $i++) {
     # Read URL from Excel
     $url = $worksheet.Cells.Item($i, 3).Value2
 
