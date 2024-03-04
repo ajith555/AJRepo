@@ -4,62 +4,36 @@ $csvFilePath = "P:\Invision\URLPDF.csv"
 # Import CSV
 $urls = Import-Csv -Path $csvFilePath
 
-# Function to check if file is downloaded
-function CheckDownload {
-    $downloadedFile = Get-ChildItem -Path $env:USERPROFILE\Downloads | Where-Object { $_.LastWriteTime -gt $script:lastCheckTime } | Sort-Object -Property LastWriteTime -Descending | Select-Object -First 1
-    if ($downloadedFile -ne $null) {
-        # File downloaded
-        $script:lastDownloadedFile = $downloadedFile
-        Unregister-Event -SourceIdentifier "DownloadCheck"
-    }
-}
-
 # Loop through each URL
-for ($i = 0; $i -lt $urls.Count; $i++) {
+foreach ($url in $urls) {
     # Open URL in Chrome
-    Start-Process "chrome.exe" -ArgumentList $urls[$i].Url
+    Start-Process "chrome.exe" -ArgumentList $url.Url
 
     # Wait for the download to complete
-    Start-Sleep -Seconds 5 # Adjust this time according to your download speed and file sizes
+    Start-Sleep -Seconds 10 # Adjust this time according to your download speed and file sizes
 
-    # Set last check time
-    $script:lastCheckTime = Get-Date
+    # Get the downloaded file name
+    $downloadedFiles = Get-ChildItem -Path $env:USERPROFILE\Downloads | Where-Object { $_.LastWriteTime -gt $url.LastChecked } | Sort-Object -Property LastWriteTime -Descending
 
-    # Start monitoring Downloads folder for changes
-    Register-ObjectEvent -InputObject (Get-ChildItem -Path $env:USERPROFILE\Downloads) -EventName Changed -SourceIdentifier "DownloadCheck" -Action { CheckDownload }
-
-    # Wait for the download to complete or timeout
-    $timeout = $false
-    do {
-        Start-Sleep -Milliseconds 500
-        if ((Get-Date) - $script:lastCheckTime -ge (New-TimeSpan -Seconds 10)) {
-            $timeout = $true
-            break
-        }
-    } while ($script:lastDownloadedFile -eq $null)
-
-    # If timed out, handle error
-    if ($timeout) {
-        $urls[$i].FileName = "Download timeout"
+    if ($downloadedFiles.Count -gt 0) {
+        # Update the CSV with the downloaded file name
+        $url.FileName = $downloadedFiles[0].Name
     } else {
-        # Get the downloaded file name
-        $downloadedFile = $script:lastDownloadedFile
-
-        # Update the CSV with the downloaded file name for the corresponding URL
-        $urls[$i].FileName = $downloadedFile.Name
+        # No file downloaded, update FileName as "Error"
+        $url.FileName = "Error"
     }
 
-    # Export updated CSV
-    $urls | Export-Csv -Path $csvFilePath -NoTypeInformation
+    # Update LastChecked time
+    $url.LastChecked = Get-Date
 
-    # Clear last downloaded file
-    $script:lastDownloadedFile = $null
+    # Export updated URL list to CSV
+    $urls | Export-Csv -Path $csvFilePath -NoTypeInformation
 
     # Wait for 10 seconds before moving to the next URL
     Start-Sleep -Seconds 10
 
     # Kill Chrome after processing every 50 URLs
-    if (($i + 1) % 50 -eq 0) {
+    if (($urls.IndexOf($url) + 1) % 50 -eq 0) {
         # Wait for 5 seconds before killing Chrome
         Start-Sleep -Seconds 5
 
@@ -67,3 +41,7 @@ for ($i = 0; $i -lt $urls.Count; $i++) {
         taskkill /IM "chrome.exe" /F /T
     }
 }
+
+# Close Chrome after processing all URLs
+Start-Sleep -Seconds 5
+taskkill /IM "chrome.exe" /F /T
