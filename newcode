@@ -17,7 +17,7 @@ for ($i = 0; $i -lt $urls.Count; $i++) {
 
     # Check if a file is downloaded successfully
     if ($downloadedFile -ne $null) {
-        # Update the CSV with the downloaded file name
+        # Update the CSV with the downloaded file name for the corresponding URL
         $urls[$i].D = $downloadedFile.Name
     } else {
         # If no file is downloaded, update with "404 error" or "No access"
