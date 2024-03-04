@@ -1,13 +1,21 @@
-# Path to the CSV file
-$csvFilePath = "C:\path\to\your\file.csv"
+# Path to the Excel file
+$excelFilePath = "C:\path\to\your\file.xlsx"
 
-# Import CSV
-$urls = Import-Csv -Path $csvFilePath
+# Load Excel COM objects
+$excel = New-Object -ComObject Excel.Application
+$workbook = $excel.Workbooks.Open($excelFilePath)
+$worksheet = $workbook.Worksheets.Item(1)
+
+# Get the last row in the Excel worksheet
+$rowCount = ($worksheet.UsedRange.Rows).Count
 
 # Loop through each URL
-for ($i = 0; $i -lt $urls.Count; $i++) {
+for ($i = 1; $i -le $rowCount; $i++) {
+    # Read URL from Excel
+    $url = $worksheet.Cells.Item($i, 3).Value2
+
     # Open URL in Chrome
-    Start-Process "chrome.exe" -ArgumentList $urls[$i].Url
+    Start-Process "chrome.exe" -ArgumentList $url
 
     # Wait for the download to complete
     Start-Sleep -Seconds 20  # Adjust this time according to your download speed and file sizes
@@ -15,15 +23,15 @@ for ($i = 0; $i -lt $urls.Count; $i++) {
     # Get the downloaded file name
     $downloadedFile = Get-ChildItem -Path $env:USERPROFILE\Downloads | Sort-Object -Property LastWriteTime -Descending | Select-Object -First 1
 
-    # Update the CSV with the downloaded file name
-    $urls[$i].D = $downloadedFile.Name
-    $urls | Export-Csv -Path $csvFilePath -NoTypeInformation
+    # Update the Excel with the downloaded file name
+    $worksheet.Cells.Item($i, 4).Value2 = $downloadedFile.Name
+    $workbook.Save()
 
     # Wait for 10 seconds before moving to the next URL
     Start-Sleep -Seconds 10
 
     # Kill Chrome after processing every 50 URLs
-    if (($i + 1) % 50 -eq 0) {
+    if (($i % 50) -eq 0) {
         # Wait for 5 seconds before killing Chrome
         Start-Sleep -Seconds 5
 
@@ -31,3 +39,12 @@ for ($i = 0; $i -lt $urls.Count; $i++) {
         Stop-Process -Name "chrome" -Force
     }
 }
+
+# Close Excel
+$workbook.Close()
+$excel.Quit()
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($worksheet) | Out-Null
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($workbook) | Out-Null
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
+[System.GC]::Collect()
+[System.GC]::WaitForPendingFinalizers()
