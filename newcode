@@ -1,5 +1,5 @@
 # Path to the Excel file
-$excelFilePath = "C:\path\to\your\file.xlsx"
+$excelFilePath = "P:\Invasion\URLPDF.xlsx"
 
 # Load Excel COM objects
 $excel = New-Object -ComObject Excel.Application
@@ -15,7 +15,7 @@ for ($i = 2; $i -le $worksheet.UsedRange.Rows.Count; $i++) {
     Start-Process "chrome.exe" -ArgumentList $url -Wait
 
     # Wait for the download to complete
-    Start-Sleep -Seconds 20  # Adjust this time according to your download speed and file sizes
+    Start-Sleep -Seconds 5  # Adjust this time according to your download speed and file sizes
 
     # Get the downloaded file name
     $downloadedFile = Get-ChildItem -Path $env:USERPROFILE\Downloads | Sort-Object -Property LastWriteTime -Descending | Select-Object -First 1
@@ -31,10 +31,10 @@ for ($i = 2; $i -le $worksheet.UsedRange.Rows.Count; $i++) {
     Write-Host "Excel Cell Updated with File Name: $($worksheet.Cells.Item($i, 4).Value2)"
 
     # Wait for 10 seconds before moving to the next URL
-    Start-Sleep -Seconds 10
+    Start-Sleep -Seconds 5
 
     # Kill Chrome after processing every 50 URLs
-    if (($i % 50) -eq 0) {
+    if (($i % 3) -eq 0) {
         # Wait for 5 seconds before killing Chrome
         Start-Sleep -Seconds 5
 
@@ -44,7 +44,7 @@ for ($i = 2; $i -le $worksheet.UsedRange.Rows.Count; $i++) {
 }
 
 # Close Excel
-$workbook.Close()
+$workbook.Close($false) # Don't save changes since we already saved them
 $excel.Quit()
 [System.Runtime.Interopservices.Marshal]::ReleaseComObject($worksheet) | Out-Null
 [System.Runtime.Interopservices.Marshal]::ReleaseComObject($workbook) | Out-Null
