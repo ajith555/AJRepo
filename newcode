@@ -1,61 +1,41 @@
-# Define the path to the Excel file
-$excelFilePath = "P:\Invasion\URLPDF.xlsx"
+# Path to the CSV file
+$csvFilePath = "P:\Invision\URLPDF.csv"
 
-# Create a COM object for Excel
-$excel = New-Object -ComObject Excel.Application
-$excel.Visible = $false
-
-# Open the Excel file
-$workbook = $excel.Workbooks.Open($excelFilePath)
-$worksheet = $workbook.Sheets.Item(1)
-
-# Get the number of rows in the URL column
-$urlColumn = $worksheet.Columns.Item("C").EntireColumn
-$numUrls = ($urlColumn.SpecialCells(11).Count)
+# Import CSV
+$urls = Import-Csv -Path $csvFilePath
 
 # Loop through each URL
-for ($i = 2; $i -le $numUrls; $i++) {
-    # Get the URL from the current row
-    $url = $worksheet.Cells.Item($i, 3).Value2
+for ($i = 0; $i -lt $urls.Count; $i++) {
+    # Open URL in Chrome
+    Start-Process "chrome.exe" -ArgumentList $urls[$i].Url
 
-    # Open the URL in Chrome
-    Start-Process "chrome.exe" -ArgumentList $url
+    # Wait for the download to complete
+    Start-Sleep -Seconds 5 # Adjust this time according to your download speed and file sizes
 
-    # Wait for 5 seconds
-    Start-Sleep -Seconds 5
+    # Get the downloaded file name
+    $downloadedFile = Get-ChildItem -Path $env:USERPROFILE\Downloads | Sort-Object -Property LastWriteTime -Descending | Select-Object -First 1
 
-    # Check if Chrome has been open for 50 URLs
-    if ($i % 50 -eq 0) {
-        # Kill the Chrome process
-        Stop-Process -Name "chrome" -Force
-
-        # Wait for a moment before restarting Chrome
-        Start-Sleep -Seconds 5
-
-        # Restart Chrome
-        Start-Process "chrome.exe"
+    # Check if a file is downloaded successfully
+    if ($downloadedFile -ne $null) {
+        # Update the CSV with the downloaded file name
+        $urls[$i].D = $downloadedFile.Name
+    } else {
+        # If no file is downloaded, update with "404 error" or "No access"
+        $urls[$i].D = "404 error or No access"
     }
 
-    # Get the most recently downloaded file in the Downloads folder
-    $latestFile = Get-ChildItem -Path $env:USERPROFILE\Downloads | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    # Export updated CSV
+    $urls | Export-Csv -Path $csvFilePath -NoTypeInformation
 
-    # Extract the file name
-    $fileName = $latestFile.Name
+    # Wait for 10 seconds before moving to the next URL
+    Start-Sleep -Seconds 5
 
-    # Update the FileName column in Excel
-    $worksheet.Cells.Item($i, 4).Value2 = $fileName
+    # Kill Chrome after processing every 50 URLs
+    if (($i + 1) % 50 -eq 0) {
+        # Wait for 5 seconds before killing Chrome
+        Start-Sleep -Seconds 5
+
+        # Kill Chrome
+        taskkill /IM "chrome.exe" /F /T
+    }
 }
-
-# Save and close the Excel file
-$workbook.Save()
-$workbook.Close()
-$excel.Quit()
-
-# Release COM objects
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($worksheet) | Out-Null
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($workbook) | Out-Null
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
-[System.GC]::Collect()
-[System.GC]::WaitForPendingFinalizers()
-
-Write-Host "Task completed."
