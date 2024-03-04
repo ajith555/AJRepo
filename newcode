@@ -1,53 +1,58 @@
-# Path to the Excel file
+# Define the path to the Excel file
 $excelFilePath = "P:\Invasion\URLPDF.xlsx"
 
-# Load Excel COM objects
+# Create a COM object for Excel
 $excel = New-Object -ComObject Excel.Application
+$excel.Visible = $false
+
+# Open the Excel file
 $workbook = $excel.Workbooks.Open($excelFilePath)
-$worksheet = $workbook.Worksheets.Item(1)
+$worksheet = $workbook.Sheets.Item(1)
 
-# Loop through each URL starting from the second row
-for ($i = 2; $i -le $worksheet.UsedRange.Rows.Count; $i++) {
-    # Read URL from Excel
-    $url = $worksheet.Cells.Item($i, 3).Value2
+# Get the number of rows in the URL column
+$urlColumn = $worksheet.Columns.Item("A").EntireColumn
+$numUrls = ($urlColumn.SpecialCells(11).Count) - 1  # Subtract 1 for the header row
 
-    # Open URL in Chrome
-    Start-Process "chrome.exe" -ArgumentList $url -Wait
+# Loop through each URL
+for ($i = 2; $i -le $numUrls + 1; $i++) {
+    # Get the URL from the current row
+    $url = $worksheet.Cells.Item($i, 1).Value2
 
-    # Wait for the download to complete
-    Start-Sleep -Seconds 5  # Adjust this time according to your download speed and file sizes
+    # Open the URL in Chrome
+    Start-Process "chrome.exe" -ArgumentList $url
 
-    # Get the downloaded file name
-    $downloadedFile = Get-ChildItem -Path $env:USERPROFILE\Downloads | Sort-Object -Property LastWriteTime -Descending | Select-Object -First 1
-
-    # Debug output to check downloaded file name
-    Write-Host "Downloaded File Name: $($downloadedFile.Name)"
-
-    # Update the Excel with the downloaded file name
-    $worksheet.Cells.Item($i, 4).Value2 = $downloadedFile.Name
-    $workbook.Save()
-
-    # Debug output to check if Excel cell is updated
-    Write-Host "Excel Cell Updated with File Name: $($worksheet.Cells.Item($i, 4).Value2)"
-
-    # Wait for 10 seconds before moving to the next URL
+    # Wait for 5 seconds
     Start-Sleep -Seconds 5
 
-    # Kill Chrome after processing every 50 URLs
-    if (($i % 3) -eq 0) {
-        # Wait for 5 seconds before killing Chrome
+    # Check if Chrome has been open for 50 URLs
+    if ($i % 50 -eq 0) {
+        # Kill the Chrome process
+        Stop-Process -Name "chrome" -Force
+
+        # Wait for a moment before restarting Chrome
         Start-Sleep -Seconds 5
 
-        # Kill Chrome
-        Stop-Process -Name "chrome" -Force
+        # Restart Chrome
+        Start-Process "chrome.exe"
     }
+
+    # Prompt the user to enter the downloaded file name
+    $fileName = Read-Host "Enter the downloaded file name for URL: $url"
+
+    # Save the file name in the FileName column
+    $worksheet.Cells.Item($i, 2).Value2 = $fileName
 }
 
-# Close Excel
-$workbook.Close($false) # Don't save changes since we already saved them
+# Save and close the Excel file
+$workbook.Save()
+$workbook.Close()
 $excel.Quit()
+
+# Release COM objects
 [System.Runtime.Interopservices.Marshal]::ReleaseComObject($worksheet) | Out-Null
 [System.Runtime.Interopservices.Marshal]::ReleaseComObject($workbook) | Out-Null
 [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
 [System.GC]::Collect()
 [System.GC]::WaitForPendingFinalizers()
+
+Write-Host "Task completed."
