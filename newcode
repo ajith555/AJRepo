@@ -10,13 +10,13 @@ $workbook = $excel.Workbooks.Open($excelFilePath)
 $worksheet = $workbook.Sheets.Item(1)
 
 # Get the number of rows in the URL column
-$urlColumn = $worksheet.Columns.Item("A").EntireColumn
+$urlColumn = $worksheet.Columns.Item("C").EntireColumn
 $numUrls = ($urlColumn.SpecialCells(11).Count) - 1  # Subtract 1 for the header row
 
 # Loop through each URL
 for ($i = 2; $i -le $numUrls + 1; $i++) {
     # Get the URL from the current row
-    $url = $worksheet.Cells.Item($i, 1).Value2
+    $url = $worksheet.Cells.Item($i, 3).Value2
 
     # Open the URL in Chrome
     Start-Process "chrome.exe" -ArgumentList $url
@@ -36,11 +36,14 @@ for ($i = 2; $i -le $numUrls + 1; $i++) {
         Start-Process "chrome.exe"
     }
 
-    # Prompt the user to enter the downloaded file name
-    $fileName = Read-Host "Enter the downloaded file name for URL: $url"
+    # Get the most recently downloaded file in the Downloads folder
+    $latestFile = Get-ChildItem -Path $env:USERPROFILE\Downloads | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 
-    # Save the file name in the FileName column
-    $worksheet.Cells.Item($i, 2).Value2 = $fileName
+    # Extract the file name
+    $fileName = $latestFile.Name
+
+    # Update the FileName column in Excel
+    $worksheet.Cells.Item($i, 4).Value2 = $fileName
 }
 
 # Save and close the Excel file
