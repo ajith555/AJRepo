@@ -11,10 +11,10 @@ $worksheet = $workbook.Sheets.Item(1)
 
 # Get the number of rows in the URL column
 $urlColumn = $worksheet.Columns.Item("C").EntireColumn
-$numUrls = ($urlColumn.SpecialCells(11).Count) - 1  # Subtract 1 for the header row
+$numUrls = ($urlColumn.SpecialCells(11).Count)
 
 # Loop through each URL
-for ($i = 2; $i -le $numUrls + 1; $i++) {
+for ($i = 2; $i -le $numUrls; $i++) {
     # Get the URL from the current row
     $url = $worksheet.Cells.Item($i, 3).Value2
 
