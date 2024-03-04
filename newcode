@@ -4,6 +4,16 @@ $csvFilePath = "P:\Invision\URLPDF.csv"
 # Import CSV
 $urls = Import-Csv -Path $csvFilePath
 
+# Function to check if file is downloaded
+function CheckDownload {
+    $downloadedFile = Get-ChildItem -Path $env:USERPROFILE\Downloads | Where-Object { $_.LastWriteTime -gt $script:lastCheckTime } | Sort-Object -Property LastWriteTime -Descending | Select-Object -First 1
+    if ($downloadedFile -ne $null) {
+        # File downloaded
+        $script:lastDownloadedFile = $downloadedFile
+        Unregister-Event -SourceIdentifier "DownloadCheck"
+    }
+}
+
 # Loop through each URL
 for ($i = 0; $i -lt $urls.Count; $i++) {
     # Open URL in Chrome
@@ -12,23 +22,41 @@ for ($i = 0; $i -lt $urls.Count; $i++) {
     # Wait for the download to complete
     Start-Sleep -Seconds 5 # Adjust this time according to your download speed and file sizes
 
-    # Get the downloaded file name
-    $downloadedFile = Get-ChildItem -Path $env:USERPROFILE\Downloads | Sort-Object -Property LastWriteTime -Descending | Select-Object -First 1
+    # Set last check time
+    $script:lastCheckTime = Get-Date
 
-    # Check if a file is downloaded successfully
-    if ($downloadedFile -ne $null) {
-        # Update the CSV with the downloaded file name for the corresponding URL
-        $urls[$i].D = $downloadedFile.Name
+    # Start monitoring Downloads folder for changes
+    Register-ObjectEvent -InputObject (Get-ChildItem -Path $env:USERPROFILE\Downloads) -EventName Changed -SourceIdentifier "DownloadCheck" -Action { CheckDownload }
+
+    # Wait for the download to complete or timeout
+    $timeout = $false
+    do {
+        Start-Sleep -Milliseconds 500
+        if ((Get-Date) - $script:lastCheckTime -ge (New-TimeSpan -Seconds 10)) {
+            $timeout = $true
+            break
+        }
+    } while ($script:lastDownloadedFile -eq $null)
+
+    # If timed out, handle error
+    if ($timeout) {
+        $urls[$i].FileName = "Download timeout"
     } else {
-        # If no file is downloaded, update with "404 error" or "No access"
-        $urls[$i].D = "404 error or No access"
+        # Get the downloaded file name
+        $downloadedFile = $script:lastDownloadedFile
+
+        # Update the CSV with the downloaded file name for the corresponding URL
+        $urls[$i].FileName = $downloadedFile.Name
     }
 
     # Export updated CSV
     $urls | Export-Csv -Path $csvFilePath -NoTypeInformation
 
+    # Clear last downloaded file
+    $script:lastDownloadedFile = $null
+
     # Wait for 10 seconds before moving to the next URL
-    Start-Sleep -Seconds 5
+    Start-Sleep -Seconds 10
 
     # Kill Chrome after processing every 50 URLs
     if (($i + 1) % 50 -eq 0) {
