@@ -40,18 +40,12 @@ foreach ($url in $urls) {
     # Update LastChecked time
     $url.LastChecked = Get-Date
 
-    # Export updated URL list to CSV
-    $urls | Export-Csv -Path $csvFilePath -NoTypeInformation
+    # Close Chrome
+    Get-Process -Name "chrome" | Stop-Process -Force
 
-    # Open next URL only if a file was downloaded or an error occurred
-    if ($fileDownloaded -or $url.FileName -eq "Error") {
-        # Wait for 10 seconds before moving to the next URL
-        Start-Sleep -Seconds 10
-    } else {
-        # If no file was downloaded, wait for a shorter time before moving to the next URL
-        Start-Sleep -Seconds 3
-    }
-    
+    # Export updated URL list to CSV
+    $urls | Export-Csv -Path $csvFilePath -NoTypeInformation -Force
+
     # Kill Chrome after processing every 50 URLs
     if (($urls.IndexOf($url) + 1) % 50 -eq 0) {
         # Wait for 5 seconds before killing Chrome
