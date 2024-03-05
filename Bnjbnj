@@ -43,9 +43,6 @@ foreach ($url in $urls) {
     # Export updated URL list to CSV
     $urls | Export-Csv -Path $csvFilePath -NoTypeInformation
 
-    # Wait for 10 seconds before moving to the next URL
-    Start-Sleep -Seconds 10
-
     # Kill Chrome after processing every 50 URLs
     if (($urls.IndexOf($url) + 1) % 50 -eq 0) {
         # Wait for 5 seconds before killing Chrome
