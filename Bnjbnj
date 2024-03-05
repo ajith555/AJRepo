@@ -1,43 +1,55 @@
 # Path to the CSV file
-$csvFilePath = "P:\Invision\URLPDF.csv"
+$csvFilePath = "P:\Invision\URLZIP.csv"
 
 # Import CSV
 $urls = Import-Csv -Path $csvFilePath
 
+# Function to check if a file is fully downloaded
+function CheckDownloadComplete {
+    param ($startTime, $fileName)
+
+    # Check if the file exists and has stopped growing
+    $file = Get-Item $fileName
+    $fileSizeStart = $file.Length
+
+    Start-Sleep -Seconds 5 # Wait for a moment before checking again
+
+    $fileSizeEnd = $file.Length
+
+    return ($fileSizeStart -eq $fileSizeEnd -and $file.LastWriteTime -gt $startTime)
+}
+
 # Loop through each URL
 foreach ($url in $urls) {
-    Write-Host "Processing URL: $($url.Url)"
-    
     # Open URL in Chrome
     Start-Process "chrome.exe" -ArgumentList $url.Url
 
-    # Wait for the download to complete
-    $downloadedFiles = $null
-    $timeout = 0
-    while ($timeout -lt 30) { # Adjust timeout as needed
-        Start-Sleep -Seconds 1
-        $downloadedFiles = Get-ChildItem -Path $env:USERPROFILE\Downloads | Where-Object { $_.LastWriteTime -gt $url.LastChecked }
-        if ($downloadedFiles.Count -gt 0) {
+    # Record the start time
+    $startTime = Get-Date
+
+    $fileDownloadStarted = $false
+
+    # Check if a file starts downloading within 30 seconds
+    while ((Get-Date) -lt $startTime.AddSeconds(30)) {
+        if (Test-Path "$env:USERPROFILE\Downloads\$($url.FileName)") {
+            $fileDownloadStarted = $true
             break
         }
-        $timeout++
+        Start-Sleep -Seconds 5
     }
 
-    # Get the downloaded file name
-    if ($downloadedFiles.Count -gt 0) {
-        $downloadedFiles = $downloadedFiles | Sort-Object -Property LastWriteTime -Descending
-        $url.FileName = $downloadedFiles[0].Name
-    } else {
-        # No file downloaded, update FileName as "Error"
+    if (-not $fileDownloadStarted) {
+        # No file started to download within 30 seconds, update FileName as "Error"
         $url.FileName = "Error"
+    } else {
+        # Wait for the download to complete
+        while (-not (CheckDownloadComplete -startTime $startTime -fileName "$env:USERPROFILE\Downloads\$($url.FileName)")) {
+            Start-Sleep -Seconds 5 # Wait for 5 seconds before checking again
+        }
     }
 
     # Update LastChecked time
-    if ($url.LastChecked -eq "") {
-        $url.LastChecked = Get-Date
-    } else {
-        $url.LastChecked = [DateTime]$url.LastChecked
-    }
+    $url.LastChecked = Get-Date
 
     # Export updated URL list to CSV
     $urls | Export-Csv -Path $csvFilePath -NoTypeInformation
