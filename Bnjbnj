@@ -4,48 +4,37 @@ $csvFilePath = "P:\Invision\URLZIP.csv"
 # Import CSV
 $urls = Import-Csv -Path $csvFilePath
 
-# Function to check if a file is fully downloaded
-function CheckDownloadComplete {
-    param ($startTime, $fileName)
-
-    # Check if the file exists and has stopped growing
-    $file = Get-Item $fileName
-    $fileSizeStart = $file.Length
-
-    Start-Sleep -Seconds 5 # Wait for a moment before checking again
-
-    $fileSizeEnd = $file.Length
-
-    return ($fileSizeStart -eq $fileSizeEnd -and $file.LastWriteTime -gt $startTime)
-}
-
 # Loop through each URL
 foreach ($url in $urls) {
     # Open URL in Chrome
     Start-Process "chrome.exe" -ArgumentList $url.Url
 
-    # Record the start time
-    $startTime = Get-Date
+    # Wait for 30 seconds to check if the download has started
+    Start-Sleep -Seconds 30
 
-    $fileDownloadStarted = $false
+    # Check if any file has started to download within 30 seconds
+    $downloadedFiles = Get-ChildItem -Path $env:USERPROFILE\Downloads | Where-Object { $_.LastWriteTime -gt $url.LastChecked } | Sort-Object -Property LastWriteTime -Descending
 
-    # Check if a file starts downloading within 30 seconds
-    while ((Get-Date) -lt $startTime.AddSeconds(30)) {
-        if (Test-Path "$env:USERPROFILE\Downloads\$($url.FileName)") {
-            $fileDownloadStarted = $true
-            break
-        }
-        Start-Sleep -Seconds 5
-    }
-
-    if (-not $fileDownloadStarted) {
-        # No file started to download within 30 seconds, update FileName as "Error"
-        $url.FileName = "Error"
-    } else {
+    if ($downloadedFiles.Count -gt 0) {
         # Wait for the download to complete
-        while (-not (CheckDownloadComplete -startTime $startTime -fileName "$env:USERPROFILE\Downloads\$($url.FileName)")) {
-            Start-Sleep -Seconds 5 # Wait for 5 seconds before checking again
+        $downloadedFile = $downloadedFiles[0]
+        $startTime = Get-Date
+        $timeout = New-TimeSpan -Seconds 600 # Adjust the timeout as needed
+        while ((Get-Date) -lt ($startTime + $timeout) -and (Test-Path $downloadedFile.FullName -PathType Leaf)) {
+            Start-Sleep -Seconds 10
         }
+
+        # Check if the file exists after download completion
+        if (Test-Path $downloadedFile.FullName -PathType Leaf) {
+            # Update the CSV with the downloaded file name
+            $url.FileName = $downloadedFile.Name
+        } else {
+            # File download failed
+            $url.FileName = "Error"
+        }
+    } else {
+        # No file started downloading within 30 seconds
+        $url.FileName = "Error"
     }
 
     # Update LastChecked time
