@@ -1,5 +1,5 @@
 # Path to the CSV file
-$csvFilePath = "P:\Invision\URLZIP.csv"
+$csvFilePath = "P:\Invision\URLPDF.csv"
 
 # Import CSV
 $urls = Import-Csv -Path $csvFilePath
@@ -33,7 +33,11 @@ foreach ($url in $urls) {
     }
 
     # Update LastChecked time
-    $url.LastChecked = Get-Date
+    if ($url.LastChecked -eq "") {
+        $url.LastChecked = Get-Date
+    } else {
+        $url.LastChecked = [DateTime]$url.LastChecked
+    }
 
     # Export updated URL list to CSV
     $urls | Export-Csv -Path $csvFilePath -NoTypeInformation
