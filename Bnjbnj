@@ -1,28 +1,30 @@
 # Path to the CSV file
-$csvFilePath = "P:\Invision\URLPDF.csv"
+$csvFilePath = "P:\Invision\URLZIP.csv"
 
 # Import CSV
 $urls = Import-Csv -Path $csvFilePath
 
 # Loop through each URL
 foreach ($url in $urls) {
+    Write-Host "Processing URL: $($url.Url)"
+    
     # Open URL in Chrome
     Start-Process "chrome.exe" -ArgumentList $url.Url
 
     # Wait for the download to complete
-    $downloaded = $false
+    $downloadedFiles = $null
     $timeout = 0
-    while (-not $downloaded -and $timeout -lt 30) { # Adjust timeout as needed
+    while ($timeout -lt 30) { # Adjust timeout as needed
         Start-Sleep -Seconds 1
-        $timeout++
         $downloadedFiles = Get-ChildItem -Path $env:USERPROFILE\Downloads | Where-Object { $_.LastWriteTime -gt $url.LastChecked }
         if ($downloadedFiles.Count -gt 0) {
-            $downloaded = $true
+            break
         }
+        $timeout++
     }
 
     # Get the downloaded file name
-    if ($downloaded) {
+    if ($downloadedFiles.Count -gt 0) {
         $downloadedFiles = $downloadedFiles | Sort-Object -Property LastWriteTime -Descending
         $url.FileName = $downloadedFiles[0].Name
     } else {
@@ -31,7 +33,7 @@ foreach ($url in $urls) {
     }
 
     # Update LastChecked time
-    $url.LastChecked = [DateTime]::Now
+    $url.LastChecked = Get-Date
 
     # Export updated URL list to CSV
     $urls | Export-Csv -Path $csvFilePath -NoTypeInformation
