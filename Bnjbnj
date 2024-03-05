@@ -1,38 +1,58 @@
-# Prompt the user for credentials
-$credential = Get-Credential
+# Path to the CSV file
+$csvFilePath = "P:\Invision\URLPDF.csv"
 
-# Define the base URL
-$baseUrl = "https://ubs.invisionapp.com"
+# Import CSV
+$urls = Import-Csv -Path $csvFilePath
 
-# Fetch the content of the website with authentication
-$response = Invoke-WebRequest -Uri "$baseUrl" -UseBasicParsing -Credential $credential
-
-# Extract the URLs
-$urls = $response.ParsedHtml.getElementsByTagName("a") | ForEach-Object {
-    # Check if the href attribute contains the required pattern
-    if ($_.href -match "/overview/.*/exports/initiate/pdf\?method=overviewMenu&sortBy=1&sortOrder=1&ViewLayout=2") {
-        # Output the matched URL
-        $_.href
+# Check if LastChecked column exists, if not, initialize it
+if ($urls[0].PSObject.Properties.Name -notcontains "LastChecked") {
+    foreach ($url in $urls) {
+        $url | Add-Member -MemberType NoteProperty -Name "LastChecked" -Value $null
     }
 }
 
-# Output the URLs
-$urls
+# Loop through each URL
+foreach ($url in $urls) {
+    # Open URL in Chrome
+    Start-Process "chrome.exe" -ArgumentList $url.Url
 
+    # Wait for the download to complete
+    $fileDownloaded = $false
+    while (-not $fileDownloaded) {
+        Start-Sleep -Seconds 1
+        $downloadedFiles = Get-ChildItem -Path $env:USERPROFILE\Downloads | Where-Object { $_.LastWriteTime -gt $url.LastChecked }
 
+        if ($downloadedFiles.Count -gt 0) {
+            # Update the CSV with the downloaded file name
+            $url.FileName = $downloadedFiles[0].Name
+            $fileDownloaded = $true
+        } elseif ((Get-Process -Name "chrome" -ErrorAction SilentlyContinue) -eq $null) {
+            # If Chrome process is not found, break the loop
+            break
+        }
+    }
 
+    # If no file downloaded, update FileName as "Error"
+    if (-not $fileDownloaded) {
+        $url.FileName = "Error"
+    }
 
-# Define the URL
-$url = "https://ubs.invisionapp.com"
+    # Update LastChecked time
+    $url.LastChecked = Get-Date
 
-# Prompt the user for credentials
-$credential = Get-Credential
+    # Export updated URL list to CSV
+    $urls | Export-Csv -Path $csvFilePath -NoTypeInformation
 
-# Make the request with Kerberos authentication
-$response = Invoke-WebRequest -Uri $url -Credential $credential -Authentication Negotiate
+    # Kill Chrome after processing every 50 URLs
+    if (($urls.IndexOf($url) + 1) % 50 -eq 0) {
+        # Wait for 5 seconds before killing Chrome
+        Start-Sleep -Seconds 5
 
-# Extract the content or perform further actions
-$response.Content
+        # Kill Chrome
+        taskkill /IM "chrome.exe" /F /T
+    }
+}
 
-
-$response = Invoke-WebRequest -Uri $url -Credential $credential -Authentication NTLM
+# Close Chrome after processing all URLs
+Start-Sleep -Seconds 5
+taskkill /IM "chrome.exe" /F /T
