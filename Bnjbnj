@@ -1,5 +1,5 @@
 # Path to the CSV file
-$csvFilePath = "P:\Invision\URLPDF.csv"
+$csvFilePath = "P:\Invision\URLZIP.csv"
 
 # Import CSV
 $urls = Import-Csv -Path $csvFilePath
@@ -43,6 +43,15 @@ foreach ($url in $urls) {
     # Export updated URL list to CSV
     $urls | Export-Csv -Path $csvFilePath -NoTypeInformation
 
+    # Open next URL only if a file was downloaded or an error occurred
+    if ($fileDownloaded -or $url.FileName -eq "Error") {
+        # Wait for 10 seconds before moving to the next URL
+        Start-Sleep -Seconds 10
+    } else {
+        # If no file was downloaded, wait for a shorter time before moving to the next URL
+        Start-Sleep -Seconds 3
+    }
+    
     # Kill Chrome after processing every 50 URLs
     if (($urls.IndexOf($url) + 1) % 50 -eq 0) {
         # Wait for 5 seconds before killing Chrome
