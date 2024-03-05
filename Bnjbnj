@@ -1,15 +1,8 @@
 # Path to the CSV file
-$csvFilePath = "P:\Invision\URLZIP.csv"
+$csvFilePath = "P:\Invision\URLPDF.csv"
 
 # Import CSV
 $urls = Import-Csv -Path $csvFilePath
-
-# Check if LastChecked column exists, if not, initialize it
-if ($urls[0].PSObject.Properties.Name -notcontains "LastChecked") {
-    foreach ($url in $urls) {
-        $url | Add-Member -MemberType NoteProperty -Name "LastChecked" -Value $null
-    }
-}
 
 # Loop through each URL
 foreach ($url in $urls) {
@@ -17,34 +10,34 @@ foreach ($url in $urls) {
     Start-Process "chrome.exe" -ArgumentList $url.Url
 
     # Wait for the download to complete
-    $fileDownloaded = $false
-    while (-not $fileDownloaded) {
+    $downloaded = $false
+    $timeout = 0
+    while (-not $downloaded -and $timeout -lt 30) { # Adjust timeout as needed
         Start-Sleep -Seconds 1
+        $timeout++
         $downloadedFiles = Get-ChildItem -Path $env:USERPROFILE\Downloads | Where-Object { $_.LastWriteTime -gt $url.LastChecked }
-
         if ($downloadedFiles.Count -gt 0) {
-            # Update the CSV with the downloaded file name
-            $url.FileName = $downloadedFiles[0].Name
-            $fileDownloaded = $true
-        } elseif ((Get-Process -Name "chrome" -ErrorAction SilentlyContinue) -eq $null) {
-            # If Chrome process is not found, break the loop
-            break
+            $downloaded = $true
         }
     }
 
-    # If no file downloaded, update FileName as "Error"
-    if (-not $fileDownloaded) {
+    # Get the downloaded file name
+    if ($downloaded) {
+        $downloadedFiles = $downloadedFiles | Sort-Object -Property LastWriteTime -Descending
+        $url.FileName = $downloadedFiles[0].Name
+    } else {
+        # No file downloaded, update FileName as "Error"
         $url.FileName = "Error"
     }
 
     # Update LastChecked time
     $url.LastChecked = Get-Date
 
-    # Close Chrome
-    Get-Process -Name "chrome" | Stop-Process -Force
-
     # Export updated URL list to CSV
-    $urls | Export-Csv -Path $csvFilePath -NoTypeInformation -Force
+    $urls | Export-Csv -Path $csvFilePath -NoTypeInformation
+
+    # Wait for 10 seconds before moving to the next URL
+    Start-Sleep -Seconds 10
 
     # Kill Chrome after processing every 50 URLs
     if (($urls.IndexOf($url) + 1) % 50 -eq 0) {
