@@ -13,11 +13,13 @@ foreach ($url in $urls) {
     Start-Sleep -Seconds 30
 
     # Check if any file has started to download within 30 seconds
-    $downloadedFiles = Get-ChildItem -Path $env:USERPROFILE\Downloads | Where-Object { $_.LastWriteTime -gt $url.LastChecked } | Sort-Object -Property LastWriteTime -Descending
+    $downloadedFiles = Get-ChildItem -Path $env:USERPROFILE\Downloads | Where-Object { $_.LastWriteTime -gt $url.LastChecked }
 
     if ($downloadedFiles.Count -gt 0) {
+        # Get the latest downloaded file
+        $downloadedFile = $downloadedFiles | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        
         # Wait for the download to complete
-        $downloadedFile = $downloadedFiles[0]
         $startTime = Get-Date
         $timeout = New-TimeSpan -Seconds 600 # Adjust the timeout as needed
         while ((Get-Date) -lt ($startTime + $timeout) -and (Test-Path $downloadedFile.FullName -PathType Leaf)) {
