@@ -31,7 +31,7 @@ foreach ($url in $urls) {
     }
 
     # Update LastChecked time
-    $url.LastChecked = Get-Date
+    $url.LastChecked = [DateTime]::Now
 
     # Export updated URL list to CSV
     $urls | Export-Csv -Path $csvFilePath -NoTypeInformation
