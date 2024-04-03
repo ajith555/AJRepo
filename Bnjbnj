@@ -1,3 +1,5 @@
+=TEXTJOIN(";", TRUE, UNIQUE(FILTERXML("<t><s>" & SUBSTITUTE(J3, ";", "</s><s>") & "</s></t>", "//s[not(.=preceding-sibling::*)]")))
+
 =TEXTJOIN(";", TRUE, UNIQUE(FILTERXML("<t><s>" & SUBSTITUTE(J3, ";", "</s><s>") & "</s></t>", "//s[not(preceding::*=.)]")))
 
 
