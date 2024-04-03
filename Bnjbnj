@@ -1,6 +1,7 @@
 =TEXTJOIN(";", TRUE, IFERROR(INDEX(J3:J1000, MATCH(0, COUNTIF($K$2:K2, J3:J1000) + IF(ISBLANK(J3:J1000), 1, 0), 0)), ""))
 
 
+=TEXTJOIN(";",TRUE,UNIQUE(FILTERXML("<t><s>"&SUBSTITUTE(A1,";","</s><s>")&"</s></t>","//s")))
 
 
 
