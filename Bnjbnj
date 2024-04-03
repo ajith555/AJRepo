@@ -1,3 +1,5 @@
+=TEXTJOIN(";", TRUE, UNIQUE(FILTERXML("<t><s>" & TEXTJOIN("</s><s>", TRUE, TRIM(MID(SUBSTITUTE(J3, ";", REPT(" ", LEN(J3))), (ROW($A$1:INDEX(A:A,LEN(J3)-LEN(SUBSTITUTE(J3,";",""))+1))-1)*LEN(J3)+1, LEN(J3)))) & "</s></t>", "//s[not(preceding::*=.)]"))
+
 =TEXTJOIN(";", TRUE, UNIQUE(FILTERXML("<t><s>" & SUBSTITUTE(J3, ";", "</s><s>") & "</s></t>", "//s[not(.=preceding-sibling::*)]")))
 
 =TEXTJOIN(";", TRUE, UNIQUE(FILTERXML("<t><s>" & SUBSTITUTE(J3, ";", "</s><s>") & "</s></t>", "//s[not(preceding::*=.)]")))
