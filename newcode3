@@ -16,9 +16,8 @@ Sub CreateFoldersAndCopyFiles()
     Dim dict As Object
     Dim key As String
     Dim filterCriteria As Variant
-    Dim filterRange As Range
-    Dim filterCell As Range
     Dim uniqueKeys As Collection
+    Dim criteriaKey As Variant
     
     ' Define the shared drive path
     sharedDrivePath = "//shared drive/"
@@ -64,10 +63,10 @@ Sub CreateFoldersAndCopyFiles()
     Loop
     
     ' Process each unique file
-    For Each key In uniqueKeys
-        fileName = Split(key, "|")(0)
-        folderName = Split(key, "|")(1)
-        sheetName = Split(key, "|")(2)
+    For Each criteriaKey In uniqueKeys
+        fileName = Split(criteriaKey, "|")(0)
+        folderName = Split(criteriaKey, "|")(1)
+        sheetName = Split(criteriaKey, "|")(2)
         
         ' Create the folder inside Coordinators folder, if it does not exist
         If Dir(coordinatorsFolderPath & "\" & folderName, vbDirectory) = "" Then
@@ -92,16 +91,14 @@ Sub CreateFoldersAndCopyFiles()
         newWorkbook.Sheets(1).Name = sheetName
         
         ' Apply filters based on the combined criteria
-        For Each filterCell In dict(key).keys
-            filterCriteria = dict(key)(filterCell)
-            
+        For Each filterCriteria In dict(criteriaKey).Items
             ' Filter column CR (column 3), CT (column 20), CV (column 22)
             If filterCriteria(2) <> "ALL" Then
                 newWorkbook.Sheets(1).Range("A1").AutoFilter Field:=3, Criteria1:=filterCriteria(0) ' Column CR
                 newWorkbook.Sheets(1).Range("A1").AutoFilter Field:=20, Criteria1:=filterCriteria(1) ' Column CT
                 newWorkbook.Sheets(1).Range("A1").AutoFilter Field:=22, Criteria1:=filterCriteria(2) ' Column CV
             End If
-        Next filterCell
+        Next filterCriteria
         
         ' Save the new workbook with the new file name inside the relevant folder
         newWorkbook.SaveAs Filename:=filePath, FileFormat:=xlOpenXMLWorkbook
@@ -109,7 +106,7 @@ Sub CreateFoldersAndCopyFiles()
         
         ' Close the source workbook
         sourceWorkbook.Close SaveChanges:=False
-    Next key
+    Next criteriaKey
     
     ' Close the rules workbook
     rulesWorkbook.Close SaveChanges:=False
