@@ -1,0 +1,94 @@
+Sub CreateFoldersAndCopyFilesWithFiltration()
+    Dim ws As Worksheet
+    Dim sourceWorkbook As Workbook
+    Dim sourceSheet As Worksheet
+    Dim rulesWorkbook As Workbook
+    Dim rulesSheet As Worksheet
+    Dim newWorkbook As Workbook
+    Dim coordinatorsFolderPath As String
+    Dim sharedDrivePath As String
+    Dim U99FilePath As String
+    Dim folderName As String
+    Dim fileName As String
+    Dim sheetName As String
+    Dim filePath As String
+    Dim uniqueIdentifier As String
+    Dim EValue As String
+    Dim FValue As String
+    Dim GValue As String
+    Dim i As Long
+    
+    ' Define the shared drive path
+    sharedDrivePath = "//shared drive/"
+    
+    ' Define the source file path
+    U99FilePath = sharedDrivePath & "U99.xlsx"
+    
+    ' Open the rules workbook
+    Set rulesWorkbook = Workbooks.Open(sharedDrivePath & "rules.xlsx")
+    Set rulesSheet = rulesWorkbook.Sheets(1)
+    
+    ' Define the Coordinators folder path
+    coordinatorsFolderPath = sharedDrivePath & "Coordinators"
+    
+    ' Check if the Coordinators folder exists, if not, create it
+    If Dir(coordinatorsFolderPath, vbDirectory) = "" Then
+        MkDir coordinatorsFolderPath
+    End If
+    
+    ' Loop through the rows in rules sheet starting from row 3
+    i = 3
+    Do While rulesSheet.Cells(i, 12).Value <> "" ' Column L
+        folderName = rulesSheet.Cells(i, 12).Value ' Folder name from column L
+        fileName = rulesSheet.Cells(i, 15).Value ' File name from column O
+        sheetName = rulesSheet.Cells(i, 14).Value ' Sheet name from column N
+        uniqueIdentifier = rulesSheet.Cells(i, 15).Value ' Unique identifier from column O
+        EValue = rulesSheet.Cells(i, 5).Value ' Value from column E
+        FValue = rulesSheet.Cells(i, 6).Value ' Value from column F
+        GValue = rulesSheet.Cells(i, 7).Value ' Value from column G
+        
+        ' Create the folder inside Coordinators folder, if it does not exist
+        If Dir(coordinatorsFolderPath & "\" & folderName, vbDirectory) = "" Then
+            MkDir coordinatorsFolderPath & "\" & folderName
+        End If
+        
+        ' Define the file path
+        filePath = coordinatorsFolderPath & "\" & folderName & "\" & fileName & ".xlsx"
+        
+        ' Delete the file if it already exists
+        If Dir(filePath) <> "" Then
+            Kill filePath
+        End If
+        
+        ' Open the source workbook
+        Set sourceWorkbook = Workbooks.Open(U99FilePath)
+        Set sourceSheet = sourceWorkbook.Sheets("Output")
+        
+        ' Apply filters to the source sheet based on E, F, G values
+        sourceSheet.AutoFilterMode = False
+        sourceSheet.Range("CR1").AutoFilter Field:=96, Criteria1:=EValue ' Column CR
+        sourceSheet.Range("CT1").AutoFilter Field:=97, Criteria1:=FValue ' Column CT
+        sourceSheet.Range("CV1").AutoFilter Field:=98, Criteria1:=GValue ' Column CV
+        
+        ' Copy the filtered "Output" sheet to a new workbook
+        sourceSheet.UsedRange.SpecialCells(xlCellTypeVisible).Copy
+        Set newWorkbook = Workbooks.Add
+        newWorkbook.Sheets(1).Paste
+        Application.CutCopyMode = False
+        newWorkbook.Sheets(1).Name = sheetName
+        
+        ' Save the new workbook with the new file name inside the relevant folder
+        newWorkbook.SaveAs Filename:=filePath, FileFormat:=xlOpenXMLWorkbook
+        newWorkbook.Close SaveChanges:=False
+        
+        ' Close the source workbook
+        sourceWorkbook.Close SaveChanges:=False
+        
+        i = i + 1
+    Loop
+    
+    ' Close the rules workbook
+    rulesWorkbook.Close SaveChanges:=False
+    
+    MsgBox "Folders and files created successfully!"
+End Sub
