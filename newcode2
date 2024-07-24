@@ -1,0 +1,69 @@
+Sub CreateFoldersAndCopyFiles()
+    Dim ws As Worksheet
+    Dim sourceWorkbook As Workbook
+    Dim sourceSheet As Worksheet
+    Dim rulesWorkbook As Workbook
+    Dim rulesSheet As Worksheet
+    Dim newWorkbook As Workbook
+    Dim coordinatorsFolderPath As String
+    Dim sharedDrivePath As String
+    Dim U99FilePath As String
+    Dim folderName As String
+    Dim fileName As String
+    Dim sheetName As String
+    Dim i As Long
+    
+    ' Define the shared drive path
+    sharedDrivePath = "//shared drive/"
+    
+    ' Define the source file path
+    U99FilePath = sharedDrivePath & "U99.xlsx"
+    
+    ' Open the rules workbook
+    Set rulesWorkbook = Workbooks.Open(sharedDrivePath & "rules.xlsx")
+    Set rulesSheet = rulesWorkbook.Sheets(1)
+    
+    ' Define the Coordinators folder path
+    coordinatorsFolderPath = sharedDrivePath & "Coordinators"
+    
+    ' Check if the Coordinators folder exists, if not, create it
+    If Dir(coordinatorsFolderPath, vbDirectory) = "" Then
+        MkDir coordinatorsFolderPath
+    End If
+    
+    ' Loop through the rows in rules sheet starting from row 3
+    i = 3
+    Do While rulesSheet.Cells(i, 12).Value <> "" ' Column L
+        folderName = rulesSheet.Cells(i, 12).Value ' Folder name from column L
+        fileName = rulesSheet.Cells(i, 15).Value ' File name from column O
+        sheetName = rulesSheet.Cells(i, 14).Value ' Sheet name from column N
+        
+        ' Create the folder inside Coordinators folder, if it does not exist
+        If Dir(coordinatorsFolderPath & "\" & folderName, vbDirectory) = "" Then
+            MkDir coordinatorsFolderPath & "\" & folderName
+        End If
+        
+        ' Open the source workbook
+        Set sourceWorkbook = Workbooks.Open(U99FilePath)
+        Set sourceSheet = sourceWorkbook.Sheets("Output")
+        
+        ' Copy the "Output" sheet to a new workbook
+        sourceSheet.Copy
+        Set newWorkbook = ActiveWorkbook
+        newWorkbook.Sheets(1).Name = sheetName
+        
+        ' Save the new workbook with the new file name inside the relevant folder, overwriting if it exists
+        newWorkbook.SaveAs Filename:=coordinatorsFolderPath & "\" & folderName & "\" & fileName & ".xlsx", FileFormat:=xlOpenXMLWorkbook, ConflictResolution:=xlLocalSessionChanges
+        newWorkbook.Close SaveChanges:=False
+        
+        ' Close the source workbook
+        sourceWorkbook.Close SaveChanges:=False
+        
+        i = i + 1
+    Loop
+    
+    ' Close the rules workbook
+    rulesWorkbook.Close SaveChanges:=False
+    
+    MsgBox "Folders and files created successfully!"
+End Sub
