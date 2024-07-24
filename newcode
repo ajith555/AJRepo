@@ -1,64 +1,68 @@
-Sub CreateDuplicateFiles()
+Sub CreateFoldersAndCopyFiles()
     Dim ws As Worksheet
-    Dim sourceFilePath As String
-    Dim rulesFilePath As String
-    Dim destFilePath As String
-    Dim destFolderPath As String
-    Dim destFileName As String
-    Dim destSheetName As String
-    Dim numCopies As Long
-    Dim i As Long, j As Long
-    Dim lastRow As Long
+    Dim sourceWorkbook As Workbook
+    Dim sourceSheet As Worksheet
+    Dim rulesWorkbook As Workbook
+    Dim rulesSheet As Worksheet
+    Dim coordinatorsFolderPath As String
+    Dim sharedDrivePath As String
+    Dim U99FilePath As String
+    Dim folderName As String
+    Dim fileName As String
+    Dim sheetName As String
+    Dim i As Long
     
-    ' Define file paths
-    sourceFilePath = "//shared drive/U99.xlsx"
-    rulesFilePath = "//shared drive/rules.xlsx"
+    ' Define the shared drive path
+    sharedDrivePath = "//shared drive/"
     
-    ' Open rules workbook
-    Workbooks.Open rulesFilePath
-    Set ws = Workbooks("rules.xlsx").Sheets(1)
+    ' Define the source file path
+    U99FilePath = sharedDrivePath & "U99.xlsx"
     
-    ' Find the last row with data in column O
-    lastRow = ws.Cells(ws.Rows.Count, "O").End(xlUp).Row
+    ' Open the rules workbook
+    Set rulesWorkbook = Workbooks.Open(sharedDrivePath & "rules.xlsx")
+    Set rulesSheet = rulesWorkbook.Sheets(1)
     
-    ' Loop through each row starting from the 3rd row
-    For i = 3 To lastRow
-        ' Get the number of copies to be created from column O
-        numCopies = ws.Cells(i, "O").Value
+    ' Define the Coordinators folder path
+    coordinatorsFolderPath = sharedDrivePath & "Coordinators"
+    
+    ' Check if the Coordinators folder exists, if not, create it
+    If Dir(coordinatorsFolderPath, vbDirectory) = "" Then
+        MkDir coordinatorsFolderPath
+    End If
+    
+    ' Loop through the rows in rules sheet starting from row 3
+    i = 3
+    Do While rulesSheet.Cells(i, 12).Value <> "" ' Column L
+        folderName = rulesSheet.Cells(i, 12).Value ' Folder name from column L
+        fileName = rulesSheet.Cells(i, 15).Value ' File name from column O
+        sheetName = rulesSheet.Cells(i, 14).Value ' Sheet name from column N
         
-        ' Get the destination file name from column O
-        destFileName = ws.Cells(i, "O").Value & ".xlsx"
-        
-        ' Get the sheet name from column N
-        destSheetName = ws.Cells(i, "N").Value
-        
-        ' Get the destination folder path from column L
-        destFolderPath = "//shared drive/" & ws.Cells(i, "L").Value
-        
-        ' Check if the folder exists, if not, create it
-        If Dir(destFolderPath, vbDirectory) = "" Then
-            MkDir destFolderPath
+        ' Create the folder inside Coordinators folder
+        If Dir(coordinatorsFolderPath & "\" & folderName, vbDirectory) = "" Then
+            MkDir coordinatorsFolderPath & "\" & folderName
         End If
         
-        ' Loop to create the required number of copies
-        For j = 1 To numCopies
-            ' Define the destination file path
-            destFilePath = destFolderPath & "/" & Replace(destFileName, ".xlsx", "_" & j & ".xlsx")
-            
-            ' Copy the source file to the new destination
-            FileCopy sourceFilePath, destFilePath
-            
-            ' Open the newly created file
-            Workbooks.Open destFilePath
-            
-            ' Rename the sheet
-            Workbooks(destFileName).Sheets(1).Name = destSheetName
-            
-            ' Save and close the newly created file
-            Workbooks(destFileName).Close SaveChanges:=True
-        Next j
-    Next i
+        ' Open the source workbook
+        Set sourceWorkbook = Workbooks.Open(U99FilePath)
+        Set sourceSheet = sourceWorkbook.Sheets(1)
+        
+        ' Copy the sheet to a new workbook
+        sourceSheet.Copy
+        Set newWorkbook = ActiveWorkbook
+        newWorkbook.Sheets(1).Name = sheetName
+        
+        ' Save the new workbook with the new file name inside the relevant folder
+        newWorkbook.SaveAs coordinatorsFolderPath & "\" & folderName & "\" & fileName & ".xlsx"
+        newWorkbook.Close SaveChanges:=False
+        
+        ' Close the source workbook
+        sourceWorkbook.Close SaveChanges:=False
+        
+        i = i + 1
+    Loop
     
     ' Close the rules workbook
-    Workbooks("rules.xlsx").Close SaveChanges:=False
+    rulesWorkbook.Close SaveChanges:=False
+    
+    MsgBox "Folders and files created successfully!"
 End Sub
