@@ -68,7 +68,9 @@ Sub CreateFoldersAndCopyFilesWithFiltration()
         sourceSheet.AutoFilterMode = False
         sourceSheet.Range("CR1").AutoFilter Field:=96, Criteria1:=EValue ' Column CR
         sourceSheet.Range("CT1").AutoFilter Field:=97, Criteria1:=FValue ' Column CT
-        sourceSheet.Range("CV1").AutoFilter Field:=98, Criteria1:=GValue ' Column CV
+        If GValue <> "ALL" Then
+            sourceSheet.Range("CV1").AutoFilter Field:=98, Criteria1:=GValue ' Column CV
+        End If
         
         ' Copy the filtered "Output" sheet to a new workbook
         sourceSheet.UsedRange.SpecialCells(xlCellTypeVisible).Copy
