@@ -16,6 +16,9 @@ Sub CreateFoldersAndCopyFiles()
     Dim dict As Object
     Dim key As String
     Dim filterCriteria As Variant
+    Dim filterRange As Range
+    Dim filterCell As Range
+    Dim uniqueKeys As Collection
     
     ' Define the shared drive path
     sharedDrivePath = "//shared drive/"
@@ -37,6 +40,7 @@ Sub CreateFoldersAndCopyFiles()
     
     ' Create a dictionary to store filters for each unique file
     Set dict = CreateObject("Scripting.Dictionary")
+    Set uniqueKeys = New Collection
     
     ' Loop through the rows in rules sheet starting from row 3
     i = 3
@@ -52,6 +56,7 @@ Sub CreateFoldersAndCopyFiles()
         key = fileName & "|" & folderName & "|" & sheetName
         If Not dict.exists(key) Then
             Set dict(key) = CreateObject("Scripting.Dictionary")
+            uniqueKeys.Add key
         End If
         dict(key)(i) = filterCriteria
         
@@ -59,7 +64,7 @@ Sub CreateFoldersAndCopyFiles()
     Loop
     
     ' Process each unique file
-    For Each key In dict.keys
+    For Each key In uniqueKeys
         fileName = Split(key, "|")(0)
         folderName = Split(key, "|")(1)
         sheetName = Split(key, "|")(2)
@@ -87,8 +92,8 @@ Sub CreateFoldersAndCopyFiles()
         newWorkbook.Sheets(1).Name = sheetName
         
         ' Apply filters based on the combined criteria
-        For Each idx In dict(key).keys
-            filterCriteria = dict(key)(idx)
+        For Each filterCell In dict(key).keys
+            filterCriteria = dict(key)(filterCell)
             
             ' Filter column CR (column 3), CT (column 20), CV (column 22)
             If filterCriteria(2) <> "ALL" Then
@@ -96,7 +101,7 @@ Sub CreateFoldersAndCopyFiles()
                 newWorkbook.Sheets(1).Range("A1").AutoFilter Field:=20, Criteria1:=filterCriteria(1) ' Column CT
                 newWorkbook.Sheets(1).Range("A1").AutoFilter Field:=22, Criteria1:=filterCriteria(2) ' Column CV
             End If
-        Next idx
+        Next filterCell
         
         ' Save the new workbook with the new file name inside the relevant folder
         newWorkbook.SaveAs Filename:=filePath, FileFormat:=xlOpenXMLWorkbook
