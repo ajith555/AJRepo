@@ -11,6 +11,7 @@ Sub CreateFoldersAndCopyFiles()
     Dim folderName As String
     Dim fileName As String
     Dim sheetName As String
+    Dim filePath As String
     Dim i As Long
     
     ' Define the shared drive path
@@ -43,6 +44,14 @@ Sub CreateFoldersAndCopyFiles()
             MkDir coordinatorsFolderPath & "\" & folderName
         End If
         
+        ' Define the file path
+        filePath = coordinatorsFolderPath & "\" & folderName & "\" & fileName & ".xlsx"
+        
+        ' Delete the file if it already exists
+        If Dir(filePath) <> "" Then
+            Kill filePath
+        End If
+        
         ' Open the source workbook
         Set sourceWorkbook = Workbooks.Open(U99FilePath)
         Set sourceSheet = sourceWorkbook.Sheets("Output")
@@ -52,8 +61,8 @@ Sub CreateFoldersAndCopyFiles()
         Set newWorkbook = ActiveWorkbook
         newWorkbook.Sheets(1).Name = sheetName
         
-        ' Save the new workbook with the new file name inside the relevant folder, overwriting if it exists
-        newWorkbook.SaveAs Filename:=coordinatorsFolderPath & "\" & folderName & "\" & fileName & ".xlsx", FileFormat:=xlOpenXMLWorkbook, ConflictResolution:=xlLocalSessionChanges
+        ' Save the new workbook with the new file name inside the relevant folder
+        newWorkbook.SaveAs Filename:=filePath, FileFormat:=xlOpenXMLWorkbook
         newWorkbook.Close SaveChanges:=False
         
         ' Close the source workbook
