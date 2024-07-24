@@ -1,1 +1,64 @@
-=A1 & "_" & TEXT(TODAY(), "mmm_yyyy")
+Sub CreateDuplicateFiles()
+    Dim ws As Worksheet
+    Dim sourceFilePath As String
+    Dim rulesFilePath As String
+    Dim destFilePath As String
+    Dim destFolderPath As String
+    Dim destFileName As String
+    Dim destSheetName As String
+    Dim numCopies As Long
+    Dim i As Long, j As Long
+    Dim lastRow As Long
+    
+    ' Define file paths
+    sourceFilePath = "//shared drive/U99.xlsx"
+    rulesFilePath = "//shared drive/rules.xlsx"
+    
+    ' Open rules workbook
+    Workbooks.Open rulesFilePath
+    Set ws = Workbooks("rules.xlsx").Sheets(1)
+    
+    ' Find the last row with data in column O
+    lastRow = ws.Cells(ws.Rows.Count, "O").End(xlUp).Row
+    
+    ' Loop through each row starting from the 3rd row
+    For i = 3 To lastRow
+        ' Get the number of copies to be created from column O
+        numCopies = ws.Cells(i, "O").Value
+        
+        ' Get the destination file name from column O
+        destFileName = ws.Cells(i, "O").Value & ".xlsx"
+        
+        ' Get the sheet name from column N
+        destSheetName = ws.Cells(i, "N").Value
+        
+        ' Get the destination folder path from column L
+        destFolderPath = "//shared drive/" & ws.Cells(i, "L").Value
+        
+        ' Check if the folder exists, if not, create it
+        If Dir(destFolderPath, vbDirectory) = "" Then
+            MkDir destFolderPath
+        End If
+        
+        ' Loop to create the required number of copies
+        For j = 1 To numCopies
+            ' Define the destination file path
+            destFilePath = destFolderPath & "/" & Replace(destFileName, ".xlsx", "_" & j & ".xlsx")
+            
+            ' Copy the source file to the new destination
+            FileCopy sourceFilePath, destFilePath
+            
+            ' Open the newly created file
+            Workbooks.Open destFilePath
+            
+            ' Rename the sheet
+            Workbooks(destFileName).Sheets(1).Name = destSheetName
+            
+            ' Save and close the newly created file
+            Workbooks(destFileName).Close SaveChanges:=True
+        Next j
+    Next i
+    
+    ' Close the rules workbook
+    Workbooks("rules.xlsx").Close SaveChanges:=False
+End Sub
