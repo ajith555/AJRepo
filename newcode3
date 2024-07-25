@@ -75,11 +75,14 @@ Sub CreateFoldersAndCopyFiles()
         With newSheet
             lastRow = .Cells(.Rows.Count, "A").End(xlUp).Row
             
-            ' Apply filter to column CR
+            ' Remove any existing filters
+            If .AutoFilterMode Then .AutoFilterMode = False
+            
+            ' Apply filter to column CR (column 96)
             .Range("A1:CV" & lastRow).AutoFilter Field:=96, Criteria1:=filterValue1
-            ' Apply filter to column CT
+            ' Apply filter to column CT (column 98)
             .Range("A1:CV" & lastRow).AutoFilter Field:=98, Criteria1:=filterValue2
-            ' Apply filter to column CV
+            ' Apply filter to column CV (column 100)
             .Range("A1:CV" & lastRow).AutoFilter Field:=100, Criteria1:=filterValue3
         End With
         
