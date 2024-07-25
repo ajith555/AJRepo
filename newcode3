@@ -12,11 +12,12 @@ Sub CreateFoldersAndCopyFiles()
     Dim fileName As String
     Dim sheetName As String
     Dim filePath As String
-    Dim i As Long
     Dim filterValueCR As String
     Dim filterValueCT As String
     Dim filterValueCV As String
-
+    Dim i As Long
+    Dim lastRow As Long
+    
     ' Define the shared drive path
     sharedDrivePath = "//shared drive/"
     
@@ -41,10 +42,10 @@ Sub CreateFoldersAndCopyFiles()
         folderName = rulesSheet.Cells(i, 12).Value ' Folder name from column L
         fileName = rulesSheet.Cells(i, 15).Value ' File name from column O
         sheetName = rulesSheet.Cells(i, 14).Value ' Sheet name from column N
-        filterValueCR = rulesSheet.Cells(i, 5).Value ' Filter value for CR from column E
-        filterValueCT = rulesSheet.Cells(i, 6).Value ' Filter value for CT from column F
-        filterValueCV = rulesSheet.Cells(i, 7).Value ' Filter value for CV from column G
-
+        filterValueCR = rulesSheet.Cells(i, 5).Value ' Filter value for column CR
+        filterValueCT = rulesSheet.Cells(i, 6).Value ' Filter value for column CT
+        filterValueCV = rulesSheet.Cells(i, 7).Value ' Filter value for column CV
+        
         ' Create the folder inside Coordinators folder, if it does not exist
         If Dir(coordinatorsFolderPath & "\" & folderName, vbDirectory) = "" Then
             MkDir coordinatorsFolderPath & "\" & folderName
@@ -67,23 +68,27 @@ Sub CreateFoldersAndCopyFiles()
         Set newWorkbook = ActiveWorkbook
         newWorkbook.Sheets(1).Name = sheetName
         
-        ' Apply the filters
+        ' Apply filters before saving the file
         With newWorkbook.Sheets(sheetName)
-            .AutoFilterMode = False ' Ensure that autofilter is off before applying new filters
-
+            lastRow = .Cells(.Rows.Count, "A").End(xlUp).Row ' Assuming data starts at row 1
+            .AutoFilterMode = False
+            
+            ' Apply filter for CR column if not "ALL"
             If filterValueCR <> "ALL" Then
-                .Range("CR1:CR" & .Cells(.Rows.Count, "CR").End(xlUp).Row).AutoFilter Field:=1, Criteria1:=filterValueCR
+                .Range("A1").AutoFilter Field:=96, Criteria1:=filterValueCR ' Assuming CR is column 96
             End If
-
+            
+            ' Apply filter for CT column if not "ALL"
             If filterValueCT <> "ALL" Then
-                .Range("CT1:CT" & .Cells(.Rows.Count, "CT").End(xlUp).Row).AutoFilter Field:=1, Criteria1:=filterValueCT
+                .Range("A1").AutoFilter Field:=98, Criteria1:=filterValueCT ' Assuming CT is column 98
             End If
-
+            
+            ' Apply filter for CV column if not "ALL"
             If filterValueCV <> "ALL" Then
-                .Range("CV1:CV" & .Cells(.Rows.Count, "CV").End(xlUp).Row).AutoFilter Field:=1, Criteria1:=filterValueCV
+                .Range("A1").AutoFilter Field:=100, Criteria1:=filterValueCV ' Assuming CV is column 100
             End If
         End With
-
+        
         ' Save the new workbook with the new file name inside the relevant folder
         newWorkbook.SaveAs Filename:=filePath, FileFormat:=xlOpenXMLWorkbook
         newWorkbook.Close SaveChanges:=False
