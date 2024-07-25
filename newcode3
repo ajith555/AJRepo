@@ -75,15 +75,16 @@ Sub CreateFoldersAndCopyFiles()
         With newSheet
             lastRow = .Cells(.Rows.Count, "A").End(xlUp).Row
             
-            ' Remove any existing filters
-            If .AutoFilterMode Then .AutoFilterMode = False
-            
-            ' Apply filter to column CR (column 96)
-            .Range("A1:CV" & lastRow).AutoFilter Field:=96, Criteria1:=filterValue1
-            ' Apply filter to column CT (column 98)
-            .Range("A1:CV" & lastRow).AutoFilter Field:=98, Criteria1:=filterValue2
-            ' Apply filter to column CV (column 100)
-            .Range("A1:CV" & lastRow).AutoFilter Field:=100, Criteria1:=filterValue3
+            ' Check if filter values are not empty
+            If filterValue1 <> "" Then
+                .Range("A1:CV" & lastRow).AutoFilter Field:=96, Criteria1:=filterValue1
+            End If
+            If filterValue2 <> "" Then
+                .Range("A1:CV" & lastRow).AutoFilter Field:=98, Criteria1:=filterValue2
+            End If
+            If filterValue3 <> "" Then
+                .Range("A1:CV" & lastRow).AutoFilter Field:=100, Criteria1:=filterValue3
+            End If
         End With
         
         ' Save the new workbook with the new file name inside the relevant folder
