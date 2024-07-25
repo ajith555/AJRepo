@@ -5,7 +5,6 @@ Sub CreateFoldersAndCopyFiles()
     Dim rulesWorkbook As Workbook
     Dim rulesSheet As Worksheet
     Dim newWorkbook As Workbook
-    Dim newSheet As Worksheet
     Dim coordinatorsFolderPath As String
     Dim sharedDrivePath As String
     Dim U99FilePath As String
@@ -16,7 +15,6 @@ Sub CreateFoldersAndCopyFiles()
     Dim filterValue1 As Variant
     Dim filterValue2 As Variant
     Dim filterValue3 As Variant
-    Dim lastRow As Long
     Dim i As Long
     
     ' Define the shared drive path
@@ -44,13 +42,6 @@ Sub CreateFoldersAndCopyFiles()
         fileName = rulesSheet.Cells(i, 15).Value ' File name from column O
         sheetName = rulesSheet.Cells(i, 14).Value ' Sheet name from column N
         
-        filterValue1 = rulesSheet.Cells(i, 5).Value ' Filter value from column E
-        filterValue2 = rulesSheet.Cells(i, 6).Value ' Filter value from column F
-        filterValue3 = rulesSheet.Cells(i, 7).Value ' Filter value from column G
-        
-        ' Debugging output to verify filter values
-        Debug.Print "Row " & i & ": Filter values - E: " & filterValue1 & ", F: " & filterValue2 & ", G: " & filterValue3
-        
         ' Create the folder inside Coordinators folder, if it does not exist
         If Dir(coordinatorsFolderPath & "\" & folderName, vbDirectory) = "" Then
             MkDir coordinatorsFolderPath & "\" & folderName
@@ -71,33 +62,18 @@ Sub CreateFoldersAndCopyFiles()
         ' Copy the "Output" sheet to a new workbook
         sourceSheet.Copy
         Set newWorkbook = ActiveWorkbook
-        Set newSheet = newWorkbook.Sheets(1)
-        newSheet.Name = sheetName
+        newWorkbook.Sheets(1).Name = sheetName
         
-        ' Apply filters based on columns E, F, G to CR, CT, CV
-        With newSheet
-            lastRow = .Cells(.Rows.Count, "A").End(xlUp).Row
-            
-            ' Remove any existing filters
-            If .AutoFilterMode Then .AutoFilterMode = False
-            
-            ' Apply filter to column CR (column 96)
-            If Not IsEmpty(filterValue1) And filterValue1 <> "" Then
-                .Range("A1:CV" & lastRow).AutoFilter Field:=96, Criteria1:=filterValue1
-                Debug.Print "Filter applied to column CR with value: " & filterValue1
-            End If
-            
-            ' Apply filter to column CT (column 98)
-            If Not IsEmpty(filterValue2) And filterValue2 <> "" Then
-                .Range("A1:CV" & lastRow).AutoFilter Field:=98, Criteria1:=filterValue2
-                Debug.Print "Filter applied to column CT with value: " & filterValue2
-            End If
-            
-            ' Apply filter to column CV (column 100)
-            If Not IsEmpty(filterValue3) And filterValue3 <> "" Then
-                .Range("A1:CV" & lastRow).AutoFilter Field:=100, Criteria1:=filterValue3
-                Debug.Print "Filter applied to column CV with value: " & filterValue3
-            End If
+        ' Apply filtering based on values from columns E, F, and G
+        filterValue1 = rulesSheet.Cells(i, 5).Value ' Filter value from column E
+        filterValue2 = rulesSheet.Cells(i, 6).Value ' Filter value from column F
+        filterValue3 = rulesSheet.Cells(i, 7).Value ' Filter value from column G
+        
+        With newWorkbook.Sheets(sheetName)
+            .AutoFilterMode = False
+            .Range("A1").AutoFilter Field:=96, Criteria1:=filterValue1 ' Column CR
+            .Range("A1").AutoFilter Field:=98, Criteria1:=filterValue2 ' Column CT
+            .Range("A1").AutoFilter Field:=100, Criteria1:=filterValue3 ' Column CV
         End With
         
         ' Save the new workbook with the new file name inside the relevant folder
