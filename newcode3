@@ -42,9 +42,9 @@ Sub CreateFoldersAndCopyFiles()
         folderName = rulesSheet.Cells(i, 12).Value ' Folder name from column L
         fileName = rulesSheet.Cells(i, 15).Value ' File name from column O
         sheetName = rulesSheet.Cells(i, 14).Value ' Sheet name from column N
-        filterValueCR = rulesSheet.Cells(i, 5).Value ' Filter value for column CR
-        filterValueCT = rulesSheet.Cells(i, 6).Value ' Filter value for column CT
-        filterValueCV = rulesSheet.Cells(i, 7).Value ' Filter value for column CV
+        filterValueCR = rulesSheet.Cells(i, 5).Value ' Filter value for CR (column E)
+        filterValueCT = rulesSheet.Cells(i, 6).Value ' Filter value for CT (column F)
+        filterValueCV = rulesSheet.Cells(i, 7).Value ' Filter value for CV (column G)
         
         ' Create the folder inside Coordinators folder, if it does not exist
         If Dir(coordinatorsFolderPath & "\" & folderName, vbDirectory) = "" Then
@@ -73,19 +73,19 @@ Sub CreateFoldersAndCopyFiles()
             lastRow = .Cells(.Rows.Count, "A").End(xlUp).Row ' Assuming data starts at row 1
             .AutoFilterMode = False
             
-            ' Apply filter for CR column if not "ALL"
+            ' Apply filter for CR column (assumed to be column 96) if not "ALL"
             If filterValueCR <> "ALL" Then
-                .Range("A1").AutoFilter Field:=96, Criteria1:=filterValueCR ' Assuming CR is column 96
+                .Range("A1:CV" & lastRow).AutoFilter Field:=96, Criteria1:=filterValueCR ' Assuming CR is column 96
             End If
             
-            ' Apply filter for CT column if not "ALL"
+            ' Apply filter for CT column (assumed to be column 98) if not "ALL"
             If filterValueCT <> "ALL" Then
-                .Range("A1").AutoFilter Field:=98, Criteria1:=filterValueCT ' Assuming CT is column 98
+                .Range("A1:CV" & lastRow).AutoFilter Field:=98, Criteria1:=filterValueCT ' Assuming CT is column 98
             End If
             
-            ' Apply filter for CV column if not "ALL"
+            ' Apply filter for CV column (assumed to be column 100) if not "ALL"
             If filterValueCV <> "ALL" Then
-                .Range("A1").AutoFilter Field:=100, Criteria1:=filterValueCV ' Assuming CV is column 100
+                .Range("A1:CV" & lastRow).AutoFilter Field:=100, Criteria1:=filterValueCV ' Assuming CV is column 100
             End If
         End With
         
