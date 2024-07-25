@@ -5,6 +5,7 @@ Sub CreateFoldersAndCopyFiles()
     Dim rulesWorkbook As Workbook
     Dim rulesSheet As Worksheet
     Dim newWorkbook As Workbook
+    Dim newSheet As Worksheet
     Dim coordinatorsFolderPath As String
     Dim sharedDrivePath As String
     Dim U99FilePath As String
@@ -12,12 +13,11 @@ Sub CreateFoldersAndCopyFiles()
     Dim fileName As String
     Dim sheetName As String
     Dim filePath As String
+    Dim filterValue1 As String
+    Dim filterValue2 As String
+    Dim filterValue3 As String
+    Dim lastRow As Long
     Dim i As Long
-    Dim dict As Object
-    Dim key As String
-    Dim filterCriteria As Variant
-    Dim uniqueKeys As Collection
-    Dim criteriaKey As Variant
     
     ' Define the shared drive path
     sharedDrivePath = "//shared drive/"
@@ -37,36 +37,16 @@ Sub CreateFoldersAndCopyFiles()
         MkDir coordinatorsFolderPath
     End If
     
-    ' Create a dictionary to store filters for each unique file
-    Set dict = CreateObject("Scripting.Dictionary")
-    Set uniqueKeys = New Collection
-    
     ' Loop through the rows in rules sheet starting from row 3
     i = 3
-    Do While rulesSheet.Cells(i, 15).Value <> "" ' Column O
-        fileName = rulesSheet.Cells(i, 15).Value ' File name from column O
+    Do While rulesSheet.Cells(i, 12).Value <> "" ' Column L
         folderName = rulesSheet.Cells(i, 12).Value ' Folder name from column L
+        fileName = rulesSheet.Cells(i, 15).Value ' File name from column O
         sheetName = rulesSheet.Cells(i, 14).Value ' Sheet name from column N
         
-        ' Get filter criteria from columns E, F, G
-        filterCriteria = Array(rulesSheet.Cells(i, 5).Value, rulesSheet.Cells(i, 6).Value, rulesSheet.Cells(i, 7).Value) ' Columns E, F, G
-        
-        ' Store the filter criteria in the dictionary
-        key = fileName & "|" & folderName & "|" & sheetName
-        If Not dict.exists(key) Then
-            Set dict(key) = CreateObject("Scripting.Dictionary")
-            uniqueKeys.Add key
-        End If
-        dict(key)(i) = filterCriteria
-        
-        i = i + 1
-    Loop
-    
-    ' Process each unique file
-    For Each criteriaKey In uniqueKeys
-        fileName = Split(criteriaKey, "|")(0)
-        folderName = Split(criteriaKey, "|")(1)
-        sheetName = Split(criteriaKey, "|")(2)
+        filterValue1 = rulesSheet.Cells(i, 5).Value ' Filter value from column E
+        filterValue2 = rulesSheet.Cells(i, 6).Value ' Filter value from column F
+        filterValue3 = rulesSheet.Cells(i, 7).Value ' Filter value from column G
         
         ' Create the folder inside Coordinators folder, if it does not exist
         If Dir(coordinatorsFolderPath & "\" & folderName, vbDirectory) = "" Then
@@ -88,17 +68,20 @@ Sub CreateFoldersAndCopyFiles()
         ' Copy the "Output" sheet to a new workbook
         sourceSheet.Copy
         Set newWorkbook = ActiveWorkbook
-        newWorkbook.Sheets(1).Name = sheetName
+        Set newSheet = newWorkbook.Sheets(1)
+        newSheet.Name = sheetName
         
-        ' Apply filters based on the combined criteria
-        For Each filterCriteria In dict(criteriaKey).Items
-            ' Filter column CR (column 3), CT (column 20), CV (column 22)
-            If filterCriteria(2) <> "ALL" Then
-                newWorkbook.Sheets(1).Range("A1").AutoFilter Field:=3, Criteria1:=filterCriteria(0) ' Column CR
-                newWorkbook.Sheets(1).Range("A1").AutoFilter Field:=20, Criteria1:=filterCriteria(1) ' Column CT
-                newWorkbook.Sheets(1).Range("A1").AutoFilter Field:=22, Criteria1:=filterCriteria(2) ' Column CV
-            End If
-        Next filterCriteria
+        ' Apply filters based on columns E, F, G to CR, CT, CV
+        With newSheet
+            lastRow = .Cells(.Rows.Count, "A").End(xlUp).Row
+            
+            ' Apply filter to column CR
+            .Range("A1:CV" & lastRow).AutoFilter Field:=96, Criteria1:=filterValue1
+            ' Apply filter to column CT
+            .Range("A1:CV" & lastRow).AutoFilter Field:=98, Criteria1:=filterValue2
+            ' Apply filter to column CV
+            .Range("A1:CV" & lastRow).AutoFilter Field:=100, Criteria1:=filterValue3
+        End With
         
         ' Save the new workbook with the new file name inside the relevant folder
         newWorkbook.SaveAs Filename:=filePath, FileFormat:=xlOpenXMLWorkbook
@@ -106,7 +89,9 @@ Sub CreateFoldersAndCopyFiles()
         
         ' Close the source workbook
         sourceWorkbook.Close SaveChanges:=False
-    Next criteriaKey
+        
+        i = i + 1
+    Loop
     
     ' Close the rules workbook
     rulesWorkbook.Close SaveChanges:=False
