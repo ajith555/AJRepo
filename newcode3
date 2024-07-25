@@ -12,11 +12,11 @@ Sub CreateFoldersAndCopyFiles()
     Dim fileName As String
     Dim sheetName As String
     Dim filePath As String
-    Dim filterValue1 As Variant
-    Dim filterValue2 As Variant
-    Dim filterValue3 As Variant
     Dim i As Long
-    
+    Dim filterValueCR As String
+    Dim filterValueCT As String
+    Dim filterValueCV As String
+
     ' Define the shared drive path
     sharedDrivePath = "//shared drive/"
     
@@ -41,7 +41,10 @@ Sub CreateFoldersAndCopyFiles()
         folderName = rulesSheet.Cells(i, 12).Value ' Folder name from column L
         fileName = rulesSheet.Cells(i, 15).Value ' File name from column O
         sheetName = rulesSheet.Cells(i, 14).Value ' Sheet name from column N
-        
+        filterValueCR = rulesSheet.Cells(i, 5).Value ' Filter value for CR from column E
+        filterValueCT = rulesSheet.Cells(i, 6).Value ' Filter value for CT from column F
+        filterValueCV = rulesSheet.Cells(i, 7).Value ' Filter value for CV from column G
+
         ' Create the folder inside Coordinators folder, if it does not exist
         If Dir(coordinatorsFolderPath & "\" & folderName, vbDirectory) = "" Then
             MkDir coordinatorsFolderPath & "\" & folderName
@@ -64,18 +67,23 @@ Sub CreateFoldersAndCopyFiles()
         Set newWorkbook = ActiveWorkbook
         newWorkbook.Sheets(1).Name = sheetName
         
-        ' Apply filtering based on values from columns E, F, and G
-        filterValue1 = rulesSheet.Cells(i, 5).Value ' Filter value from column E
-        filterValue2 = rulesSheet.Cells(i, 6).Value ' Filter value from column F
-        filterValue3 = rulesSheet.Cells(i, 7).Value ' Filter value from column G
-        
+        ' Apply the filters
         With newWorkbook.Sheets(sheetName)
-            .AutoFilterMode = False
-            .Range("A1").AutoFilter Field:=96, Criteria1:=filterValue1 ' Column CR
-            .Range("A1").AutoFilter Field:=98, Criteria1:=filterValue2 ' Column CT
-            .Range("A1").AutoFilter Field:=100, Criteria1:=filterValue3 ' Column CV
+            .AutoFilterMode = False ' Ensure that autofilter is off before applying new filters
+
+            If filterValueCR <> "ALL" Then
+                .Range("CR1:CR" & .Cells(.Rows.Count, "CR").End(xlUp).Row).AutoFilter Field:=1, Criteria1:=filterValueCR
+            End If
+
+            If filterValueCT <> "ALL" Then
+                .Range("CT1:CT" & .Cells(.Rows.Count, "CT").End(xlUp).Row).AutoFilter Field:=1, Criteria1:=filterValueCT
+            End If
+
+            If filterValueCV <> "ALL" Then
+                .Range("CV1:CV" & .Cells(.Rows.Count, "CV").End(xlUp).Row).AutoFilter Field:=1, Criteria1:=filterValueCV
+            End If
         End With
-        
+
         ' Save the new workbook with the new file name inside the relevant folder
         newWorkbook.SaveAs Filename:=filePath, FileFormat:=xlOpenXMLWorkbook
         newWorkbook.Close SaveChanges:=False
