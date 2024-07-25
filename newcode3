@@ -13,9 +13,9 @@ Sub CreateFoldersAndCopyFiles()
     Dim fileName As String
     Dim sheetName As String
     Dim filePath As String
-    Dim filterValue1 As String
-    Dim filterValue2 As String
-    Dim filterValue3 As String
+    Dim filterValue1 As Variant
+    Dim filterValue2 As Variant
+    Dim filterValue3 As Variant
     Dim lastRow As Long
     Dim i As Long
     
@@ -48,6 +48,9 @@ Sub CreateFoldersAndCopyFiles()
         filterValue2 = rulesSheet.Cells(i, 6).Value ' Filter value from column F
         filterValue3 = rulesSheet.Cells(i, 7).Value ' Filter value from column G
         
+        ' Debugging output to verify filter values
+        Debug.Print "Row " & i & ": Filter values - E: " & filterValue1 & ", F: " & filterValue2 & ", G: " & filterValue3
+        
         ' Create the folder inside Coordinators folder, if it does not exist
         If Dir(coordinatorsFolderPath & "\" & folderName, vbDirectory) = "" Then
             MkDir coordinatorsFolderPath & "\" & folderName
@@ -75,15 +78,25 @@ Sub CreateFoldersAndCopyFiles()
         With newSheet
             lastRow = .Cells(.Rows.Count, "A").End(xlUp).Row
             
-            ' Check if filter values are not empty
-            If filterValue1 <> "" Then
+            ' Remove any existing filters
+            If .AutoFilterMode Then .AutoFilterMode = False
+            
+            ' Apply filter to column CR (column 96)
+            If Not IsEmpty(filterValue1) And filterValue1 <> "" Then
                 .Range("A1:CV" & lastRow).AutoFilter Field:=96, Criteria1:=filterValue1
+                Debug.Print "Filter applied to column CR with value: " & filterValue1
             End If
-            If filterValue2 <> "" Then
+            
+            ' Apply filter to column CT (column 98)
+            If Not IsEmpty(filterValue2) And filterValue2 <> "" Then
                 .Range("A1:CV" & lastRow).AutoFilter Field:=98, Criteria1:=filterValue2
+                Debug.Print "Filter applied to column CT with value: " & filterValue2
             End If
-            If filterValue3 <> "" Then
+            
+            ' Apply filter to column CV (column 100)
+            If Not IsEmpty(filterValue3) And filterValue3 <> "" Then
                 .Range("A1:CV" & lastRow).AutoFilter Field:=100, Criteria1:=filterValue3
+                Debug.Print "Filter applied to column CV with value: " & filterValue3
             End If
         End With
         
