@@ -2,12 +2,15 @@ W
 =IF(COUNTIF($A$3:A3, A3)=1, "First", "Duplicate")
 
 
+
 Z
 =TEXTJOIN(", ", TRUE, IF($A$3:$A$1000=A3, $E$3:$E$1000, ""))
 
 
+
 AA3
 =IF(MAX(COUNTIF($E$3:$E$1000, TEXTSPLIT(Z3, ", ")))>1, "Yes", "No")
+
 
 
 X
