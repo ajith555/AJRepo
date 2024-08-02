@@ -1,17 +1,27 @@
 W
 =IF(COUNTIF($A$3:A3, A3)=1, "First", "Duplicate")
+
+
 Z
 =TEXTJOIN(", ", TRUE, IF($A$3:$A$1000=A3, $E$3:$E$1000, ""))
+
+
 AA3
-=IF(SUMPRODUCT(($A$3:$A$1000=A3)*(ISNUMBER(SEARCH(TEXTSPLIT(Z3, ", "), $E$3:$E$1000))))>1, "Yes", "No")
+=IF(MAX(COUNTIF($E$3:$E$1000, TEXTSPLIT(Z3, ", ")))>1, "Yes", "No")
+
+
 X
 =IF(W3="First", TEXTJOIN(", ", TRUE, IF(($A$3:$A$1000=A3)*(AA$3:$AA$1000="Yes"), $B$3:$B$1000, "")), $B3)
 
 
 
 
+
+
 Y
 =IF(W3="First", TEXTJOIN(", ", TRUE, IF(($A$3:$A$1000=A3)*(AA$3:$AA$1000="Yes"), $C$3:$C$1000, "")), $C3)
+
+
 
 
 
