@@ -1,1 +1,8 @@
-=IF(COUNTIF($A$2:A2, A2) > 1, TEXTJOIN(",", TRUE, IF($A$2:A2=A2, $B$2:B2, "")), "")
+W
+=IF(COUNTIFS($A$3:$A$1000, A3, $E$3:$E$1000, E3) > 1, "Duplicate", "Unique")
+
+X
+=IF(W3="Duplicate", TEXTJOIN(", ", TRUE, IF(($A$3:$A$1000=A3)*($E$3:$E$1000=E3), $B$3:$B$1000, "")), B3)
+
+Y
+=IF(W3="Duplicate", TEXTJOIN(", ", TRUE, IF(($A$3:$A$1000=A3)*($E$3:$E$1000=E3), $C$3:$C$1000, "")), C3)
