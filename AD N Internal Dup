@@ -2,41 +2,67 @@
   "elmType": "div",
   "children": [
     {
-      "elmType": "div",
-      "style": {
-        "margin-bottom": "10px"
+      "elmType": "section",
+      "attributes": {
+        "class": "ms-Grid"
       },
       "children": [
         {
-          "elmType": "button",
-          "txtContent": "Save",
-          "style": {
-            "background-color": "#0078d4",
-            "color": "white",
-            "padding": "10px",
-            "border-radius": "5px",
-            "cursor": "pointer"
+          "elmType": "div",
+          "attributes": {
+            "class": "ms-Grid-row"
           },
-          "customRowAction": {
-            "action": "submitForm"
-          }
+          "children": [
+            {
+              "elmType": "div",
+              "attributes": {
+                "class": "ms-Grid-col ms-u-sm12 ms-u-md12 ms-u-lg12"
+              },
+              "children": [
+                {
+                  "elmType": "div",
+                  "children": [
+                    {
+                      "elmType": "button",
+                      "txtContent": "Save and Show Message",
+                      "attributes": {
+                        "class": "ms-Button ms-Button--primary",
+                        "id": "customSaveButton"
+                      },
+                      "style": {
+                        "background-color": "#0078d4",
+                        "color": "white",
+                        "padding": "10px",
+                        "border-radius": "5px",
+                        "cursor": "pointer"
+                      },
+                      "customRowAction": {
+                        "action": "submitForm"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "elmType": "div",
+                  "attributes": {
+                    "id": "successMessage",
+                    "class": "hidden"
+                  },
+                  "style": {
+                    "background-color": "#dff0d8",
+                    "color": "#3c763d",
+                    "padding": "10px",
+                    "border-radius": "5px",
+                    "margin-top": "10px",
+                    "display": "none"
+                  },
+                  "txtContent": "Form has been successfully saved!"
+                }
+              ]
+            }
+          ]
         }
       ]
-    },
-    {
-      "elmType": "div",
-      "attributes": {
-        "id": "successMessage",
-        "class": "hidden"
-      },
-      "style": {
-        "background-color": "#dff0d8",
-        "color": "#3c763d",
-        "padding": "10px",
-        "border-radius": "5px",
-        "display": "none"
-      },
-      "txtContent": "Form has been successfully saved!"
     }
   ]
 }
