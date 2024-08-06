@@ -15,28 +15,6 @@
         "border-radius": "5px",
         "cursor": "pointer"
       }
-    },
-    {
-      "elmType": "script",
-      "attributes": {
-        "type": "text/javascript"
-      },
-      "txtContent": "
-        document.addEventListener('DOMContentLoaded', function() {
-          var customSaveButton = document.getElementById('customSaveButton');
-          if(customSaveButton) {
-            customSaveButton.addEventListener('click', function() {
-              var saveButton = document.querySelector('[data-automation-id=\"saveButton\"]');
-              if (saveButton) {
-                saveButton.click();
-                setTimeout(function() {
-                  alert('Form has been successfully saved!'); // Show success message
-                }, 1000); // Adjust the timeout as necessary
-              }
-            });
-          }
-        });
-      "
     }
   ]
 }
