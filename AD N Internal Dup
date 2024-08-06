@@ -1,24 +1,13 @@
 {
-  "elmType": "div",
-  "children": [
+  "$schema": "https://developer.microsoft.com/json-schemas/sp/v2/column-formatting.schema.json",
+  "actions": [
     {
-      "elmType": "button",
-      "txtContent": "Save and Close",
-      "attributes": {
-        "class": "ms-Button ms-Button--primary"
-      },
-      "customRowAction": {
-        "action": "submit"
-      }
-    },
-    {
-      "elmType": "button",
-      "txtContent": "Cancel",
-      "attributes": {
-        "class": "ms-Button ms-Button--default"
-      },
-      "customRowAction": {
-        "action": "cancel"
+      "id": "saveAndCloseButton",
+      "title": "Save and Close",
+      "icon": "Save",
+      "action": "custom",
+      "onClick": {
+        "command": "saveAndClose"
       }
     }
   ]
