@@ -2,67 +2,41 @@
   "elmType": "div",
   "children": [
     {
-      "elmType": "section",
+      "elmType": "button",
+      "txtContent": "Save and Close",
       "attributes": {
-        "class": "ms-Grid"
+        "class": "ms-Button ms-Button--primary",
+        "id": "customSaveButton"
       },
-      "children": [
-        {
-          "elmType": "div",
-          "attributes": {
-            "class": "ms-Grid-row"
-          },
-          "children": [
-            {
-              "elmType": "div",
-              "attributes": {
-                "class": "ms-Grid-col ms-u-sm12 ms-u-md12 ms-u-lg12"
-              },
-              "children": [
-                {
-                  "elmType": "div",
-                  "children": [
-                    {
-                      "elmType": "button",
-                      "txtContent": "Save and Show Message",
-                      "attributes": {
-                        "class": "ms-Button ms-Button--primary",
-                        "id": "customSaveButton"
-                      },
-                      "style": {
-                        "background-color": "#0078d4",
-                        "color": "white",
-                        "padding": "10px",
-                        "border-radius": "5px",
-                        "cursor": "pointer"
-                      },
-                      "customRowAction": {
-                        "action": "submitForm"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "elmType": "div",
-                  "attributes": {
-                    "id": "successMessage",
-                    "class": "hidden"
-                  },
-                  "style": {
-                    "background-color": "#dff0d8",
-                    "color": "#3c763d",
-                    "padding": "10px",
-                    "border-radius": "5px",
-                    "margin-top": "10px",
-                    "display": "none"
-                  },
-                  "txtContent": "Form has been successfully saved!"
-                }
-              ]
-            }
-          ]
-        }
-      ]
+      "style": {
+        "background-color": "#0078d4",
+        "color": "white",
+        "padding": "10px",
+        "border-radius": "5px",
+        "cursor": "pointer"
+      }
+    },
+    {
+      "elmType": "script",
+      "attributes": {
+        "type": "text/javascript"
+      },
+      "txtContent": "
+        document.addEventListener('DOMContentLoaded', function() {
+          var customSaveButton = document.getElementById('customSaveButton');
+          if(customSaveButton) {
+            customSaveButton.addEventListener('click', function() {
+              var saveButton = document.querySelector('[data-automation-id=\"saveButton\"]');
+              if (saveButton) {
+                saveButton.click();
+                setTimeout(function() {
+                  alert('Form has been successfully saved!'); // Show success message
+                }, 1000); // Adjust the timeout as necessary
+              }
+            });
+          }
+        });
+      "
     }
   ]
 }
