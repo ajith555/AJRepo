@@ -5,15 +5,20 @@
       "elmType": "button",
       "txtContent": "Save and Close",
       "attributes": {
-        "class": "ms-Button ms-Button--primary",
-        "id": "customSaveButton"
+        "class": "ms-Button ms-Button--primary"
       },
-      "style": {
-        "background-color": "#0078d4",
-        "color": "white",
-        "padding": "10px",
-        "border-radius": "5px",
-        "cursor": "pointer"
+      "customRowAction": {
+        "action": "submit"
+      }
+    },
+    {
+      "elmType": "button",
+      "txtContent": "Cancel",
+      "attributes": {
+        "class": "ms-Button ms-Button--default"
+      },
+      "customRowAction": {
+        "action": "cancel"
       }
     }
   ]
