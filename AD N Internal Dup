@@ -1,18 +1,42 @@
 {
-  "elmType": "button",
-  "txtContent": "Save and Close",
-  "attributes": {
-    "class": "ms-Button ms-Button--primary"
-  },
-  "style": {
-    "background-color": "#0078d4",
-    "color": "white",
-    "padding": "10px",
-    "border-radius": "5px",
-    "cursor": "pointer"
-  },
-  "customRowAction": {
-    "action": "setValue",
-    "actionParams": "{\"Title\":\"=@currentField + ' - saved'\"}"
-  }
+  "elmType": "div",
+  "children": [
+    {
+      "elmType": "div",
+      "style": {
+        "margin-bottom": "10px"
+      },
+      "children": [
+        {
+          "elmType": "button",
+          "txtContent": "Save",
+          "style": {
+            "background-color": "#0078d4",
+            "color": "white",
+            "padding": "10px",
+            "border-radius": "5px",
+            "cursor": "pointer"
+          },
+          "customRowAction": {
+            "action": "submitForm"
+          }
+        }
+      ]
+    },
+    {
+      "elmType": "div",
+      "attributes": {
+        "id": "successMessage",
+        "class": "hidden"
+      },
+      "style": {
+        "background-color": "#dff0d8",
+        "color": "#3c763d",
+        "padding": "10px",
+        "border-radius": "5px",
+        "display": "none"
+      },
+      "txtContent": "Form has been successfully saved!"
+    }
+  ]
 }
