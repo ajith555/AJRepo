@@ -1,77 +1,18 @@
-Dim objExcelApplication As Object ' Use Object type to late-bind Excel
-Dim objExcelWorkbook As Object
-Dim objExcelWorksheet As Object
-Dim objInbox As Outlook.Folder
+Sub RemoveFormulasFromDUP2()
+    Dim ws As Worksheet
+    Dim cell As Range
 
-Sub ExportEmailsNotReplied()
-    ' Initialize Outlook objects
-    Set objInbox = Application.Session.GetDefaultFolder(olFolderInbox)
+    ' Set the worksheet to DUP2
+    Set ws = ThisWorkbook.Sheets("DUP2")
 
-    ' Create Excel objects
-    Set objExcelApplication = CreateObject("Excel.Application")
-    Set objExcelWorkbook = objExcelApplication.Workbooks.Add
-    Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
-
-    ' Set headers in the Excel worksheet
-    With objExcelWorksheet
-        .Cells(1, 1) = "Subject"
-        .Cells(1, 1).Font.Bold = True
-        .Cells(1, 2) = "Received"
-        .Cells(1, 2).Font.Bold = True
-        .Cells(1, 3) = "Sender"
-        .Cells(1, 3).Font.Bold = True
-        .Cells(1, 4) = "Excerpts"
-        .Cells(1, 4).Font.Bold = True
-    End With
-
-    ' Make Excel visible
-    objExcelApplication.Visible = True
-    objExcelWorkbook.Activate
-
-    ' Format Excel worksheet
-    With objExcelWorksheet
-        .Columns("A:C").AutoFit
-        .Rows.RowHeight = 15
-        .Columns("D").ColumnWidth = 100
-        .Columns("D").WrapText = False
-    End With
-
-    ' Process folders and emails
-    Call ProcessFolders(objInbox)
-End Sub
-
-Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder)
-    Dim i As Long
-    Dim objMail As Outlook.MailItem
-    Dim strReplied As String
-    Dim nDateDiff As Integer
-    Dim nLastRow As Integer
-
-    For i = objCurrentFolder.Items.Count To 1 Step -1
-        If objCurrentFolder.Items(i).Class = olMail Then
-            Set objMail = objCurrentFolder.Items(i)
-            strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
-            
-            ' Calculate the time difference in hours (48 hours = 2 days)
-            nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
-            
-            If (Not (strReplied = 102)) And (Not (strReplied = 103)) And (nDateDiff <= 48) Then
-                ' Late-bind Excel worksheet
-                nLastRow = objExcelWorksheet.Cells(objExcelWorksheet.Rows.Count, "A").End(-4162).Row + 1
-                With objExcelWorksheet
-                    .Cells(nLastRow, 1) = objMail.Subject
-                    .Cells(nLastRow, 2) = objMail.ReceivedTime
-                    .Cells(nLastRow, 3) = objMail.SenderName
-                    .Cells(nLastRow, 4) = Left(Trim(objMail.Body), 100) & "..."
-                End With
-            End If
+    ' Loop through each cell in the used range of the DUP2 sheet
+    For Each cell In ws.UsedRange
+        ' Check if the cell contains a formula
+        If cell.HasFormula Then
+            ' Replace the formula with its calculated value
+            cell.Value = cell.Value
         End If
-    Next
-
-    ' Recursively process subfolders
-    If objCurrentFolder.Folders.Count > 0 Then
-        For Each objSubfolder In objCurrentFolder.Folders
-            Call ProcessFolders(objSubfolder)
-        Next
-    End If
+    Next cell
+    
+    MsgBox "Formulas have been removed and replaced with their values in the DUP2 sheet."
 End Sub
