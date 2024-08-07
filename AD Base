@@ -1,29 +1,43 @@
-<script type="text/javascript">
-    // Function to display a success message
-    function showSuccessMessage() {
-        alert("Changes saved successfully!");
-    }
+Here's a concise and effective content outline for your PowerPoint presentation to the CSR team:
 
-    // Function to override the save button behavior
-    function overrideSaveButton() {
-        // Get the save button element
-        var saveButton = document.querySelector("input[value='Save']");
-        
-        if (saveButton) {
-            // Add an event listener to the save button
-            saveButton.addEventListener("click", function(event) {
-                event.preventDefault(); // Prevent the default save behavior
-                showSuccessMessage(); // Show the success message
-                
-                // Optionally, you can trigger the actual save operation here
-                // For example, you can use the SharePoint JSOM or REST API to save the changes
-                // Execute the save operation here
-                
-                // If you don't want to trigger the actual save operation, you can remove the above comment and leave the function as it is
-            });
-        }
-    }
+### Slide 1: Introduction
+- **Title:** Proposal for a CSR-Funded Educational and Medical Awareness Film
+- **Introduction:** Brief introduction of yourself and your filmmaking background.
 
-    // Execute the override function when the page is loaded
-    document.addEventListener("DOMContentLoaded", overrideSaveButton);
-</script>
+### Slide 2: The Idea
+- **Objective:** 
+  - Create a 1.5-hour film focused on the importance of education and the medical system.
+  - Address key societal issues and inspire change.
+- **CSR Alignment:**
+  - Aligns with CSR goals of educating people and supporting NGOs.
+  - Leverage storytelling to amplify CSR initiatives' impact.
+
+### Slide 3: The Plan
+- **Content Outline:**
+  - **Part 1:** Education System - Challenges and Opportunities.
+  - **Part 2:** Medical System - Accessibility and Importance of Healthcare.
+- **Implementation:**
+  - Pre-production: Research, scriptwriting, casting.
+  - Production: Filming, editing.
+  - Post-production: Distribution, marketing.
+- **Budget Estimate:**
+  - Detailed breakdown of anticipated costs.
+
+### Slide 4: My Experience
+- **Filmmaking Background:**
+  - Produced, directed, and acted in various films.
+  - Latest film "Gabhira":
+    - Available on Amazon Prime (UK, US).
+    - Available on CPics, Forture Today OTTs, and YouTube (India).
+- **Skills and Expertise:**
+  - Proven track record in film production and direction.
+  - Experience in delivering impactful messages through cinema.
+
+### Slide 5: Conclusion
+- **Call to Action:**
+  - Seek support and collaboration from the CSR team.
+  - Highlight the potential positive impact on society.
+- **Contact Information:**
+  - Provide your contact details for further discussion.
+
+Feel free to adjust the content according to your preferences and the specific requirements of your CSR team.
