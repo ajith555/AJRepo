@@ -1,18 +1,28 @@
 Sub RemoveFormulasFromDUP2()
     Dim ws As Worksheet
     Dim cell As Range
+    Dim formulaCells As Range
+    Dim cellArray() As Variant
 
     ' Set the worksheet to DUP2
     Set ws = ThisWorkbook.Sheets("DUP2")
 
-    ' Loop through each cell in the used range of the DUP2 sheet
-    For Each cell In ws.UsedRange
-        ' Check if the cell contains a formula
-        If cell.HasFormula Then
-            ' Replace the formula with its calculated value
-            cell.Value = cell.Value
-        End If
-    Next cell
-    
-    MsgBox "Formulas have been removed and replaced with their values in the DUP2 sheet."
+    ' Find all formula cells in the used range
+    On Error Resume Next
+    Set formulaCells = ws.UsedRange.SpecialCells(xlCellTypeFormulas)
+    On Error GoTo 0
+
+    If Not formulaCells Is Nothing Then
+        ' Store values of formula cells
+        cellArray = formulaCells.Value
+        
+        ' Replace each formula with its calculated value
+        For Each cell In formulaCells
+            cell.Value = cellArray(cell.Row - formulaCells.Row + 1, cell.Column - formulaCells.Column + 1)
+        Next cell
+        
+        MsgBox "Formulas have been removed and replaced with their values in the DUP2 sheet."
+    Else
+        MsgBox "No formulas found in the DUP2 sheet."
+    End If
 End Sub
