@@ -1,30 +1,19 @@
-# Define variables
-$sharedDriveFolderPath = "C:\Path\To\SharedDrive\Folder"
-$sharePointSiteUrl = "https://yourcompany.sharepoint.com/sites/yoursite"
-$sharePointFolderPath = "/Shared Documents/YourFolder"  # Relative path within the document library
-$username = "your.email@company.com"
-$password = "yourpassword"
+# Define the shared drive path
+$sharedDriveFolderPath = "\\ServerName\SharedFolder"  # Replace with your shared drive path
 
-# Create a WebClient object for uploading
-$webClient = New-Object System.Net.WebClient
+# Check if the shared drive is accessible
+if (Test-Path $sharedDriveFolderPath) {
+    Write-Host "Shared drive is connected."
 
-# Set the credentials
-$securePassword = ConvertTo-SecureString $password -AsPlainText -Force
-$credentials = New-Object System.Management.Automation.PSCredential($username, $securePassword)
-$webClient.Credentials = $credentials
+    # List the files in the shared drive folder
+    $files = Get-ChildItem -Path $sharedDriveFolderPath
 
-# Get all files from the shared drive folder
-$files = Get-ChildItem -Path $sharedDriveFolderPath
-
-# Loop through each file and upload to SharePoint
-foreach ($file in $files) {
-    $filePath = $file.FullName
-    $fileName = $file.Name
-    $targetUrl = "$sharePointSiteUrl/$sharePointFolderPath/$fileName"
-
-    # Upload the file to SharePoint
-    $webClient.UploadFile($targetUrl, $filePath)
+    if ($files.Count -gt 0) {
+        Write-Host "Files in the shared drive:"
+        $files | ForEach-Object { Write-Host $_.Name }
+    } else {
+        Write-Host "No files found in the shared drive folder."
+    }
+} else {
+    Write-Host "Shared drive is not connected."
 }
-
-# Cleanup
-$webClient.Dispose()
