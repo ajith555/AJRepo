@@ -1,36 +1,18 @@
-# Define variables
-$sharePointSiteUrl = "https://yourcompany.sharepoint.com/sites/yoursite"
-$sharePointFolderPath = "/Shared Documents/YourFolder"
-$username = "your.email@company.com"
-$password = "yourpassword"
+# SharePoint Online site URL and folder path
+$siteUrl = "https://yourtenant.sharepoint.com/sites/yoursite"
+$folderPath = "/sites/yoursite/Shared Documents/YourFolder"
 
-# Convert password to secure string
-$securePassword = ConvertTo-SecureString $password -AsPlainText -Force
-$credentials = New-Object System.Management.Automation.PSCredential($username, $securePassword)
+# Credentials (you will be prompted to enter your password)
+$credentials = Get-Credential
 
-# Create a header for basic authentication
-$encodedCreds = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes(("$username:$password")))
-$headers = @{
-    Authorization = "Basic $encodedCreds"
+# Connect to SharePoint Online
+Connect-SPOService -Url $siteUrl -Credential $credentials
+
+# Retrieve and list files
+$files = Get-SPOFile -FolderUrl $folderPath
+foreach ($file in $files) {
+    Write-Output $file.Name
 }
 
-# Define the full URL to the SharePoint folder
-$fullUrl = "$sharePointSiteUrl/_api/web/GetFolderByServerRelativeUrl('$sharePointFolderPath')/Files"
-
-# Send a request to SharePoint
-try {
-    $response = Invoke-RestMethod -Uri $fullUrl -Headers $headers -Method Get
-    Write-Host "Connected to SharePoint folder."
-
-    # Parse the response to get the file names
-    $files = $response.d.results
-
-    if ($files.Count -gt 0) {
-        Write-Host "Files in the SharePoint folder:"
-        $files | ForEach-Object { Write-Host $_.Name }
-    } else {
-        Write-Host "No files found in the SharePoint folder."
-    }
-} catch {
-    Write-Host "Failed to connect to SharePoint folder. Error: $_"
-}
+# Disconnect
+Disconnect-SPOService
