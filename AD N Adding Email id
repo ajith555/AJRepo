@@ -1,18 +1,12 @@
-# SharePoint Online site URL and folder path
-$siteUrl = "https://yourtenant.sharepoint.com/sites/yoursite"
-$folderPath = "/sites/yoursite/Shared Documents/YourFolder"
-
-# Credentials (you will be prompted to enter your password)
-$credentials = Get-Credential
+# Define variables
+$SiteURL = "https://ubscloud.sharepoint.com/teams/ABCDAUTOMATION"
+$FolderRelativeURL = "/Move"
 
 # Connect to SharePoint Online
-Connect-SPOService -Url $siteUrl -Credential $credentials
+Connect-PnPOnline -Url $SiteURL -Interactive
 
-# Retrieve and list files
-$files = Get-SPOFile -FolderUrl $folderPath
-foreach ($file in $files) {
-    Write-Output $file.Name
-}
+# Get the files in the specified folder
+$Files = Get-PnPFolderItem -FolderSiteRelativeUrl $FolderRelativeURL -ItemType File
 
-# Disconnect
-Disconnect-SPOService
+# Display the files
+$Files | Select-Object Name, ServerRelativeUrl
