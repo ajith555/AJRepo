@@ -1,12 +1,11 @@
-# Define variables
-$SiteURL = "https://ubscloud.sharepoint.com/teams/ABCDAUTOMATION"
-$FolderRelativeURL = "/Move"
+ # Define source and destination paths
+$sourcePath = "C:\SharedDriveFolder\"  # Replace with your shared drive folder path
+$destinationPath = "C:\Users\YourUsername\OneDrive\DestinationFolder\"  # Replace with your OneDrive folder path
 
-# Connect to SharePoint Online
-Connect-PnPOnline -Url $SiteURL -Interactive
+# Get all files from the source directory
+Get-ChildItem -Path $sourcePath -File | ForEach-Object {
+    # Copy each file to the destination directory with overwrite
+    Copy-Item -Path $_.FullName -Destination $destinationPath -Force
+}
 
-# Get the files in the specified folder
-$Files = Get-PnPFolderItem -FolderSiteRelativeUrl $FolderRelativeURL -ItemType File
-
-# Display the files
-$Files | Select-Object Name, ServerRelativeUrl
+Write-Host "Files copied successfully from $sourcePath to $destinationPath"
