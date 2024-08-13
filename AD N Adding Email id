@@ -1,11 +1,25 @@
- # Define source and destination paths
-$sourcePath = "C:\SharedDriveFolder\"  # Replace with your shared drive folder path
-$destinationPath = "C:\Users\YourUsername\OneDrive\DestinationFolder\"  # Replace with your OneDrive folder path
+import os
+import shutil
 
-# Get all files from the source directory
-Get-ChildItem -Path $sourcePath -File | ForEach-Object {
-    # Copy each file to the destination directory with overwrite
-    Copy-Item -Path $_.FullName -Destination $destinationPath -Force
-}
+# Define the shared drive path and the OneDrive path
+shared_drive_path = r"\\SharedDrive\YourFolder"
+one_drive_path = r"C:\Users\YourUsername\OneDrive\YourFolder"
 
-Write-Host "Files copied successfully from $sourcePath to $destinationPath"
+# Function to copy files from shared drive to OneDrive
+def copy_files(shared_drive_path, one_drive_path):
+    # Iterate over all the files in the shared drive directory
+    for root, dirs, files in os.walk(shared_drive_path):
+        # Create corresponding directories in OneDrive
+        for dir in dirs:
+            dest_dir = os.path.join(root.replace(shared_drive_path, one_drive_path), dir)
+            os.makedirs(dest_dir, exist_ok=True)
+
+        # Copy each file
+        for file in files:
+            src_file = os.path.join(root, file)
+            dest_file = os.path.join(root.replace(shared_drive_path, one_drive_path), file)
+            # Overwrite the file if it already exists in OneDrive
+            shutil.copy2(src_file, dest_file)
+
+# Run the function
+copy_files(shared_drive_path, one_drive_path)
