@@ -1,43 +1,50 @@
-Here's a concise and effective content outline for your PowerPoint presentation to the CSR team:
+# Define paths
+$sourceFilePath = "C:\Source Files\U99.xlsx"
+$rulesFilePath = "C:\rules.xlsx"
+$coordinatorsPath = "C:\Coordinators\"
 
-### Slide 1: Introduction
-- **Title:** Proposal for a CSR-Funded Educational and Medical Awareness Film
-- **Introduction:** Brief introduction of yourself and your filmmaking background.
+# Load the Excel COM object
+$excel = New-Object -ComObject Excel.Application
+$excel.Visible = $false
+$excel.DisplayAlerts = $false
 
-### Slide 2: The Idea
-- **Objective:** 
-  - Create a 1.5-hour film focused on the importance of education and the medical system.
-  - Address key societal issues and inspire change.
-- **CSR Alignment:**
-  - Aligns with CSR goals of educating people and supporting NGOs.
-  - Leverage storytelling to amplify CSR initiatives' impact.
+# Open the rules.xlsx file
+$workbook = $excel.Workbooks.Open($rulesFilePath)
+$sheet = $workbook.Sheets.Item(1)
 
-### Slide 3: The Plan
-- **Content Outline:**
-  - **Part 1:** Education System - Challenges and Opportunities.
-  - **Part 2:** Medical System - Accessibility and Importance of Healthcare.
-- **Implementation:**
-  - Pre-production: Research, scriptwriting, casting.
-  - Production: Filming, editing.
-  - Post-production: Distribution, marketing.
-- **Budget Estimate:**
-  - Detailed breakdown of anticipated costs.
+# Get the current month and year
+$currentMonth = (Get-Date).ToString("MMMM")
+$currentYear = (Get-Date).Year
 
-### Slide 4: My Experience
-- **Filmmaking Background:**
-  - Produced, directed, and acted in various films.
-  - Latest film "Gabhira":
-    - Available on Amazon Prime (UK, US).
-    - Available on CPics, Forture Today OTTs, and YouTube (India).
-- **Skills and Expertise:**
-  - Proven track record in film production and direction.
-  - Experience in delivering impactful messages through cinema.
+# Get the last row with data in the B column
+$lastRow = $sheet.Cells($sheet.Rows.Count, "B").End(-4162).Row
 
-### Slide 5: Conclusion
-- **Call to Action:**
-  - Seek support and collaboration from the CSR team.
-  - Highlight the potential positive impact on society.
-- **Contact Information:**
-  - Provide your contact details for further discussion.
+# Loop through the rows starting from the 3rd row
+for ($row = 3; $row -le $lastRow; $row++) {
+    # Get the folder and file name from column B
+    $folderName = $sheet.Cells.Item($row, 2).Text
+    $fileName = $sheet.Cells.Item($row, 2).Text
 
-Feel free to adjust the content according to your preferences and the specific requirements of your CSR team.
+    # Construct the folder path
+    $folderPath = Join-Path $coordinatorsPath $folderName
+
+    # Check if the folder exists, if not, create it
+    if (-not (Test-Path -Path $folderPath)) {
+        New-Item -ItemType Directory -Path $folderPath | Out-Null
+    }
+
+    # Construct the destination file name
+    $destinationFileName = "$fileName" + "_$currentMonth_$currentYear.xlsx"
+    $destinationFilePath = Join-Path $folderPath $destinationFileName
+
+    # Copy the source file to the destination folder
+    Copy-Item -Path $sourceFilePath -Destination $destinationFilePath -Force
+}
+
+# Clean up
+$workbook.Close()
+$excel.Quit()
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
+Remove-Variable excel
+
+Write-Host "Files copied and folders created successfully."
