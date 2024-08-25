@@ -37,7 +37,7 @@ for ($row = 3; $row -le $lastRow; $row++) {
     $destinationFileName = "${fileName}_${currentMonth}_${currentYear}.xlsx"
     $destinationFilePath = Join-Path $folderPath $destinationFileName
 
-    # Copy the source file to the destination folder
+    # Copy the source file to the destination folder, overwriting if it already exists
     Copy-Item -Path $sourceFilePath -Destination $destinationFilePath -Force
 }
 
