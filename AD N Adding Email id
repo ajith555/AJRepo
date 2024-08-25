@@ -1,25 +1,50 @@
-import os
-import shutil
+# Define paths
+$sourceFilePath = "C:\Source Files\U99.xlsx"
+$rulesFilePath = "C:\rules.xlsx"
+$coordinatorsPath = "C:\Coordinators\"
 
-# Define the shared drive path and the OneDrive path
-shared_drive_path = r"\\SharedDrive\YourFolder"
-one_drive_path = r"C:\Users\YourUsername\OneDrive\YourFolder"
+# Load the Excel COM object
+$excel = New-Object -ComObject Excel.Application
+$excel.Visible = $false
+$excel.DisplayAlerts = $false
 
-# Function to copy files from shared drive to OneDrive
-def copy_files(shared_drive_path, one_drive_path):
-    # Iterate over all the files in the shared drive directory
-    for root, dirs, files in os.walk(shared_drive_path):
-        # Create corresponding directories in OneDrive
-        for dir in dirs:
-            dest_dir = os.path.join(root.replace(shared_drive_path, one_drive_path), dir)
-            os.makedirs(dest_dir, exist_ok=True)
+# Open the rules.xlsx file
+$workbook = $excel.Workbooks.Open($rulesFilePath)
+$sheet = $workbook.Sheets.Item(1)
 
-        # Copy each file
-        for file in files:
-            src_file = os.path.join(root, file)
-            dest_file = os.path.join(root.replace(shared_drive_path, one_drive_path), file)
-            # Overwrite the file if it already exists in OneDrive
-            shutil.copy2(src_file, dest_file)
+# Get the current month and year
+$currentMonth = (Get-Date).ToString("MMMM")
+$currentYear = (Get-Date).Year
 
-# Run the function
-copy_files(shared_drive_path, one_drive_path)
+# Get the last row with data in the B column
+$lastRow = $sheet.Cells($sheet.Rows.Count, "B").End(-4162).Row
+
+# Loop through the rows starting from the 3rd row
+for ($row = 3; $row -le $lastRow; $row++) {
+    # Get the folder and file name from column B
+    $folderName = $sheet.Cells.Item($row, 2).Text
+    $fileName = $sheet.Cells.Item($row, 2).Text
+
+    # Construct the folder path
+    $folderPath = Join-Path $coordinatorsPath $folderName
+
+    # Check if the folder exists, if not, create it
+    if (-not (Test-Path -Path $folderPath)) {
+        New-Item -ItemType Directory -Path $folderPath | Out-Null
+    }
+
+    # Construct the destination file name
+    $destinationFileName = "${fileName}_${currentMonth}_${currentYear}.xlsx"
+    $destinationFilePath = Join-Path $folderPath $destinationFileName
+
+    # Copy the source file to the destination folder
+    Copy-Item -Path $sourceFilePath -Destination $destinationFilePath -Force
+}
+
+# Clean up
+$workbook.Close()
+$excel.Quit()
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
+Remove-Variable excel
+
+Write-Host "Files copied and folders created successfully."
