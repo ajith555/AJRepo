@@ -41,10 +41,21 @@ for ($row = 3; $row -le $lastRow; $row++) {
     Copy-Item -Path $sourceFilePath -Destination $destinationFilePath -Force
 }
 
-# Clean up
+# Save and close the rules workbook
+$workbook.Save()
 $workbook.Close()
+
+# Quit Excel application
 $excel.Quit()
+
+# Release COM objects to avoid file locking
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($sheet) | Out-Null
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($workbook) | Out-Null
 [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
+
+# Remove variables
+Remove-Variable sheet
+Remove-Variable workbook
 Remove-Variable excel
 
-Write-Host "Files copied and folders created successfully."
+Write-Host "Files copied, folders created, and Excel closed successfully."
