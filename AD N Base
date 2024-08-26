@@ -39,11 +39,13 @@ for ($row = 3; $row -le $lastRow; $row++) {
     # Construct the folder path
     $folderPath = Join-Path $coordinatorsPath $folderName
 
-    # Check if the folder exists, if not, create it and track it
+    # Check if the folder has already been created
     if (-not $foldersCreated.ContainsKey($folderName)) {
+        # Create the folder if it doesn't exist
         if (-not (Test-Path -Path $folderPath)) {
             New-Item -ItemType Directory -Path $folderPath | Out-Null
         }
+        # Track that this folder has been created
         $foldersCreated[$folderName] = $true
     }
 
