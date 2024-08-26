@@ -25,21 +25,28 @@ $sheet = $workbook.Sheets.Item(1)
 $currentMonth = (Get-Date).ToString("MMMM")
 $currentYear = (Get-Date).Year
 
-# Get the last row with data in the B column
+# Get the last row with data in column B
 $lastRow = $sheet.Cells($sheet.Rows.Count, "B").End(-4162).Row
+
+# Create a dictionary to keep track of folder creation
+$folderCreated = @{}
 
 # Loop through the rows starting from the 3rd row
 for ($row = 3; $row -le $lastRow; $row++) {
-    # Get the folder and file name from column B
+    # Get the folder and file names
     $folderName = $sheet.Cells.Item($row, 2).Text
-    $fileName = $sheet.Cells.Item($row, 2).Text
+    $fileName = $sheet.Cells.Item($row, 6).Text  # Column F contains file names
 
     # Construct the folder path
     $folderPath = Join-Path $coordinatorsPath $folderName
 
     # Check if the folder exists, if not, create it
-    if (-not (Test-Path -Path $folderPath)) {
-        New-Item -ItemType Directory -Path $folderPath | Out-Null
+    if (-not $folderCreated.ContainsKey($folderName)) {
+        if (-not (Test-Path -Path $folderPath)) {
+            New-Item -ItemType Directory -Path $folderPath | Out-Null
+        }
+        # Mark folder as created
+        $folderCreated[$folderName] = $true
     }
 
     # Construct the destination file name
