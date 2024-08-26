@@ -28,7 +28,7 @@ $currentYear = (Get-Date).Year
 # Get the last row with data in column B
 $lastRow = $sheet.Cells($sheet.Rows.Count, "B").End(-4162).Row
 
-# Create a hashtable to store folder names and their files
+# Create a hashtable to store unique folder names and their corresponding files
 $folders = @{}
 
 # Loop through the rows starting from the 3rd row
@@ -47,12 +47,12 @@ for ($row = 3; $row -le $lastRow; $row++) {
     }
 }
 
-# Create a folder for each unique folder name and save all related files inside it
+# Process each folder and its files
 foreach ($folderName in $folders.Keys) {
     # Construct the folder path
     $folderPath = Join-Path $coordinatorsPath $folderName
 
-    # Check if the folder exists, if not, create it
+    # Create the folder only if it doesn't already exist
     if (-not (Test-Path -Path $folderPath)) {
         New-Item -ItemType Directory -Path $folderPath | Out-Null
     }
