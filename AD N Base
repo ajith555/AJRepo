@@ -74,13 +74,19 @@ foreach ($fileName in $filterCriteria.Keys) {
     $workbook = $excel.Workbooks.Open($tempFilePath)
     $sheet = $workbook.Sheets.Item(1)
 
-    # Apply filters based on the criteria
-    $filters = $filterCriteria[$fileName]
-    foreach ($column in $filters.Keys) {
-        $filterValues = $filters[$column] | Where-Object { $_ -ne "ALL" }
-        if ($filterValues.Count -gt 0) {
-            $columnIndex = 96 + ([int][char]$column[1]) - 65  # Convert CR, CT, etc. to column numbers
-            $sheet.UsedRange.AutoFilter($columnIndex, $filterValues, 7)  # 7 = xlFilterValues
+    # Ensure the sheet has data before attempting to filter
+    $usedRange = $sheet.UsedRange
+
+    if ($usedRange -and $usedRange.Rows.Count -gt 1) {
+        # Apply filters based on the criteria starting from the 16th row
+        $filters = $filterCriteria[$fileName]
+        foreach ($column in $filters.Keys) {
+            $filterValues = $filters[$column] | Where-Object { $_ -ne "ALL" }
+            if ($filterValues.Count -gt 0) {
+                # Convert column letter (e.g., CR, CT) to a column number
+                $columnIndex = $sheet.Range($column & "16").Column
+                $sheet.Range("A15:" + $sheet.Cells($usedRange.Rows.Count + 15, $usedRange.Columns.Count).Address()).AutoFilter($columnIndex, $filterValues, 7)  # 7 = xlFilterValues
+            }
         }
     }
 
