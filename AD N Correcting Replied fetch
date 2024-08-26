@@ -88,21 +88,20 @@ Remove-Variable sheet
 Remove-Variable workbook
 Remove-Variable excel
 
-# Check for duplicate folders and merge contents
-$folderNames = Get-ChildItem -Path $coordinatorsPath -Directory | Select-Object -ExpandProperty Name | Sort-Object
-$uniqueFolderNames = $folderNames | Get-Unique
+# Final Check for Duplicates: Merge and Delete
+$folderNames = Get-ChildItem -Path $coordinatorsPath -Directory | Group-Object Name
 
-foreach ($uniqueFolder in $uniqueFolderNames) {
-    $duplicateFolders = Get-ChildItem -Path $coordinatorsPath -Directory -Filter "$uniqueFolder*" | Sort-Object FullName
-    
-    if ($duplicateFolders.Count -gt 1) {
-        # Merge contents of duplicate folders into the first folder
-        $targetFolder = $duplicateFolders[0]
-        
-        for ($i = 1; $i -lt $duplicateFolders.Count; $i++) {
-            $currentFolder = $duplicateFolders[$i]
-            Get-ChildItem -Path $currentFolder.FullName | Move-Item -Destination $targetFolder.FullName -Force
-            Remove-Item -Path $currentFolder.FullName -Recurse -Force
+foreach ($group in $folderNames) {
+    if ($group.Count -gt 1) {
+        # There are duplicate folders, merge them
+        $primaryFolder = $group.Group[0].FullName
+
+        for ($i = 1; $i -lt $group.Count; $i++) {
+            $duplicateFolder = $group.Group[$i].FullName
+            # Move contents from duplicate folder to primary folder
+            Get-ChildItem -Path $duplicateFolder -Recurse | Move-Item -Destination $primaryFolder -Force
+            # Remove the now-empty duplicate folder
+            Remove-Item -Path $duplicateFolder -Recurse -Force
         }
     }
 }
