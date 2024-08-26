@@ -3,100 +3,61 @@ $sourceFilePath = "C:\Source Files\U99.xlsx"
 $rulesFilePath = "C:\rules.xlsx"
 $coordinatorsPath = "C:\Coordinators\"
 
+# Check if the Coordinators folder exists, create it if it doesn't
+if (-not (Test-Path -Path $coordinatorsPath)) {
+    New-Item -ItemType Directory -Path $coordinatorsPath | Out-Null
+}
+
 # Load the Excel COM object
 $excel = New-Object -ComObject Excel.Application
 $excel.Visible = $false
 $excel.DisplayAlerts = $false
 
 # Open the rules.xlsx file
-$rulesWorkbook = $excel.Workbooks.Open($rulesFilePath)
-$rulesSheet = $rulesWorkbook.Sheets.Item(1)
+$workbook = $excel.Workbooks.Open($rulesFilePath)
+$sheet = $workbook.Sheets.Item(1)
 
 # Get the current month and year
 $currentMonth = (Get-Date).ToString("MMMM")
 $currentYear = (Get-Date).Year
 
-# Get the last row with data in the B column of rules.xlsx
-$lastRow = $rulesSheet.Cells($rulesSheet.Rows.Count, "B").End(-4162).Row
+# Get the last row with data in the B column
+$lastRow = $sheet.Cells($sheet.Rows.Count, "B").End(-4162).Row
 
-# Create a dictionary to hold filter criteria for each unique folder name
-$filterCriteria = @{}
+# Delete all contents in the Coordinators folder
+Remove-Item -Path "$coordinatorsPath\*" -Recurse -Force
+
+# Create a dictionary to track processed folder names
+$foldersCreated = @{}
 
 # Loop through the rows starting from the 3rd row
 for ($row = 3; $row -le $lastRow; $row++) {
-    # Get the file name from column B
-    $fileName = $rulesSheet.Cells.Item($row, 2).Text
+    # Get the folder name from column B and file suffix from column F
+    $folderName = $sheet.Cells.Item($row, 2).Text
+    $fileSuffix = $sheet.Cells.Item($row, 6).Text
 
-    # Collect filter values from columns E, F, G, H, I
-    $filters = @{
-        "CR" = $rulesSheet.Cells.Item($row, 5).Text
-        "CT" = $rulesSheet.Cells.Item($row, 6).Text
-        "CV" = $rulesSheet.Cells.Item($row, 7).Text
-        "CX" = $rulesSheet.Cells.Item($row, 8).Text
-        "CZ" = $rulesSheet.Cells.Item($row, 9).Text
-    }
-
-    # If the file name already exists in the dictionary, merge the filter values
-    if ($filterCriteria.ContainsKey($fileName)) {
-        foreach ($key in $filters.Keys) {
-            if ($filters[$key] -ne "ALL") {
-                $filterCriteria[$fileName][$key] += @($filters[$key])
-            }
-        }
-    } else {
-        # Otherwise, add a new entry to the dictionary
-        $filterCriteria[$fileName] = $filters
-    }
-}
-
-# Close the rules workbook
-$rulesWorkbook.Close()
-
-# Process each file name in the filter criteria
-foreach ($fileName in $filterCriteria.Keys) {
     # Construct the folder path
-    $folderPath = Join-Path $coordinatorsPath $fileName
+    $folderPath = Join-Path $coordinatorsPath $folderName
 
-    # Check if the folder exists, if not, create it
-    if (-not (Test-Path -Path $folderPath)) {
-        New-Item -ItemType Directory -Path $folderPath | Out-Null
+    # Check if the folder exists, if not, create it and track it
+    if (-not $foldersCreated.ContainsKey($folderName)) {
+        if (-not (Test-Path -Path $folderPath)) {
+            New-Item -ItemType Directory -Path $folderPath | Out-Null
+        }
+        $foldersCreated[$folderName] = $true
     }
 
     # Construct the destination file name
-    $destinationFileName = "${fileName}_${currentMonth}_${currentYear}.xlsx"
+    $destinationFileName = "${folderName}_${fileSuffix}_${currentMonth}_${currentYear}.xlsx"
     $destinationFilePath = Join-Path $folderPath $destinationFileName
 
-    # Copy the source file to a temporary location
-    $tempFilePath = Join-Path $coordinatorsPath "Temp_$destinationFileName"
-    Copy-Item -Path $sourceFilePath -Destination $tempFilePath -Force
-
-    # Open the copied file
-    $workbook = $excel.Workbooks.Open($tempFilePath)
-    $sheet = $workbook.Sheets.Item(1)
-
-    # Ensure the sheet has data before attempting to filter
-    $usedRange = $sheet.UsedRange
-
-    if ($usedRange -and $usedRange.Rows.Count -gt 1) {
-        # Apply filters based on the criteria starting from the 16th row
-        $filters = $filterCriteria[$fileName]
-        foreach ($column in $filters.Keys) {
-            $filterValues = $filters[$column] | Where-Object { $_ -ne "ALL" }
-            if ($filterValues.Count -gt 0) {
-                # Convert column letter (e.g., CR, CT) to a column number
-                $columnIndex = $sheet.Range($column & "16").Column
-                $sheet.Range("A15:" + $sheet.Cells($usedRange.Rows.Count + 15, $usedRange.Columns.Count).Address()).AutoFilter($columnIndex, $filterValues, 7)  # 7 = xlFilterValues
-            }
-        }
-    }
-
-    # Save and close the workbook
-    $workbook.SaveAs($destinationFilePath)
-    $workbook.Close()
-
-    # Remove the temporary file
-    Remove-Item -Path $tempFilePath -Force
+    # Copy the source file to the destination folder, overwriting if it already exists
+    Copy-Item -Path $sourceFilePath -Destination $destinationFilePath -Force
 }
+
+# Save and close the rules workbook
+$workbook.Save()
+$workbook.Close()
 
 # Quit Excel application
 $excel.Quit()
@@ -110,7 +71,5 @@ $excel.Quit()
 Remove-Variable sheet
 Remove-Variable workbook
 Remove-Variable excel
-Remove-Variable rulesSheet
-Remove-Variable rulesWorkbook
 
-Write-Host "Folders created, files copied, data filtered, and Excel closed successfully."
+Write-Host "Files copied, folders created, and Excel closed successfully."
