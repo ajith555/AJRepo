@@ -3,6 +3,15 @@ $sourceFilePath = "C:\Source Files\U99.xlsx"
 $rulesFilePath = "C:\rules.xlsx"
 $coordinatorsPath = "C:\Coordinators\"
 
+# Check if the Coordinators folder exists
+if (Test-Path -Path $coordinatorsPath) {
+    # If it exists, delete everything inside it
+    Get-ChildItem -Path $coordinatorsPath | ForEach-Object { Remove-Item -Path $_.FullName -Recurse -Force }
+} else {
+    # If it does not exist, create the Coordinators folder
+    New-Item -ItemType Directory -Path $coordinatorsPath | Out-Null
+}
+
 # Load the Excel COM object
 $excel = New-Object -ComObject Excel.Application
 $excel.Visible = $false
