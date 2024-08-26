@@ -1,17 +1,23 @@
-# Define the source directory
-$source = "C:\SourceFolder"
+# Define source and destination paths
+$sourceFile = "C:\SourceFolder\earthing"
+$destinationBase = "C:\DestinationFolder\"
 
-# Define the destination directory and construct the new folder name
-$destinationBase = "C:\DestinationFolder"
-$currentMonth = (Get-Date).ToString("MMMM") # Current month name
-$currentYear = (Get-Date).ToString("yyyy")   # Current year
-$folderName = "Files Sent_$currentMonth_$currentYear"
-$destination = Join-Path -Path $destinationBase -ChildPath $folderName
+# Get current month and year
+$currentMonth = (Get-Date).ToString("MM")
+$currentYear = (Get-Date).ToString("yyyy")
 
-# Create the destination directory if it doesn't exist
-if (-not (Test-Path $destination)) {
-    New-Item -Path $destination -ItemType Directory
+# Define the destination folder name
+$destinationFolder = "$destinationBase\Files Sent_$currentMonth_$currentYear"
+
+# Create the destination folder if it doesn't exist
+if (-not (Test-Path $destinationFolder)) {
+    New-Item -Path $destinationFolder -ItemType Directory
 }
 
-# Copy all files and subdirectories from the source to the destination
-Copy-Item -Path $source\* -Destination $destination -Recurse -Force
+# Define the destination file path
+$destinationFile = Join-Path -Path $destinationFolder -ChildPath "earthing"
+
+# Copy the file
+Copy-Item -Path $sourceFile -Destination $destinationFile -Force
+
+Write-Output "File copied to $destinationFile"
