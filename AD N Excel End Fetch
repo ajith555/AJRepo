@@ -2,6 +2,12 @@
 $sourceFile = "C:\SourceFolder\earthing"
 $destinationBase = "C:\DestinationFolder\"
 
+# Check if the source file exists
+if (-not (Test-Path $sourceFile)) {
+    Write-Error "Source file not found: $sourceFile"
+    exit
+}
+
 # Get current month and year
 $currentMonth = (Get-Date).ToString("MM")
 $currentYear = (Get-Date).ToString("yyyy")
@@ -11,13 +17,24 @@ $destinationFolder = "$destinationBase\Files Sent_$currentMonth_$currentYear"
 
 # Create the destination folder if it doesn't exist
 if (-not (Test-Path $destinationFolder)) {
-    New-Item -Path $destinationFolder -ItemType Directory
+    try {
+        New-Item -Path $destinationFolder -ItemType Directory -Force
+        Write-Output "Destination folder created: $destinationFolder"
+    }
+    catch {
+        Write-Error "Failed to create destination folder: $($_.Exception.Message)"
+        exit
+    }
 }
 
 # Define the destination file path
 $destinationFile = Join-Path -Path $destinationFolder -ChildPath "earthing"
 
 # Copy the file
-Copy-Item -Path $sourceFile -Destination $destinationFile -Force
-
-Write-Output "File copied to $destinationFile"
+try {
+    Copy-Item -Path $sourceFile -Destination $destinationFile -Force
+    Write-Output "File copied to $destinationFile"
+}
+catch {
+    Write-Error "Failed to copy file: $($_.Exception.Message)"
+}
