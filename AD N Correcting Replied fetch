@@ -88,4 +88,23 @@ Remove-Variable sheet
 Remove-Variable workbook
 Remove-Variable excel
 
-Write-Host "Files copied, folders created, and Excel closed successfully."
+# Check for duplicate folders and merge contents
+$folderNames = Get-ChildItem -Path $coordinatorsPath -Directory | Select-Object -ExpandProperty Name | Sort-Object
+$uniqueFolderNames = $folderNames | Get-Unique
+
+foreach ($uniqueFolder in $uniqueFolderNames) {
+    $duplicateFolders = Get-ChildItem -Path $coordinatorsPath -Directory -Filter "$uniqueFolder*" | Sort-Object FullName
+    
+    if ($duplicateFolders.Count -gt 1) {
+        # Merge contents of duplicate folders into the first folder
+        $targetFolder = $duplicateFolders[0]
+        
+        for ($i = 1; $i -lt $duplicateFolders.Count; $i++) {
+            $currentFolder = $duplicateFolders[$i]
+            Get-ChildItem -Path $currentFolder.FullName | Move-Item -Destination $targetFolder.FullName -Force
+            Remove-Item -Path $currentFolder.FullName -Recurse -Force
+        }
+    }
+}
+
+Write-Host "Files copied, folders created, merged duplicates, and Excel closed successfully."
