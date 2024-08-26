@@ -1,24 +1,27 @@
 # Define the path to the Coordinators folder
 $coordinatorsPath = "C:\Coordinators\"
 
-# Get all folder names in the Coordinators directory
-$folders = Get-ChildItem -Path $coordinatorsPath -Directory
+# Get all folder names in the Coordinators directory, normalize names to lowercase
+$folders = Get-ChildItem -Path $coordinatorsPath -Directory | ForEach-Object {
+    $_.Name = $_.Name.Trim().ToLower()
+    $_
+}
 
-# Group folders by name to find duplicates
+# Group folders by normalized name to find duplicates
 $groupedFolders = $folders | Group-Object Name | Where-Object { $_.Count -gt 1 }
 
 # Loop through each group of duplicate folders
 foreach ($group in $groupedFolders) {
-    # Get the unique folder name
+    # Get the unique folder (first in the group)
     $uniqueFolder = $group.Group[0].FullName
 
     # Loop through each duplicate folder (except the unique one)
     foreach ($folder in $group.Group[1..($group.Count - 1)]) {
-        # Move contents from the duplicate folder to the unique folder
-        Get-ChildItem -Path $folder.FullName | Move-Item -Destination $uniqueFolder -Force
+        # Move all contents from the duplicate folder to the unique folder, including hidden/system files
+        Get-ChildItem -Path $folder.FullName -Recurse -Force | Move-Item -Destination $uniqueFolder -Force
 
         # Remove the empty duplicate folder
-        Remove-Item -Path $folder.FullName -Force
+        Remove-Item -Path $folder.FullName -Force -Recurse
     }
 }
 
