@@ -47,7 +47,7 @@ for ($row = 3; $row -le $lastRow; $row++) {
     }
 }
 
-# Process each folder and its files
+# Create a folder for each unique folder name and save all related files inside it
 foreach ($folderName in $folders.Keys) {
     # Construct the folder path
     $folderPath = Join-Path $coordinatorsPath $folderName
