@@ -34,14 +34,17 @@ $folders = @{}
 # Loop through the rows starting from the 3rd row
 for ($row = 3; $row -le $lastRow; $row++) {
     # Get the folder name and file name
-    $folderName = $sheet.Cells.Item($row, 2).Text
-    $fileName = $sheet.Cells.Item($row, 6).Text  # Column F contains file names
+    $folderName = $sheet.Cells.Item($row, 2).Text.Trim()
+    $fileName = $sheet.Cells.Item($row, 6).Text.Trim()  # Column F contains file names
 
-    # Add file to the appropriate folder in the hashtable
-    if (-not $folders.ContainsKey($folderName)) {
-        $folders[$folderName] = @()
+    # Check if folder name and file name are not empty
+    if (-not [string]::IsNullOrEmpty($folderName) -and -not [string]::IsNullOrEmpty($fileName)) {
+        # Add file to the appropriate folder in the hashtable
+        if (-not $folders.ContainsKey($folderName)) {
+            $folders[$folderName] = @()
+        }
+        $folders[$folderName] += $fileName
     }
-    $folders[$folderName] += $fileName
 }
 
 # Process each folder and its files
