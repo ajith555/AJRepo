@@ -1,284 +1,130 @@
-Dim objExcelApplication As Object ' Use Object type to late-bind Excel
-Dim objExcelWorkbook As Object
-Dim objExcelWorksheet As Object
-Dim objInbox As Outlook.Folder
-Dim objStack As New Collection
+# Define paths
+$sourceFilePath = "C:\Source Files\U99.xlsx"
+$rulesFilePath = "C:\rules.xlsx"
+$coordinatorsPath = "C:\Coordinators\"
+$finalFilesPath = "C:\Final Files\"
 
-Sub ExportEmailsNotReplied()
-    ' Define the target email address
-    Dim targetEmail As String
-    targetEmail = "kushal-ajith.shetty@ubs.com" ' Change this to the desired email address
+# Check if the Coordinators folder exists
+if (Test-Path -Path $coordinatorsPath) {
+    # If it exists, delete everything inside it
+    Get-ChildItem -Path $coordinatorsPath | ForEach-Object { Remove-Item -Path $_.FullName -Recurse -Force }
+} else {
+    # If it does not exist, create the Coordinators folder
+    New-Item -ItemType Directory -Path $coordinatorsPath | Out-Null
+}
 
-    ' Initialize Outlook objects
-    Set objInbox = GetInboxForEmail(targetEmail)
+# Load the Excel COM object
+$excel = New-Object -ComObject Excel.Application
+$excel.Visible = $false
+$excel.DisplayAlerts = $false
 
-    ' Initialize folder for copied emails
-    Dim objAgedFolder As Outlook.Folder
-    On Error Resume Next
-    Set objAgedFolder = objInbox.Parent.Folders("(1) AGED Internal")
-    On Error GoTo 0
-    If objAgedFolder Is Nothing Then
-        ' Create the folder if it doesn't exist
-        Set objAgedFolder = objInbox.Parent.Folders.Add("(1) AGED Internal")
-    End If
+# Open the rules.xlsx file
+$workbook = $excel.Workbooks.Open($rulesFilePath)
+$sheet = $workbook.Sheets.Item(1)
 
-    ' Initialize folder for replied emails
-    Dim objRepliedFolder As Outlook.Folder
-    On Error Resume Next
-    Set objRepliedFolder = objInbox.Parent.Folders("(1) AGED Replied")
-    On Error GoTo 0
-    If objRepliedFolder Is Nothing Then
-        ' Create the folder if it doesn't exist
-        Set objRepliedFolder = objInbox.Parent.Folders.Add("(1) AGED Replied")
-    End If
+# Get the current month and year
+$currentMonth = (Get-Date).ToString("MMMM")
+$currentYear = (Get-Date).Year
 
-    ' Initialize folder for external emails
-    Dim objExternalFolder As Outlook.Folder
-    On Error Resume Next
-    Set objExternalFolder = objInbox.Parent.Folders("(1) AGED External")
-    On Error GoTo 0
-    If objExternalFolder Is Nothing Then
-        ' Create the folder if it doesn't exist
-        Set objExternalFolder = objInbox.Parent.Folders.Add("(1) AGED External")
-    End If
+# Get the last row with data in column B
+$lastRow = $sheet.Cells($sheet.Rows.Count, "B").End(-4162).Row
 
-    ' Check for replied emails in the "(1) AGED Internal" folder and move them to the "(1) AGED Replied" folder
-    CheckRepliedEmails objAgedFolder, objRepliedFolder
+# Create a hashtable to store folder names and their corresponding files
+$folders = @{}
 
+# Loop through the rows starting from the 3rd row
+for ($row = 3; $row -le $lastRow; $row++) {
+    # Get the folder name and file name
+    $folderName = $sheet.Cells.Item($row, 2).Text.Trim()
+    $fileName = $sheet.Cells.Item($row, 6).Text.Trim()  # Column F contains file names
 
+    # Check if folder name and file name are not empty
+    if (-not [string]::IsNullOrEmpty($folderName) -and -not [string]::IsNullOrEmpty($fileName)) {
+        # Add file to the appropriate folder in the hashtable
+        if (-not $folders.ContainsKey($folderName)) {
+            $folders[$folderName] = @()  # Initialize an empty array for the folder
+        }
+        $folders[$folderName] += $fileName
+    }
+}
 
-    ' Initialize the stack with the inbox folder and its subfolders
-    objStack.Add objInbox
-    AddSubfoldersToStack objInbox, objStack
+# Process each folder and its files
+foreach ($folderName in $folders.Keys) {
+    # Construct the folder path
+    $folderPath = Join-Path $coordinatorsPath $folderName
 
-    ' Process folders and emails iteratively
-    Do While objStack.Count > 0
-        Call ProcessFolders(objStack(1), objAgedFolder, objRepliedFolder)
-        objStack.Remove 1
-    Loop
+    # Ensure the folder is created only once
+    if (-not (Test-Path -Path $folderPath)) {
+        New-Item -ItemType Directory -Path $folderPath | Out-Null
+    }
 
-    ' Check for external emails in the "(1) AGED Internal" folder and move them to the "(1) AGED External" folder
-    CheckExternalEmailsInFolder objAgedFolder, objExternalFolder
+    # Get the list of files for this folder
+    $files = $folders[$folderName]
 
-    ' Recursively check subfolders of "(1) AGED Internal" for external emails and move them
-    CheckExternalEmailsInSubfolders objAgedFolder, objExternalFolder
-    ' Create Excel objects
-    Set objExcelApplication = CreateObject("Excel.Application")
-    Set objExcelWorkbook = objExcelApplication.Workbooks.Add
-    Set objExcelWorksheet = objExcelWorkbook.Worksheets(1)
+    # Copy each file to the destination folder
+    foreach ($fileName in $files) {
+        # Construct the destination file name
+        $destinationFileName = "${fileName}_${currentMonth}_${currentYear}.xlsx"
+        $destinationFilePath = Join-Path $folderPath $destinationFileName
 
-    ' Set headers in the Excel worksheet
-    With objExcelWorksheet
-        .Cells(1, 1) = "Subject"
-        .Cells(1, 1).Font.Bold = True
-        .Cells(1, 2) = "Received"
-        .Cells(1, 2).Font.Bold = True
-        .Cells(1, 3) = "Sender"
-        .Cells(1, 3).Font.Bold = True
-        .Cells(1, 4) = "Recipients"
-        .Cells(1, 4).Font.Bold = True
-        .Cells(1, 5) = "Excerpts"
-        .Cells(1, 5).Font.Bold = True
-    End With
+        # Copy the source file to the destination folder, overwriting if it already exists
+        Copy-Item -Path $sourceFilePath -Destination $destinationFilePath -Force
+    }
+}
 
-    ' Make Excel visible
-    objExcelApplication.Visible = True
-    objExcelWorkbook.Activate
+# Save and close the rules workbook
+$workbook.Save()
+$workbook.Close()
 
-    ' Format Excel worksheet
-    With objExcelWorksheet
-        .Columns("A:D").AutoFit
-        .Rows.RowHeight = 15
-        .Columns("E").ColumnWidth = 100
-        .Columns("E").WrapText = False
-    End With
+# Quit Excel application
+$excel.Quit()
 
-    FetchEmailsToExcel objAgedFolder
+# Release COM objects to avoid file locking
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($sheet) | Out-Null
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($workbook) | Out-Null
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
 
-End Sub
+# Remove variables
+Remove-Variable sheet
+Remove-Variable workbook
+Remove-Variable excel
 
-Function GetInboxForEmail(ByVal email As String) As Outlook.Folder
-    ' This function retrieves the Inbox folder for the specified email address
+# Final Check for Duplicates: Merge and Delete
+$folderNames = Get-ChildItem -Path $coordinatorsPath -Directory | Group-Object Name
 
-    Dim olNamespace As Outlook.NameSpace
-    Dim accounts As Outlook.Accounts
-    Dim account As Outlook.Account
-    Dim folder As Outlook.Folder
+foreach ($group in $folderNames) {
+    if ($group.Count -gt 1) {
+        # There are duplicate folders, merge them
+        $primaryFolder = $group.Group[0].FullName
 
-    Set olNamespace = Outlook.Application.GetNamespace("MAPI")
-    Set accounts = olNamespace.Accounts
+        for ($i = 1; $i -lt $group.Count; $i++) {
+            $duplicateFolder = $group.Group[$i].FullName
+            # Move contents from duplicate folder to primary folder
+            Get-ChildItem -Path $duplicateFolder -Recurse | Move-Item -Destination $primaryFolder -Force
+            # Remove the now-empty duplicate folder
+            Remove-Item -Path $duplicateFolder -Recurse -Force
+        }
+    }
+}
 
-    For Each account In accounts
-        If account.SmtpAddress = email Then
-            ' Retrieve the Inbox folder for the specified email address
-            Set folder = account.DeliveryStore.GetDefaultFolder(olFolderInbox)
-            Exit For
-        End If
-    Next account
+# Copy U99.xlsx to the Final Files folder with the correct naming format
+if (-not (Test-Path -Path $finalFilesPath)) {
+    # If the Final Files folder does not exist, create it
+    New-Item -ItemType Directory -Path $finalFilesPath | Out-Null
+}
 
-    Set GetInboxForEmail = folder
-End Function
+# Start with the base file name
+$baseFileName = "U69_${currentMonth}_${currentYear}"
+$finalFilePath = Join-Path $finalFilesPath "${baseFileName}.xlsx"
 
-Sub CheckExternalEmailsInFolder(ByVal objAgedInternalFolder As Outlook.Folder, ByVal objAgedExternalFolder As Outlook.Folder)
-    Dim objMail As Outlook.MailItem
+# Check if a file with the same name already exists and append _V1, _V2, etc.
+$version = 1
+while (Test-Path -Path $finalFilePath) {
+    $version++
+    $finalFilePath = Join-Path $finalFilesPath "${baseFileName}_V${version}.xlsx"
+}
 
-    For Each objMail In objAgedInternalFolder.Items
-        If objMail.Class = olMail Then
-            If Not objMail.SenderEmailType = "EX" Then
-                ' Check if sender's domain is not ubs.com (external)
-                If Right(objMail.SenderEmailAddress, 7) <> "ubs.com" Then
-                    ' Move the email to the external folder
-                    objMail.Move objAgedExternalFolder
-                Else
-                    ' Diagnostic message for emails that should be moved but aren't
-                    Debug.Print "Email not moved to external folder: " & objMail.Subject
-                End If
-            End If
-        End If
-    Next
-End Sub
+# Copy the source file to the Final Files folder with the unique name
+Copy-Item -Path $sourceFilePath -Destination $finalFilePath -Force
 
-Sub CheckExternalEmailsInSubfolders(ByVal objFolder As Outlook.Folder, ByVal objAgedExternalFolder As Outlook.Folder)
-    Dim objSubfolder As Outlook.Folder
-
-    For Each objSubfolder In objFolder.Folders
-        CheckExternalEmailsInFolder objSubfolder, objAgedExternalFolder
-        CheckExternalEmailsInSubfolders objSubfolder, objAgedExternalFolder
-    Next
-End Sub
-
-Sub AddSubfoldersToStack(ByVal objFolder As Outlook.Folder, ByRef objStack As Collection)
-    Dim objSubfolder As Outlook.Folder
-    For Each objSubfolder In objFolder.Folders
-        objStack.Add objSubfolder
-        AddSubfoldersToStack objSubfolder, objStack
-    Next
-End Sub
-
-Sub ProcessFolders(ByVal objCurrentFolder As Outlook.Folder, ByVal objAgedFolder As Outlook.Folder, ByVal objRepliedFolder As Outlook.Folder)
-    Dim i As Long
-    Dim objMail As Outlook.MailItem
-    Dim strReplied As String
-    Dim nDateDiff As Integer
-    Dim objExistingMail As Outlook.MailItem
-    Dim isDuplicate As Boolean
-    Dim objLatestMail As Outlook.MailItem
-
-    ' Check if the current folder is the Inbox or a subfolder of the Inbox
-    If objCurrentFolder = objInbox Or objCurrentFolder.Parent = objInbox Then
-        For i = objCurrentFolder.Items.Count To 1 Step -1
-            If objCurrentFolder.Items(i).Class = olMail Then
-                Set objMail = objCurrentFolder.Items(i)
-                strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
-
-                ' Calculate the time difference in hours (48 hours = 2 days)
-                nDateDiff = DateDiff("h", objMail.ReceivedTime, Now)
-
-                If (Not (strReplied = "102")) And (Not (strReplied = "103")) And (nDateDiff >= 0 And nDateDiff <= 5) Then
-                    ' Check if an email with the same subject already exists in the AGED folder
-                    isDuplicate = False
-                    Set objLatestMail = Nothing ' Initialize objLatestMail
-
-                    For Each objExistingMail In objAgedFolder.Items
-                        If objExistingMail.Subject = objMail.Subject Then
-                            isDuplicate = True
-                            ' Compare the ReceivedTime to determine the latest email
-                            If objLatestMail Is Nothing Then
-                                Set objLatestMail = objExistingMail
-                            ElseIf objExistingMail.ReceivedTime > objLatestMail.ReceivedTime Then
-                                Set objLatestMail = objExistingMail
-                            End If
-                        End If
-                    Next
-
-                    ' If it's not a duplicate, then try to move the email to the AGED folder
-                    If Not isDuplicate Then
-                        On Error Resume Next
-                        objMail.Move objAgedFolder
-                        If Err.Number <> 0 Then
-                            ' Handle any error during move, and log the error details
-                            Debug.Print "Error moving email: " & objMail.Subject
-                            Debug.Print "Error description: " & Err.Description
-                            On Error GoTo 0 ' Reset error handling
-                        End If
-                        On Error GoTo 0
-                    Else
-                        ' Check if the latest email should be kept in AGED folder
-                        If Not objLatestMail Is Nothing And objLatestMail.Subject = objMail.Subject And objMail.ReceivedTime > objLatestMail.ReceivedTime Then
-                            On Error Resume Next
-                            objMail.Move objAgedFolder
-                            If Err.Number <> 0 Then
-                                ' Handle any error during move, and log the error details
-                                Debug.Print "Error moving email: " & objMail.Subject
-                                Debug.Print "Error description: " & Err.Description
-                                On Error GoTo 0 ' Reset error handling
-                            End If
-                            On Error GoTo 0
-
-                            ' Move the older email back to its source folder
-                            On Error Resume Next
-                            objLatestMail.Move objCurrentFolder
-                            If Err.Number <> 0 Then
-                                ' Handle any error during move, and log the error details
-                                Debug.Print "Error moving email: " & objLatestMail.Subject
-                                Debug.Print "Error description: " & Err.Description
-                                On Error GoTo 0 ' Reset error handling
-                            End If
-                            On Error GoTo 0
-                        Else
-                            On Error Resume Next
-                            ' Move the older email back to its source folder
-                            objMail.Move objCurrentFolder
-                            If Err.Number <> 0 Then
-                                ' Handle any error during move, and log the error details
-                                Debug.Print "Error moving email: " & objMail.Subject
-                                Debug.Print "Error description: " & Err.Description
-                                On Error GoTo 0 ' Reset error handling
-                            End If
-                            On Error GoTo 0
-                        End If
-                    End If
-                End If
-            End If
-        Next
-    End If
-End Sub
-
-Sub CheckRepliedEmails(ByVal objAgedInternalFolder As Outlook.Folder, ByVal objAgedRepliedFolder As Outlook.Folder)
-    Dim objMail As Outlook.MailItem
-    Dim strReplied As String
-
-    For Each objMail In objAgedInternalFolder.Items
-        If objMail.Class = olMail Then
-            strReplied = objMail.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x10810003")
-            If strReplied = "102" Or strReplied = "103" Then
-                ' Move the replied email to the "(1) AGED Replied" folder
-                objMail.Move objAgedRepliedFolder
-            End If
-        End If
-    Next
-End Sub
-
-Sub FetchEmailsToExcel(objAgedFolder As Outlook.Folder)
-    Dim objMail As Outlook.MailItem
-    Dim row As Long
-
-    ' Initialize the row to start populating the Excel worksheet
-    row = 2 ' Start from row 2 to avoid overwriting headers
-
-    ' Loop through the emails in the specified folder
-    For Each objMail In objAgedFolder.Items
-        If objMail.Class = olMail Then
-            ' Populate Excel cells with email information
-            objExcelWorksheet.Cells(row, 1).Value = objMail.Subject
-            objExcelWorksheet.Cells(row, 2).Value = objMail.ReceivedTime
-            objExcelWorksheet.Cells(row, 3).Value = objMail.SenderName ' Use SenderName for sender's name
-            objExcelWorksheet.Cells(row, 4).Value = objMail.To ' Add a new column for recipients
-            objExcelWorksheet.Cells(row, 5).Value = objMail.Body
-
-            ' Increment the row counter for the next email
-            row = row + 1
-        End If
-    Next objMail
-End Sub
-
+Write-Host "Files copied, folders created, merged duplicates, Excel closed, and U69 file copied to Final Files folder with appropriate versioning."
