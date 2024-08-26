@@ -19,26 +19,32 @@ $currentYear = (Get-Date).Year
 # Get the last row with data in the B column of rules.xlsx
 $lastRow = $rulesSheet.Cells($rulesSheet.Rows.Count, "B").End(-4162).Row
 
-# Create a dictionary to hold filter criteria for each file name
+# Create a dictionary to hold filter criteria for each unique folder name
 $filterCriteria = @{}
 
 # Loop through the rows starting from the 3rd row
 for ($row = 3; $row -le $lastRow; $row++) {
-    # Get the folder and file name from column B
+    # Get the file name from column B
     $fileName = $rulesSheet.Cells.Item($row, 2).Text
 
-    # Get the filter values from columns E, F, G, H, I
-    $filters = @()
-    if ($rulesSheet.Cells.Item($row, 5).Text -ne "ALL") { $filters += $rulesSheet.Cells.Item($row, 5).Text }
-    if ($rulesSheet.Cells.Item($row, 6).Text -ne "ALL") { $filters += $rulesSheet.Cells.Item($row, 6).Text }
-    if ($rulesSheet.Cells.Item($row, 7).Text -ne "ALL") { $filters += $rulesSheet.Cells.Item($row, 7).Text }
-    if ($rulesSheet.Cells.Item($row, 8).Text -ne "ALL") { $filters += $rulesSheet.Cells.Item($row, 8).Text }
-    if ($rulesSheet.Cells.Item($row, 9).Text -ne "ALL") { $filters += $rulesSheet.Cells.Item($row, 9).Text }
+    # Collect filter values from columns E, F, G, H, I
+    $filters = @{
+        "CR" = $rulesSheet.Cells.Item($row, 5).Text
+        "CT" = $rulesSheet.Cells.Item($row, 6).Text
+        "CV" = $rulesSheet.Cells.Item($row, 7).Text
+        "CX" = $rulesSheet.Cells.Item($row, 8).Text
+        "CZ" = $rulesSheet.Cells.Item($row, 9).Text
+    }
 
-    # Combine filters for the same file name
+    # If the file name already exists in the dictionary, merge the filter values
     if ($filterCriteria.ContainsKey($fileName)) {
-        $filterCriteria[$fileName] = $filterCriteria[$fileName] + $filters
+        foreach ($key in $filters.Keys) {
+            if ($filters[$key] -ne "ALL") {
+                $filterCriteria[$fileName][$key] += @($filters[$key])
+            }
+        }
     } else {
+        # Otherwise, add a new entry to the dictionary
         $filterCriteria[$fileName] = $filters
     }
 }
@@ -70,23 +76,11 @@ foreach ($fileName in $filterCriteria.Keys) {
 
     # Apply filters based on the criteria
     $filters = $filterCriteria[$fileName]
-    if ($filters.Count -gt 0) {
-        # Assuming that columns CR, CT, CV, CX, CZ are equivalent to A, B, C, D, E in Excel
-        $columnMapping = @{
-            "CR" = 1
-            "CT" = 2
-            "CV" = 3
-            "CX" = 4
-            "CZ" = 5
-        }
-
-        foreach ($filter in $filters) {
-            foreach ($column in $columnMapping.Keys) {
-                $columnIndex = $columnMapping[$column]
-
-                # Apply the filter to the appropriate column
-                $sheet.UsedRange.AutoFilter($columnIndex, $filter, 1)  # 1 = xlFilterValues
-            }
+    foreach ($column in $filters.Keys) {
+        $filterValues = $filters[$column] | Where-Object { $_ -ne "ALL" }
+        if ($filterValues.Count -gt 0) {
+            $columnIndex = 96 + ([int][char]$column[1]) - 65  # Convert CR, CT, etc. to column numbers
+            $sheet.UsedRange.AutoFilter($columnIndex, $filterValues, 7)  # 7 = xlFilterValues
         }
     }
 
@@ -113,4 +107,4 @@ Remove-Variable excel
 Remove-Variable rulesSheet
 Remove-Variable rulesWorkbook
 
-Write-Host "Files copied, folders created, data filtered, and Excel closed successfully."
+Write-Host "Folders created, files copied, data filtered, and Excel closed successfully."
