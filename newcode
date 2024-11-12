@@ -1,68 +1,30 @@
-Sub CreateFoldersAndCopyFiles()
-    Dim ws As Worksheet
-    Dim sourceWorkbook As Workbook
-    Dim sourceSheet As Worksheet
-    Dim rulesWorkbook As Workbook
-    Dim rulesSheet As Worksheet
-    Dim coordinatorsFolderPath As String
-    Dim sharedDrivePath As String
-    Dim U99FilePath As String
-    Dim folderName As String
-    Dim fileName As String
-    Dim sheetName As String
-    Dim i As Long
-    
-    ' Define the shared drive path
-    sharedDrivePath = "//shared drive/"
-    
-    ' Define the source file path
-    U99FilePath = sharedDrivePath & "U99.xlsx"
-    
-    ' Open the rules workbook
-    Set rulesWorkbook = Workbooks.Open(sharedDrivePath & "rules.xlsx")
-    Set rulesSheet = rulesWorkbook.Sheets(1)
-    
-    ' Define the Coordinators folder path
-    coordinatorsFolderPath = sharedDrivePath & "Coordinators"
-    
-    ' Check if the Coordinators folder exists, if not, create it
-    If Dir(coordinatorsFolderPath, vbDirectory) = "" Then
-        MkDir coordinatorsFolderPath
-    End If
-    
-    ' Loop through the rows in rules sheet starting from row 3
-    i = 3
-    Do While rulesSheet.Cells(i, 12).Value <> "" ' Column L
-        folderName = rulesSheet.Cells(i, 12).Value ' Folder name from column L
-        fileName = rulesSheet.Cells(i, 15).Value ' File name from column O
-        sheetName = rulesSheet.Cells(i, 14).Value ' Sheet name from column N
-        
-        ' Create the folder inside Coordinators folder
-        If Dir(coordinatorsFolderPath & "\" & folderName, vbDirectory) = "" Then
-            MkDir coordinatorsFolderPath & "\" & folderName
-        End If
-        
-        ' Open the source workbook
-        Set sourceWorkbook = Workbooks.Open(U99FilePath)
-        Set sourceSheet = sourceWorkbook.Sheets(1)
-        
-        ' Copy the sheet to a new workbook
-        sourceSheet.Copy
-        Set newWorkbook = ActiveWorkbook
-        newWorkbook.Sheets(1).Name = sheetName
-        
-        ' Save the new workbook with the new file name inside the relevant folder
-        newWorkbook.SaveAs coordinatorsFolderPath & "\" & folderName & "\" & fileName & ".xlsx"
-        newWorkbook.Close SaveChanges:=False
-        
-        ' Close the source workbook
-        sourceWorkbook.Close SaveChanges:=False
-        
-        i = i + 1
-    Loop
-    
-    ' Close the rules workbook
-    rulesWorkbook.Close SaveChanges:=False
-    
-    MsgBox "Folders and files created successfully!"
-End Sub
+1. Strengths and Achievements, Core Contributions, and Impactful Efforts
+This year, I successfully completed two key projects that showcased my technical skills, adaptability, and dedication to meeting project goals. My work on both projects not only fulfilled requirements but also had a measurable impact on team productivity and efficiency.
+
+Accelerated Report Card Project: This project was a significant achievement as it was completed well ahead of schedule, meeting all the outlined requirements and exceeding quality expectations. The early completion allowed for extended testing, feedback, and minor refinements, which helped deliver a seamless, high-functioning solution. My timely execution demonstrated my ability to manage complex requirements while ensuring thorough implementation.
+
+BCA ACH Bot (Automation Anywhere): This was an ambitious project involving a complex Automation Anywhere bot, equivalent to five to six standard projects in terms of scale and difficulty. I took on the challenge of designing and implementing a bot capable of handling numerous tasks with precision. Despite the complexity and the constant requirement for code adjustments, I maintained consistency in delivering updates as requested. Each revision and update was completed promptly to start the UAT (User Acceptance Testing) phase on time, keeping the project on track. My perseverance, coupled with my problem-solving abilities, allowed me to navigate this high-stakes project successfully, enhancing overall team output by reducing repetitive workloads through automation.
+
+These achievements underscore my strengths in delivering impactful, quality-focused contributions under tight deadlines, especially on demanding and dynamic projects. My adaptability in meeting changing requirements and ensuring project integrity reflects my commitment to excellence and efficient project execution.
+
+2. Development Areas, Areas to Improve, and Impactful Lessons
+Reflecting on my work this year, I identified several areas where I can further develop my skills to enhance project outcomes and team collaboration.
+
+Enhancing Adaptability Under Frequent Changes: While I successfully managed frequent code adjustments in the BCA ACH Bot project, there were instances where multiple revisions impacted the workflow's overall momentum. Improving my adaptability to these last-minute changes and incorporating agile best practices could streamline future adjustments, minimizing potential slowdowns. Learning to anticipate and proactively plan for likely changes will further enhance my efficiency.
+
+Time Management Amid Complex Project Demands: Both projects required substantial time investment, particularly due to evolving requirements in the BCA ACH Bot project. Going forward, I aim to refine my time management skills to better balance project needs with personal workload, especially on complex, long-term projects. By setting up stricter prioritization frameworks and optimizing task distribution, I can enhance my productivity and reduce potential delays.
+
+Improving Collaborative Feedback Processes: In highly technical projects like these, especially with substantial updates and modifications, seeking timely feedback can sometimes be challenging. Moving forward, I plan to focus on more frequent collaboration checkpoints with team members and stakeholders to ensure that the project trajectory aligns continuously with expectations. This will foster a more cohesive, collaborative approach, particularly in complex projects.
+
+These areas for growth represent valuable learning experiences from the year, guiding my focus on adaptability, time management, and enhanced collaboration moving forward.
+
+3. Behavior During Projects and Interpersonal Skills
+Throughout the year, I have maintained a collaborative and constructive approach with my team, consistently aiming to foster a positive and efficient project environment.
+
+Dependability and Resilience: During both projects, especially the BCA ACH Bot, I demonstrated resilience in the face of challenges. I maintained a composed demeanor despite frequent changes, handling them with patience and a solutions-oriented mindset. My colleagues could rely on me to address challenges without losing momentum or focus on project goals.
+
+Positive Interpersonal Interactions: I have prioritized open communication with team members and stakeholders throughout these projects. I strive to ensure my interactions are respectful, supportive, and open to feedback. My emphasis on maintaining strong working relationships has contributed to a positive, cooperative team atmosphere.
+
+Proactive Problem-Solving: During each project, I engaged with others in a proactive manner, often taking the initiative to identify issues early and present solutions. My willingness to go the extra mile to troubleshoot and address emerging challenges has been appreciated by colleagues and leaders, as it reflects my commitment to collaborative success.
+
+These aspects of my behavior contribute to a culture of reliability, positivity, and forward-thinking within the team, further enabling productive teamwork and successful project outcomes.
