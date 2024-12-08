@@ -1,5 +1,5 @@
 Dim xlApp, xlBook
-Dim FilePath, BusinessUnit
+Dim BusinessUnit
 Dim LastRow, i
 Dim ws
 Dim wbTitle
@@ -11,11 +11,11 @@ BusinessUnit = GetVariable("$strEcrBusinessUnit$")  ' Pass the business unit val
 Set xlApp = CreateObject("Excel.Application")
 xlApp.Visible = True  ' Set to True to see Excel
 
-' Loop through open workbooks and match by window title pattern
+' Loop through open workbooks and match by window title pattern using wildcard "_20"
 For Each xlBook In xlApp.Workbooks
     wbTitle = xlBook.Name
     ' Check if the window title contains the wildcard pattern "_20"
-    If InStr(wbTitle, "_20") > 0 Then
+    If InStr(wbTitle, "*_20*") > 0 Then
         ' This workbook matches the pattern, so work with this one
         Exit For
     End If
@@ -33,7 +33,7 @@ MsgBox "Found workbook: " & wbTitle
 ' Set the worksheet (change "OUTPUT" to your sheet name)
 Set ws = xlBook.Sheets("OUTPUT")
 
-' Get the last row in column CR
+' Get the last row in column CR (make sure to change "CR" if necessary)
 LastRow = ws.Cells(ws.Rows.Count, "CR").End(-4162).Row  ' -4162 is xlUp constant
 
 ' Debugging: Check if the last row is correct
