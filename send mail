@@ -2,17 +2,30 @@ Dim xlApp, xlBook
 Dim FilePath, BusinessUnit
 Dim LastRow, i
 Dim ws
+Dim wbTitle
 
-' Get the file path and business unit value from Automation Anywhere variables
-FilePath = GetVariable("$FilePath$")  ' Pass the file path as a variable
+' Get the business unit value from Automation Anywhere variable
 BusinessUnit = GetVariable("$strEcrBusinessUnit$")  ' Pass the business unit value as a variable
 
 ' Create Excel application object
 Set xlApp = CreateObject("Excel.Application")
 xlApp.Visible = True  ' Set to True to see Excel
 
-' Open the Excel workbook
-Set xlBook = xlApp.Workbooks.Open(FilePath)
+' Loop through open workbooks and match by window title pattern
+For Each xlBook In xlApp.Workbooks
+    wbTitle = xlBook.Name
+    ' Check if the window title contains the wildcard pattern "_20"
+    If InStr(wbTitle, "_20") > 0 Then
+        ' This workbook matches the pattern, so work with this one
+        Exit For
+    End If
+Next
+
+' If no workbook is found, exit the script
+If xlBook Is Nothing Then
+    MsgBox "No workbook with title matching '_20' found!"
+    Exit Sub
+End If
 
 ' Set the worksheet (change "OUTPUT" to your sheet name)
 Set ws = xlBook.Sheets("OUTPUT")
@@ -28,9 +41,6 @@ For i = LastRow To 1 Step -1
 Next
 
 ' Do not save or close yet, leaving the workbook open
-' No xlBook.Save or xlBook.Close here
-
-' Keep the Excel instance open for further actions
 ' Excel will stay open, and you can manually save or close it later
 
 ' Clean up
