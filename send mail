@@ -1,23 +1,42 @@
-Sub DeleteRowsNotMatching(strEcrBusinessUnit As String)
-    Application.ScreenUpdating = False
-    
-    Dim ws As Worksheet
-    Set ws = ThisWorkbook.Sheets("OUTPUT") ' Update to your actual sheet name
-    
-    Dim LastRow As Long
-    LastRow = ws.Cells(ws.Rows.Count, "CR").End(xlUp).Row
-    
-    Dim i As Long
-    For i = LastRow To 1 Step -1
-        If ws.Cells(i, "CR").Value <> strEcrBusinessUnit Then
-            ws.Rows(i).Delete
-        End If
-    Next i
-    
-    Application.ScreenUpdating = True
-    MsgBox "Rows deleted successfully!"
-End Sub
+Dim xlApp, xlBook
+Dim FilePath, BusinessUnit
+Dim LastRow, i
+Dim ws
 
+' Get the file path and business unit value from Automation Anywhere variables
+FilePath = GetVariable("$FilePath$")  ' Pass the file path as a variable
+BusinessUnit = GetVariable("$strEcrBusinessUnit$")  ' Pass the business unit value as a variable
 
-Macro Name: DeleteRowsNotMatching
-Parameter: {$strEcrBusinessUnit$}
+' Create Excel application object
+Set xlApp = CreateObject("Excel.Application")
+xlApp.Visible = True  ' Set to True to see Excel
+
+' Open the Excel workbook
+Set xlBook = xlApp.Workbooks.Open(FilePath)
+
+' Set the worksheet (change "OUTPUT" to your sheet name)
+Set ws = xlBook.Sheets("OUTPUT")
+
+' Get the last row in column CR
+LastRow = ws.Cells(ws.Rows.Count, "CR").End(-4162).Row  ' -4162 is xlUp constant
+
+' Loop through rows from last to first and delete if value in CR doesn't match the business unit
+For i = LastRow To 1 Step -1
+    If ws.Cells(i, "CR").Value <> BusinessUnit Then
+        ws.Rows(i).Delete
+    End If
+Next
+
+' Do not save or close yet, leaving the workbook open
+' No xlBook.Save or xlBook.Close here
+
+' Keep the Excel instance open for further actions
+' Excel will stay open, and you can manually save or close it later
+
+' Clean up
+Set ws = Nothing
+Set xlBook = Nothing
+Set xlApp = Nothing
+
+' Display completion message (optional)
+MsgBox "Rows deleted successfully! The file is still open."
