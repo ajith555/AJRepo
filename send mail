@@ -27,16 +27,26 @@ If xlBook Is Nothing Then
     Exit Sub
 End If
 
+' Debugging: Display the title of the found workbook
+MsgBox "Found workbook: " & wbTitle
+
 ' Set the worksheet (change "OUTPUT" to your sheet name)
 Set ws = xlBook.Sheets("OUTPUT")
 
 ' Get the last row in column CR
 LastRow = ws.Cells(ws.Rows.Count, "CR").End(-4162).Row  ' -4162 is xlUp constant
 
+' Debugging: Check if the last row is correct
+MsgBox "Last row in CR column: " & LastRow
+
 ' Loop through rows from last to first and delete if value in CR doesn't match the business unit
 For i = LastRow To 1 Step -1
+    ' Debugging: Check the value of each row in the CR column
+    MsgBox "Checking row " & i & ": " & ws.Cells(i, "CR").Value
     If ws.Cells(i, "CR").Value <> BusinessUnit Then
         ws.Rows(i).Delete
+        ' Debugging: Show a message when a row is deleted
+        MsgBox "Deleted row " & i
     End If
 Next
 
