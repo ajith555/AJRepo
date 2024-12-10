@@ -1,62 +1,12 @@
-Dim xlApp, xlBook
-Dim BusinessUnit
-Dim LastRow, i
-Dim ws
-Dim wbTitle
-
-' Get the business unit value from Automation Anywhere variable
-BusinessUnit = GetVariable("$strEcrBusinessUnit$")  ' Pass the business unit value as a variable
-
-' Create Excel application object
-Set xlApp = CreateObject("Excel.Application")
-xlApp.Visible = True  ' Set to True to see Excel
-
-' Loop through open workbooks and match by window title pattern using wildcard "_20"
-For Each xlBook In xlApp.Workbooks
-    wbTitle = xlBook.Name
-    ' Check if the window title contains the wildcard pattern "_20"
-    If InStr(wbTitle, "*_20*") > 0 Then
-        ' This workbook matches the pattern, so work with this one
-        Exit For
-    End If
-Next
-
-' If no workbook is found, exit the script
-If xlBook Is Nothing Then
-    MsgBox "No workbook with title matching '_20' found!"
-    Exit Sub
-End If
-
-' Debugging: Display the title of the found workbook
-MsgBox "Found workbook: " & wbTitle
-
-' Set the worksheet (change "OUTPUT" to your sheet name)
-Set ws = xlBook.Sheets("OUTPUT")
-
-' Get the last row in column CR (make sure to change "CR" if necessary)
-LastRow = ws.Cells(ws.Rows.Count, "CR").End(-4162).Row  ' -4162 is xlUp constant
-
-' Debugging: Check if the last row is correct
-MsgBox "Last row in CR column: " & LastRow
-
-' Loop through rows from last to first and delete if value in CR doesn't match the business unit
-For i = LastRow To 1 Step -1
-    ' Debugging: Check the value of each row in the CR column
-    MsgBox "Checking row " & i & ": " & ws.Cells(i, "CR").Value
-    If ws.Cells(i, "CR").Value <> BusinessUnit Then
-        ws.Rows(i).Delete
-        ' Debugging: Show a message when a row is deleted
-        MsgBox "Deleted row " & i
-    End If
-Next
-
-' Do not save or close yet, leaving the workbook open
-' Excel will stay open, and you can manually save or close it later
-
-' Clean up
-Set ws = Nothing
-Set xlBook = Nothing
-Set xlApp = Nothing
-
-' Display completion message (optional)
-MsgBox "Rows deleted successfully! The file is still open."
+UPDATE [Output$$] 
+SET [Remove]=1 
+WHERE 
+(
+    ([CR COLUMN NAME] LIKE CASE WHEN '${E}' = 'ALL' THEN '%' ELSE '%${E}%' END) AND
+    ([CT COLUMN NAME] LIKE CASE WHEN '${F}' = 'ALL' THEN '%' ELSE '%${F}%' END) AND
+    ([CV COLUMN NAME] LIKE CASE WHEN '${G}' = 'ALL' THEN '%' ELSE '%${G}%' END) AND
+    ([CX COLUMN NAME] LIKE CASE WHEN '${H}' = 'ALL' THEN '%' ELSE '%${H}%' END) AND
+    ([CZ COLUMN NAME] LIKE CASE WHEN '${I}' = 'ALL' THEN '%' ELSE '%${I}%' END) AND
+    ([DC COLUMN NAME] LIKE CASE WHEN '${J}' = 'ALL' THEN '%' ELSE '%${J}%' END) AND
+    ([DA COLUMN NAME] LIKE CASE WHEN '${K}' = 'ALL' THEN '%' ELSE '%${K}%' END)
+)
