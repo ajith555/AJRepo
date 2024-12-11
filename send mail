@@ -2,5 +2,11 @@ UPDATE [Output$$]
 SET [Remove] = 1 
 WHERE 
 (
-    ('$E$' = 'ALL' OR [CR COLUMN NAME] LIKE '%$E$%')
+    ('$EcrBusinessUnit$' = 'ALL' OR [CR COLUMN NAME] LIKE '%$EcrBusinessUnit$%') AND
+    ('$FctBusinessArea$' = 'ALL' OR [CT COLUMN NAME] LIKE '%$FctBusinessArea$%') AND
+    ('$GcvBusinessSector$' = 'ALL' OR [CV COLUMN NAME] LIKE '%$GcvBusinessSector$%') AND
+    ('$HcxBusinessSegment$' = 'ALL' OR [CX COLUMN NAME] LIKE '%$HcxBusinessSegment$%') AND
+    ('$LczBusinessFunction$' = 'ALL' OR [CZ COLUMN NAME] LIKE '%$LczBusinessFunction$%') AND
+    ('$JdcRegion$' = 'ALL' OR [DC COLUMN NAME] LIKE '%$JdcRegion$%') AND
+    ('$KdaCompanyCode$' = 'ALL' OR [DA COLUMN NAME] LIKE '%$KdaCompanyCode$%')
 )
