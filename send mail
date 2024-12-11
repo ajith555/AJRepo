@@ -1,12 +1,11 @@
 UPDATE [Output$$] 
-SET [Remove]=1 
+SET [Remove] = 1 
 WHERE 
 (
-    ([CR COLUMN NAME] LIKE CASE WHEN '${E}' = 'ALL' THEN '%' ELSE '%${E}%' END) AND
-    ([CT COLUMN NAME] LIKE CASE WHEN '${F}' = 'ALL' THEN '%' ELSE '%${F}%' END) AND
-    ([CV COLUMN NAME] LIKE CASE WHEN '${G}' = 'ALL' THEN '%' ELSE '%${G}%' END) AND
-    ([CX COLUMN NAME] LIKE CASE WHEN '${H}' = 'ALL' THEN '%' ELSE '%${H}%' END) AND
-    ([CZ COLUMN NAME] LIKE CASE WHEN '${I}' = 'ALL' THEN '%' ELSE '%${I}%' END) AND
-    ([DC COLUMN NAME] LIKE CASE WHEN '${J}' = 'ALL' THEN '%' ELSE '%${J}%' END) AND
-    ([DA COLUMN NAME] LIKE CASE WHEN '${K}' = 'ALL' THEN '%' ELSE '%${K}%' END)
+    ([CR COLUMN NAME] LIKE 
+        CASE 
+            WHEN '$E$' = 'ALL' THEN '%' 
+            ELSE '%' + '$E$' + '%' 
+        END
+    )
 )
