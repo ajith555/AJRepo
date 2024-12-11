@@ -1,17 +1,45 @@
-UPDATE [Output$$] 
-SET [Remove] = 1 
-WHERE 
-(
-    [CR COLUMN NAME] LIKE 
-    CASE 
-        WHEN '$strEcrBusinessUnit$' = 'ALL' THEN '%' 
-        ELSE '%$strEcrBusinessUnit$%' 
-    END
-) AND 
-(
-    [CT COLUMN NAME] LIKE 
-    CASE 
-        WHEN '$strFctBusinessArea$' = 'ALL' THEN '%' 
-        ELSE '%$strFctBusinessArea$%' 
-    END
-)
+Dim objExcel, objWorkbookReport, objWorkbookUA69, objSheetReport, objSheetUA69
+Dim rowIndex, reportPath, ua69Path, valE, valF, lastRowReport, lastRowUA69
+
+' Get input arguments from Automation Anywhere
+rowIndex = WScript.Arguments(0) ' Example: "2"
+reportPath = WScript.Arguments(1) ' Full path to report.xlsx
+ua69Path = WScript.Arguments(2) ' Full path to UA69.xlsx
+
+' Initialize Excel
+Set objExcel = CreateObject("Excel.Application")
+objExcel.Visible = False
+objExcel.DisplayAlerts = False
+
+' Open workbooks
+Set objWorkbookReport = objExcel.Workbooks.Open(reportPath)
+Set objSheetReport = objWorkbookReport.Sheets(1)
+
+Set objWorkbookUA69 = objExcel.Workbooks.Open(ua69Path)
+Set objSheetUA69 = objWorkbookUA69.Sheets(1)
+
+' Get values from report.xlsx
+valE = objSheetReport.Range("E" & rowIndex).Value
+valF = objSheetReport.Range("F" & rowIndex).Value
+
+' Filter and delete non-matching rows
+lastRowUA69 = objSheetUA69.Cells(objSheetUA69.Rows.Count, "CR").End(-4162).Row
+
+For i = lastRowUA69 To 2 Step -1 ' Start from last row to avoid skipping
+    If objSheetUA69.Range("CR" & i).Value <> valE Or objSheetUA69.Range("CT" & i).Value <> valF Then
+        objSheetUA69.Rows(i).Delete
+    End If
+Next
+
+' Save and close files
+objWorkbookUA69.Save
+objWorkbookUA69.Close
+objWorkbookReport.Close
+
+' Cleanup
+objExcel.Quit
+Set objExcel = Nothing
+Set objWorkbookReport = Nothing
+Set objWorkbookUA69 = Nothing
+Set objSheetReport = Nothing
+Set objSheetUA69 = Nothing
