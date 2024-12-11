@@ -5,7 +5,30 @@ WHERE
     ([CR COLUMN NAME] LIKE 
         CASE 
             WHEN '$E$' = 'ALL' THEN '%' 
+            ELSE '%' || '$E$' || '%' 
+        END
+    )
+)
+
+
+UPDATE [Output$$] 
+SET [Remove] = 1 
+WHERE 
+(
+    ([CR COLUMN NAME] LIKE 
+        CASE 
+            WHEN '$E$' = 'ALL' THEN '%' 
             ELSE '%' + '$E$' + '%' 
         END
+    )
+)
+
+
+UPDATE `Output$$` 
+SET `Remove` = 1 
+WHERE 
+(
+    (`CR COLUMN NAME` LIKE 
+        IF('$E$' = 'ALL', '%', CONCAT('%', '$E$', '%'))
     )
 )
