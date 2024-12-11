@@ -2,16 +2,16 @@ UPDATE [Output$$]
 SET [Remove] = 1 
 WHERE 
 (
-    ([CR COLUMN NAME] LIKE 
-        CASE 
-            WHEN '$strEcrBusinessUnit$' = 'ALL' THEN '%' 
-            ELSE '%$strEcrBusinessUnit$%' 
-        END
-    ) AND 
-    ([CT COLUMN NAME] LIKE 
-        CASE 
-            WHEN '$strFctBusinessArea$' = 'ALL' THEN '%' 
-            ELSE '%$strFctBusinessArea$%' 
-        END
-    )
+    [CR COLUMN NAME] LIKE 
+    CASE 
+        WHEN '$strEcrBusinessUnit$' = 'ALL' THEN '%' 
+        ELSE '%$strEcrBusinessUnit$%' 
+    END
+) AND 
+(
+    [CT COLUMN NAME] LIKE 
+    CASE 
+        WHEN '$strFctBusinessArea$' = 'ALL' THEN '%' 
+        ELSE '%$strFctBusinessArea$%' 
+    END
 )
