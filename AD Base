@@ -3,9 +3,8 @@ Sub Update_AG_Column()
     Dim wsSource As Worksheet, wsTarget As Worksheet
     Dim lastRow As Long, lastRowTarget As Long
     Dim filterCol As String, filterValue As String
-    Dim targetCol As Range, targetRow As Range
     Dim countryExclusion As String, dateRange As String
-    Dim cell As Range, targetCell As Range
+    Dim cell As Range
     Dim AGColNum As Long, filterColNum As Long
     
     ' Set workbook references
@@ -20,14 +19,8 @@ Sub Update_AG_Column()
     lastRow = wsSource.Cells(wsSource.Rows.Count, 1).End(xlUp).Row
     lastRowTarget = wsTarget.Cells(wsTarget.Rows.Count, 1).End(xlUp).Row
     
-    ' Find AG column in UA69_Updated file (it is fixed as "AG")
-    On Error Resume Next
-    AGColNum = Application.Match("AG", wsTarget.Rows(1), 0)
-    On Error GoTo 0
-    If AGColNum = 0 Then
-        MsgBox "AG column not found in UA69_Updated.xlsx!", vbExclamation
-        Exit Sub
-    End If
+    ' Set AG column directly (Column 33 in Excel is AG)
+    AGColNum = 33
     
     Dim i As Long, j As Long
     
@@ -86,7 +79,7 @@ Sub Update_AG_Column()
                 End If
                 
                 ' Update AG column in UA69_Updated file
-                wsTarget.Cells(j, AGColNum).Value = wsSource.Cells(i, wsSource.Rows(i).Columns.Count).Value
+                wsTarget.Cells(j, AGColNum).Value = wsSource.Cells(i, wsSource.Cells(i, Columns.Count).End(xlToLeft).Column).Value
             End If
 NextTargetRow:
         Next j
