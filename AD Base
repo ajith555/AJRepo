@@ -1,28 +1,85 @@
-# Define the paths for input PDF and output Word file
-$inputPdf = "C:\path\to\your\input.pdf"
-$outputDoc = "C:\path\to\your\output.docx"
-
-# Create an instance of Adobe Acrobat application
-$acrobatApp = New-Object -ComObject AcroExch.App
-
-# Open the PDF document
-$pdfDoc = New-Object -ComObject AcroExch.PDDoc
-if ($pdfDoc.Open($inputPdf)) {
-    # Export the PDF as Word file
-    $wordOutput = $pdfDoc.Save(1, $outputDoc)  # 1 = SaveAsWord
-
-    # Check if the export was successful
-    if ($wordOutput -eq 0) {
-        Write-Host "PDF successfully converted to Word: $outputDoc"
-    } else {
-        Write-Host "Failed to convert PDF to Word."
-    }
-
-    # Close the PDF document
-    $pdfDoc.Close()
-} else {
-    Write-Host "Failed to open PDF file."
-}
-
-# Quit Acrobat application
-$acrobatApp.Exit()
+Sub Update_AG_Column()
+    Dim wbSource As Workbook, wbTarget As Workbook
+    Dim wsSource As Worksheet, wsTarget As Worksheet
+    Dim lastRow As Long, lastRowTarget As Long
+    Dim filterCol As String, filterValue As String
+    Dim targetCol As Range, targetRow As Range
+    Dim countryExclusion As String, dateRange As String
+    Dim cell As Range, targetCell As Range
+    
+    ' Set workbook references
+    Set wbSource = ThisWorkbook  ' Ajith Macro V1.xlsm
+    Set wbTarget = Workbooks("UA69_Updated.xlsx")
+    
+    ' Set worksheet references
+    Set wsSource = wbSource.Sheets("Job Code Description")
+    Set wsTarget = wbTarget.Sheets("Output") ' Use Output sheet in UA69_Updated.xlsx
+    
+    ' Find last row in source and target
+    lastRow = wsSource.Cells(wsSource.Rows.Count, 1).End(xlUp).Row
+    lastRowTarget = wsTarget.Cells(wsTarget.Rows.Count, 1).End(xlUp).Row
+    
+    Dim i As Long, j As Long
+    
+    ' Loop through each row in Job Code Description sheet
+    For i = 2 To lastRow  ' Assuming row 1 is headers
+        filterCol = wsSource.Cells(1, i).Value  ' Get column name for filter
+        filterValue = wsSource.Cells(i, 1).Value ' Value to check in UA69_Updated
+        countryExclusion = wsSource.Cells(i, 4).Value ' Country exclusion column
+        dateRange = wsSource.Cells(i, 5).Value ' Date range column
+        
+        ' Find the actual column number in target sheet
+        Dim filterColNum As Long, AGColNum As Long
+        filterColNum = 0
+        AGColNum = 0
+        
+        ' Find filter column index in UA69_Updated
+        For j = 1 To wsTarget.UsedRange.Columns.Count
+            If wsTarget.Cells(1, j).Value = filterCol Then
+                filterColNum = j
+            ElseIf wsTarget.Cells(1, j).Value = "AG" Then
+                AGColNum = j
+            End If
+        Next j
+        
+        ' If filter column not found, skip
+        If filterColNum = 0 Or AGColNum = 0 Then GoTo NextRow
+        
+        ' Loop through UA69_Updated file and update AG column
+        For Each targetRow In wsTarget.Range(wsTarget.Cells(2, filterColNum), wsTarget.Cells(lastRowTarget, filterColNum))
+            If targetRow.Value = filterValue Then
+                ' Country check
+                If Not IsEmpty(countryExclusion) Then
+                    Dim country As String
+                    country = wsTarget.Cells(targetRow.Row, 4).Value ' Assuming country is in 4th column
+                    
+                    If InStr(1, countryExclusion, "All except", vbTextCompare) > 0 Then
+                        If InStr(1, countryExclusion, country, vbTextCompare) > 0 Then GoTo NextTargetRow
+                    End If
+                End If
+                
+                ' Date range check
+                If Not IsEmpty(dateRange) Then
+                    Dim dateValue As Date, startDate As Date, endDate As Date
+                    dateValue = wsTarget.Cells(targetRow.Row, 5).Value ' Assuming date is in 5th column
+                    
+                    Dim parts() As String
+                    parts = Split(dateRange, "-")
+                    If UBound(parts) = 1 Then
+                        startDate = DateValue(Trim(parts(0)))
+                        endDate = DateValue(Trim(parts(1)))
+                        
+                        If dateValue < startDate Or dateValue > endDate Then GoTo NextTargetRow
+                    End If
+                End If
+                
+                ' Update AG column
+                wsTarget.Cells(targetRow.Row, AGColNum).Value = wsSource.Cells(i, "AG").Value
+            End If
+NextTargetRow:
+        Next targetRow
+NextRow:
+    Next i
+    
+    MsgBox "AG Column updated successfully!", vbInformation
+End Sub
