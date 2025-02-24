@@ -5,7 +5,7 @@ Sub Update_AG_Column()
     Dim filterCol As String, filterValue As String
     Dim countryCondition As String, dateRange As String
     Dim cell As Range
-    Dim AGColNum As Long, filterColNum As Long, AOColNum As Long, AG_LatAmColNum As Long
+    Dim AGColNum As Long, filterColNum As Long
     Dim dictAO As Object
     Dim countryList As Variant
     Dim excludeMode As Boolean
@@ -25,7 +25,7 @@ Sub Update_AG_Column()
     lastRowTarget = wsTarget.Cells(wsTarget.Rows.Count, 1).End(xlUp).Row
     lastRowLatAm = wsLatAm.Cells(wsLatAm.Rows.Count, 1).End(xlUp).Row
 
-    ' Set AG column directly (Column 33 in Excel is AG)
+    ' AG column in UA69_Updated (Column 33 = AG)
     AGColNum = 33
 
     ' Store AO -> AG mapping from LatAm sheet in Dictionary
@@ -34,16 +34,10 @@ Sub Update_AG_Column()
     Dim i As Long, j As Long, k As Long
     Dim AG_LatAm As String, AO_LatAm As String
     
-    ' Get column numbers for AO and AG in LatAm sheet
-    On Error Resume Next
-    AOColNum = Application.Match("AO", wsLatAm.Rows(1), 0)
-    AG_LatAmColNum = Application.Match("AG", wsLatAm.Rows(1), 0)
-    On Error GoTo 0
-    
-    If AOColNum = 0 Or AG_LatAmColNum = 0 Then
-        MsgBox "AO or AG column not found in LatAm sheet!", vbExclamation
-        Exit Sub
-    End If
+    ' LatAm AO column = Column B, AG column = Column C
+    Dim AOColNum As Long, AG_LatAmColNum As Long
+    AOColNum = 2
+    AG_LatAmColNum = 3
     
     ' Load AO -> AG mapping from LatAm sheet
     For k = 2 To lastRowLatAm
