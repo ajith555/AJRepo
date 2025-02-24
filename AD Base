@@ -2,10 +2,10 @@ Sub Update_AG_Column()
     Dim wbSource As Workbook, wbTarget As Workbook
     Dim wsSource As Worksheet, wsTarget As Worksheet
     Dim lastRow As Long, lastRowTarget As Long
-    Dim filterCol As String, filterValue As String
-    Dim targetCol As Range, targetRow As Range
-    Dim countryExclusion As String, dateRange As String
-    Dim cell As Range, targetCell As Range
+    Dim filterValue As String, countryExclusion As String, dateRange As String
+    Dim filterColNum As Long, AGColNum As Long
+    Dim i As Long, j As Long
+    Dim targetRow As Range, filterCol As Range
     
     ' Set workbook references
     Set wbSource = ThisWorkbook  ' Ajith Macro V1.xlsm
@@ -13,80 +13,59 @@ Sub Update_AG_Column()
     
     ' Set worksheet references
     Set wsSource = wbSource.Sheets("Job Code Description")
-    Set wsTarget = wbTarget.Sheets("Output") ' Use Output sheet in UA69_Updated.xlsx
+    Set wsTarget = wbTarget.Sheets("Output")
     
     ' Find last row in source and target
     lastRow = wsSource.Cells(wsSource.Rows.Count, 1).End(xlUp).Row
     lastRowTarget = wsTarget.Cells(wsTarget.Rows.Count, 1).End(xlUp).Row
     
-    Dim i As Long, j As Long
+    ' Get column numbers for filtering and AG
+    filterColNum = 1  ' Assuming filter values are in column A
+    AGColNum = Application.Match("AG", wsTarget.Rows(1), 0)
     
-    ' Loop through each row in Job Code Description sheet
-    For i = 2 To lastRow  ' Assuming row 1 is headers
-        filterCol = wsSource.Cells(1, i).Value  ' Get column name for filter
-        filterValue = wsSource.Cells(i, 1).Value ' Value to check in UA69_Updated
-        countryExclusion = wsSource.Cells(i, 4).Value ' Country exclusion column
-        dateRange = wsSource.Cells(i, 5).Value ' Date range column
-        
-        ' Find the actual column number in target sheet
-        Dim filterColNum As Long, AGColNum As Long
-        filterColNum = 0
-        AGColNum = 0
-        
-        ' Find filter column index in UA69_Updated
-        For j = 1 To wsTarget.UsedRange.Columns.Count
-            If wsTarget.Cells(1, j).Value = filterCol Then
-                filterColNum = j
-            ElseIf wsTarget.Cells(1, j).Value = "AG" Then
-                AGColNum = j
-            End If
-        Next j
-        
-        ' If filter column not found, skip
-        If filterColNum = 0 Or AGColNum = 0 Then GoTo NextRow
+    ' If AG column is not found, exit
+    If IsError(AGColNum) Then
+        MsgBox "AG column not found in UA69_Updated.xlsx", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Loop through each row in source sheet
+    For i = 2 To lastRow
+        filterValue = Trim(wsSource.Cells(i, filterColNum).Value)
+        countryExclusion = Trim(wsSource.Cells(i, 4).Value) ' Country exclusion
+        dateRange = Trim(wsSource.Cells(i, 5).Value) ' Date range
         
         ' Loop through UA69_Updated file and update AG column
-        For Each targetRow In wsTarget.Range(wsTarget.Cells(2, filterColNum), wsTarget.Cells(lastRowTarget, filterColNum))
-            If targetRow.Value = filterValue Then
-                ' Country check
-                If Not IsEmpty(countryExclusion) Then
-                    Dim country As String
-                    country = wsTarget.Cells(targetRow.Row, 4).Value ' Assuming country is in 4th column
-                    
-                    If InStr(1, countryExclusion, "All except", vbTextCompare) > 0 Then
-                        If InStr(1, countryExclusion, country, vbTextCompare) > 0 Then GoTo NextTargetRow
-                    End If
+        For j = 2 To lastRowTarget
+            If Trim(wsTarget.Cells(j, filterColNum).Value) = filterValue Then
+                ' Country exclusion check
+                If countryExclusion <> "" And InStr(1, countryExclusion, wsTarget.Cells(j, 4).Value, vbTextCompare) > 0 Then
+                    GoTo SkipRow
                 End If
                 
                 ' Date range check
-                If Not IsEmpty(dateRange) Then
-                    Dim dateValue As Variant, startDate As Date, endDate As Date
-                    dateValue = wsTarget.Cells(targetRow.Row, 5).Value ' Assuming date is in 5th column
+                If dateRange <> "" Then
+                    Dim parts() As String
+                    Dim startDate As Date, endDate As Date
+                    Dim targetDate As Variant
                     
-                    If IsDate(dateValue) Then
-                        Dim parts() As String
-                        If InStr(1, dateRange, "-") > 0 Then
-                            parts = Split(dateRange, "-")
-                            If UBound(parts) = 1 Then
-                                On Error Resume Next
-                                startDate = DateValue(Trim(parts(0)))
-                                endDate = DateValue(Trim(parts(1)))
-                                On Error GoTo 0
-                                
-                                If IsDate(startDate) And IsDate(endDate) Then
-                                    If dateValue < startDate Or dateValue > endDate Then GoTo NextTargetRow
-                                End If
-                            End If
+                    parts = Split(dateRange, "-")
+                    If UBound(parts) = 1 Then
+                        startDate = DateValue(Trim(parts(0)))
+                        endDate = DateValue(Trim(parts(1)))
+                        targetDate = wsTarget.Cells(j, 5).Value
+                        
+                        If IsDate(targetDate) Then
+                            If targetDate < startDate Or targetDate > endDate Then GoTo SkipRow
                         End If
                     End If
                 End If
                 
                 ' Update AG column
-                wsTarget.Cells(targetRow.Row, AGColNum).Value = wsSource.Cells(i, wsSource.Rows(i).Columns.Count).Value
+                wsTarget.Cells(j, AGColNum).Value = wsSource.Cells(i, wsSource.UsedRange.Columns.Count).Value
             End If
-NextTargetRow:
-        Next targetRow
-NextRow:
+SkipRow:
+        Next j
     Next i
     
     MsgBox "AG Column updated successfully!", vbInformation
