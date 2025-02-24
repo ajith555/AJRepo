@@ -1,40 +1,68 @@
 Sub Update_AG_Column()
-    Dim wbSource As Workbook, wbTarget As Workbook
-    Dim wsSource As Worksheet, wsTarget As Worksheet
-    Dim lastRow As Long, lastRowTarget As Long
+    Dim wbSource As Workbook, wbTarget As Workbook, wbLatAm As Workbook
+    Dim wsSource As Worksheet, wsTarget As Worksheet, wsLatAm As Worksheet
+    Dim lastRow As Long, lastRowTarget As Long, lastRowLatAm As Long
     Dim filterCol As String, filterValue As String
-    Dim countryExclusion As String, dateRange As String
+    Dim countryCondition As String, dateRange As String
     Dim cell As Range
-    Dim AGColNum As Long, filterColNum As Long
+    Dim AGColNum As Long, filterColNum As Long, AOColNum As Long, AG_LatAmColNum As Long
+    Dim dictAO As Object
+    Dim countryList As Variant
+    Dim excludeMode As Boolean
     
     ' Set workbook references
     Set wbSource = ThisWorkbook  ' Ajith Macro V1.xlsm
     Set wbTarget = Workbooks("UA69_Updated.xlsx")
+    Set wbLatAm = Workbooks("WMA BLR_BLC_Rules for Automation.xlsx")
     
     ' Set worksheet references
     Set wsSource = wbSource.Sheets("Job Code Description")
     Set wsTarget = wbTarget.Sheets("Output") ' Use Output sheet in UA69_Updated.xlsx
+    Set wsLatAm = wbLatAm.Sheets("LatAm")
     
-    ' Find last row in source and target
+    ' Find last rows
     lastRow = wsSource.Cells(wsSource.Rows.Count, 1).End(xlUp).Row
     lastRowTarget = wsTarget.Cells(wsTarget.Rows.Count, 1).End(xlUp).Row
-    
+    lastRowLatAm = wsLatAm.Cells(wsLatAm.Rows.Count, 1).End(xlUp).Row
+
     ' Set AG column directly (Column 33 in Excel is AG)
     AGColNum = 33
+
+    ' Store AO -> AG mapping from LatAm sheet in Dictionary
+    Set dictAO = CreateObject("Scripting.Dictionary")
     
-    Dim i As Long, j As Long
+    Dim i As Long, j As Long, k As Long
+    Dim AG_LatAm As String, AO_LatAm As String
     
+    ' Get column numbers for AO and AG in LatAm sheet
+    On Error Resume Next
+    AOColNum = Application.Match("AO", wsLatAm.Rows(1), 0)
+    AG_LatAmColNum = Application.Match("AG", wsLatAm.Rows(1), 0)
+    On Error GoTo 0
+    
+    If AOColNum = 0 Or AG_LatAmColNum = 0 Then
+        MsgBox "AO or AG column not found in LatAm sheet!", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Load AO -> AG mapping from LatAm sheet
+    For k = 2 To lastRowLatAm
+        AG_LatAm = wsLatAm.Cells(k, AG_LatAmColNum).Value
+        AO_LatAm = wsLatAm.Cells(k, AOColNum).Value
+        If Not dictAO.exists(AG_LatAm) Then
+            dictAO.Add AG_LatAm, AO_LatAm
+        End If
+    Next k
+
     ' Loop through each row in Job Code Description sheet
     For i = 2 To lastRow  ' Assuming row 1 is headers
         filterCol = wsSource.Cells(1, i).Value  ' Get column name for filter
-        filterValue = wsSource.Cells(i, 1).Value ' Value to check in UA69_Updated
-        countryExclusion = wsSource.Cells(i, 4).Value ' Country exclusion column
+        filterValue = wsSource.Cells(i, 2).Value ' Value to check (2nd column)
+        countryCondition = wsSource.Cells(i, 4).Value ' Country condition column
         dateRange = wsSource.Cells(i, 5).Value ' Date range column
         
-        ' Find the actual column number in target sheet
+        ' Find actual column number in UA69_Updated
         filterColNum = 0
-        
-        ' Find filter column index in UA69_Updated
         On Error Resume Next
         filterColNum = Application.Match(filterCol, wsTarget.Rows(1), 0)
         On Error GoTo 0
@@ -42,17 +70,54 @@ Sub Update_AG_Column()
         ' If filter column not found, skip
         If filterColNum = 0 Then GoTo NextRow
         
+        ' Parse country condition
+        excludeMode = False
+        If InStr(1, countryCondition, "All except", vbTextCompare) > 0 Then
+            excludeMode = True
+            countryCondition = Trim(Replace(countryCondition, "All except", ""))
+        End If
+        
+        ' Split the country list into an array
+        If Len(countryCondition) > 0 Then
+            countryList = Split(countryCondition, ",")
+            For k = LBound(countryList) To UBound(countryList)
+                countryList(k) = Trim(countryList(k))
+            Next k
+        Else
+            countryList = Array()
+        End If
+
+        ' Check if filterValue exists in LatAm AG column and get AO value
+        Dim AO_Match As String
+        If dictAO.exists(filterValue) Then
+            AO_Match = dictAO(filterValue)
+        Else
+            GoTo NextRow ' Skip if AG not found in LatAm sheet
+        End If
+
         ' Loop through UA69_Updated file and update AG column
         For j = 2 To lastRowTarget
-            If wsTarget.Cells(j, filterColNum).Value = filterValue Then
+            ' Match AO column in UA69_Updated with AO value from LatAm sheet
+            If wsTarget.Cells(j, filterColNum).Value = AO_Match Then
                 ' Country check
-                If Not IsEmpty(countryExclusion) Then
-                    Dim country As String
-                    country = wsTarget.Cells(j, 4).Value ' Assuming country is in 4th column
-                    
-                    If InStr(1, countryExclusion, "All except", vbTextCompare) > 0 Then
-                        If InStr(1, countryExclusion, country, vbTextCompare) > 0 Then GoTo NextTargetRow
-                    End If
+                Dim country As String
+                country = wsTarget.Cells(j, 4).Value ' Assuming country is in 4th column
+                
+                If excludeMode Then
+                    ' If "All except" mode, exclude listed countries
+                    For k = LBound(countryList) To UBound(countryList)
+                        If StrComp(country, countryList(k), vbTextCompare) = 0 Then GoTo NextTargetRow
+                    Next k
+                ElseIf UBound(countryList) >= 0 Then
+                    ' If specific countries are listed, include only them
+                    Dim found As Boolean: found = False
+                    For k = LBound(countryList) To UBound(countryList)
+                        If StrComp(country, countryList(k), vbTextCompare) = 0 Then
+                            found = True
+                            Exit For
+                        End If
+                    Next k
+                    If Not found Then GoTo NextTargetRow
                 End If
                 
                 ' Date range check
