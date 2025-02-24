@@ -2,52 +2,47 @@ Sub Update_AG_Column()
     Dim wbSource As Workbook, wbTarget As Workbook, wbLatAm As Workbook
     Dim wsSource As Worksheet, wsTarget As Worksheet, wsLatAm As Worksheet
     Dim lastRow As Long, lastRowTarget As Long, lastRowLatAm As Long
-    Dim filterCol As String, filterValue As String, countryCondition As String, dateRange As String
-    Dim AOValue As String, AGValue As String, foundAO As String
+    Dim filterCol As String, filterValue As String
+    Dim countryExclusion As String, dateRange As String
     Dim cell As Range
-    Dim AGColNum As Long, filterColNum As Long
+    Dim AGColNum As Long, filterColNum As Long, AOTargetColNum As Long
+    Dim i As Long, j As Long
+    Dim AOMap As Object
     
     ' Set workbook references
     Set wbSource = ThisWorkbook  ' Ajith Macro V1.xlsm
     Set wbTarget = Workbooks("UA69_Updated.xlsx")
-    Set wbLatAm = Workbooks("WMA BLR_BLC_Rules for Automation.xlsx")
+    Set wbLatAm = Workbooks("WMA BLR_BLC_Rules for Automation.xlsx") ' Ensure this file is open
     
     ' Set worksheet references
     Set wsSource = wbSource.Sheets("Job Code Description")
     Set wsTarget = wbTarget.Sheets("Output") ' Use Output sheet in UA69_Updated.xlsx
-    Set wsLatAm = wbLatAm.Sheets("LatAm") ' LatAm sheet in WMA BLR_BLC_Rules for Automation
+    Set wsLatAm = wbLatAm.Sheets("LatAm") ' LatAm sheet in WMA BLR_BLC_Rules file
     
     ' Find last row in source, target, and LatAm sheet
     lastRow = wsSource.Cells(wsSource.Rows.Count, 1).End(xlUp).Row
     lastRowTarget = wsTarget.Cells(wsTarget.Rows.Count, 1).End(xlUp).Row
-    lastRowLatAm = wsLatAm.Cells(wsLatAm.Rows.Count, 2).End(xlUp).Row ' B = AO column in LatAm sheet
+    lastRowLatAm = wsLatAm.Cells(wsLatAm.Rows.Count, 2).End(xlUp).Row ' AO column is in B, AG in C
     
-    ' AG column is the 33rd column in UA69_Updated file
+    ' Set AG column directly (Column 33 in Excel is AG)
     AGColNum = 33
     
-    Dim i As Long, j As Long
+    ' Create dictionary for AO to AG mapping from LatAm sheet
+    Set AOMap = CreateObject("Scripting.Dictionary")
+    
+    ' Populate dictionary with AO -> AG values from LatAm sheet
+    For i = 2 To lastRowLatAm
+        AOMap(wsLatAm.Cells(i, 2).Value) = wsLatAm.Cells(i, 3).Value
+    Next i
     
     ' Loop through each row in Job Code Description sheet
     For i = 2 To lastRow  ' Assuming row 1 is headers
-        filterCol = wsSource.Cells(i, 1).Value ' Column name to filter
-        filterValue = wsSource.Cells(i, 2).Value ' Value to check in LatAm sheet
-        countryCondition = wsSource.Cells(i, 4).Value ' Country condition
-        dateRange = wsSource.Cells(i, 5).Value ' Date range condition
+        filterCol = wsSource.Cells(1, i).Value  ' Get column name for filter
+        filterValue = wsSource.Cells(i, 1).Value ' Value to check in UA69_Updated
+        countryExclusion = wsSource.Cells(i, 4).Value ' Country exclusion column
+        dateRange = wsSource.Cells(i, 5).Value ' Date range column
         
-        ' Find corresponding AO value from LatAm sheet based on AG match
-        foundAO = ""
-        For j = 2 To lastRowLatAm
-            If wsLatAm.Cells(j, 3).Value = filterValue Then ' Column C (AG) in LatAm
-                foundAO = wsLatAm.Cells(j, 2).Value ' Column B (AO) in LatAm
-                Exit For
-            End If
-        Next j
-        
-        ' If no AO value found, skip row
-        If foundAO = "" Then GoTo NextRow
-        
-        ' Find actual column number in UA69_Updated file
-        filterColNum = 0
+        ' Find filter column index in UA69_Updated file
         On Error Resume Next
         filterColNum = Application.Match(filterCol, wsTarget.Rows(1), 0)
         On Error GoTo 0
@@ -57,27 +52,31 @@ Sub Update_AG_Column()
         
         ' Loop through UA69_Updated file and update AG column
         For j = 2 To lastRowTarget
-            If wsTarget.Cells(j, filterColNum).Value = foundAO Then
-                ' Country filtering logic
-                Dim country As String
-                country = wsTarget.Cells(j, 4).Value ' Assuming country is in column 4
-                
-                If InStr(1, countryCondition, "All except", vbTextCompare) > 0 Then
-                    ' Exclude listed countries
-                    Dim excludedCountries As String
-                    excludedCountries = Trim(Replace(countryCondition, "All except", ""))
-                    If InStr(1, excludedCountries, country, vbTextCompare) > 0 Then GoTo NextTargetRow
-                ElseIf InStr(1, countryCondition, "All", vbTextCompare) > 0 Then
-                    ' Include all countries (no filtering needed)
-                Else
-                    ' Include only specified countries
-                    If InStr(1, countryCondition, country, vbTextCompare) = 0 Then GoTo NextTargetRow
+            Dim targetValue As String
+            targetValue = wsTarget.Cells(j, filterColNum).Value
+            
+            ' Check if targetValue is contained in filterValue (instead of exact match)
+            If InStr(1, filterValue, targetValue, vbTextCompare) > 0 Then
+                ' Country check
+                If Not IsEmpty(countryExclusion) Then
+                    Dim country As String
+                    country = wsTarget.Cells(j, 4).Value ' Assuming country is in 4th column
+                    
+                    If InStr(1, countryExclusion, "All except", vbTextCompare) > 0 Then
+                        Dim excludedCountries As String
+                        excludedCountries = Trim(Mid(countryExclusion, InStr(1, countryExclusion, "except") + 6))
+                        
+                        If InStr(1, excludedCountries, country, vbTextCompare) > 0 Then GoTo NextTargetRow
+                    ElseIf InStr(1, countryExclusion, "All", vbTextCompare) = 0 Then
+                        ' Only specified countries should be included
+                        If InStr(1, countryExclusion, country, vbTextCompare) = 0 Then GoTo NextTargetRow
+                    End If
                 End If
                 
-                ' Date range filtering
+                ' Date range check
                 If Not IsEmpty(dateRange) Then
                     Dim dateValue As Variant, startDate As Date, endDate As Date
-                    dateValue = wsTarget.Cells(j, 5).Value ' Assuming date is in column 5
+                    dateValue = wsTarget.Cells(j, 5).Value ' Assuming date is in 5th column
                     
                     If IsDate(dateValue) Then
                         Dim parts() As String
@@ -97,8 +96,15 @@ Sub Update_AG_Column()
                     End If
                 End If
                 
-                ' Update AG column in UA69_Updated file
-                wsTarget.Cells(j, AGColNum).Value = wsSource.Cells(i, wsSource.Cells(i, Columns.Count).End(xlToLeft).Column).Value
+                ' Map AO to AG using LatAm sheet
+                Dim AOTargetValue As String, AGMappingValue As String
+                AOTargetValue = wsTarget.Cells(j, 2).Value ' Assuming AO is in column 2 of UA69_Updated
+                
+                If AOMap.exists(AOTargetValue) Then
+                    AGMappingValue = AOMap(AOTargetValue)
+                    ' Update AG column in UA69_Updated file
+                    wsTarget.Cells(j, AGColNum).Value = AGMappingValue
+                End If
             End If
 NextTargetRow:
         Next j
