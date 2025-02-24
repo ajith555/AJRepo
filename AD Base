@@ -60,21 +60,29 @@ Sub Update_AG_Column()
                 
                 ' Date range check
                 If Not IsEmpty(dateRange) Then
-                    Dim dateValue As Date, startDate As Date, endDate As Date
+                    Dim dateValue As Variant, startDate As Date, endDate As Date
                     dateValue = wsTarget.Cells(targetRow.Row, 5).Value ' Assuming date is in 5th column
                     
-                    Dim parts() As String
-                    parts = Split(dateRange, "-")
-                    If UBound(parts) = 1 Then
-                        startDate = DateValue(Trim(parts(0)))
-                        endDate = DateValue(Trim(parts(1)))
-                        
-                        If dateValue < startDate Or dateValue > endDate Then GoTo NextTargetRow
+                    If IsDate(dateValue) Then
+                        Dim parts() As String
+                        If InStr(1, dateRange, "-") > 0 Then
+                            parts = Split(dateRange, "-")
+                            If UBound(parts) = 1 Then
+                                On Error Resume Next
+                                startDate = DateValue(Trim(parts(0)))
+                                endDate = DateValue(Trim(parts(1)))
+                                On Error GoTo 0
+                                
+                                If IsDate(startDate) And IsDate(endDate) Then
+                                    If dateValue < startDate Or dateValue > endDate Then GoTo NextTargetRow
+                                End If
+                            End If
+                        End If
                     End If
                 End If
                 
                 ' Update AG column
-                wsTarget.Cells(targetRow.Row, AGColNum).Value = wsSource.Cells(i, "AG").Value
+                wsTarget.Cells(targetRow.Row, AGColNum).Value = wsSource.Cells(i, wsSource.Rows(i).Columns.Count).Value
             End If
 NextTargetRow:
         Next targetRow
