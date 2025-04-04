@@ -1,4 +1,3 @@
-=TEXT(INT([Planned Task End] - [Planned Task Start]),"0") & " days " & 
+= INT([Planned Task End] - [Planned Task Start]) & " days " & 
 TEXT(HOUR([Planned Task End] - [Planned Task Start]),"0") & " hours " & 
-TEXT(MINUTE([Planned Task End] - [Planned Task Start]),"0") & " minutes " & 
-TEXT(SECOND([Planned Task End] - [Planned Task Start]),"0") & " seconds"
+TEXT(MINUTE([Planned Task End] - [Planned Task Start]),"0") & " minutes"
