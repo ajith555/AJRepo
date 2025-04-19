@@ -1,28 +1,5 @@
 (
-  '$strHeaderFiveValue$' = 'All'
-  OR
-  (
-    '$strHeaderFiveValue$' LIKE '>% years' AND 
-    DATEDIFF(YEAR, CONVERT(DATETIME, [Latest hire date], 104), GETDATE()) > CAST(REPLACE(REPLACE('$strHeaderFiveValue$', '>',''), ' years','') AS INT)
-  )
-  OR
-  (
-    '$strHeaderFiveValue$' LIKE '<% years' AND 
-    DATEDIFF(YEAR, CONVERT(DATETIME, [Latest hire date], 104), GETDATE()) < CAST(REPLACE(REPLACE('$strHeaderFiveValue$', '<',''), ' years','') AS INT)
-  )
-  OR
-  (
-    '$strHeaderFiveValue$' LIKE '=% years' AND 
-    DATEDIFF(YEAR, CONVERT(DATETIME, [Latest hire date], 104), GETDATE()) = CAST(REPLACE(REPLACE('$strHeaderFiveValue$', '=',''), ' years','') AS INT)
-  )
-  OR
-  (
-    '$strHeaderFiveValue$' LIKE '>=% years' AND 
-    DATEDIFF(YEAR, CONVERT(DATETIME, [Latest hire date], 104), GETDATE()) >= CAST(REPLACE(REPLACE('$strHeaderFiveValue$', '>=',''), ' years','') AS INT)
-  )
-  OR
-  (
-    '$strHeaderFiveValue$' LIKE '<=% years' AND 
-    DATEDIFF(YEAR, CONVERT(DATETIME, [Latest hire date], 104), GETDATE()) <= CAST(REPLACE(REPLACE('$strHeaderFiveValue$', '<=',''), ' years','') AS INT)
-  )
+  '$strHeaderFiveValue$' = '<10 years'
+  AND
+  DATEDIFF(YEAR, CONVERT(DATETIME, [Latest hire date], 104), GETDATE()) < 10
 )
