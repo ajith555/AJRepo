@@ -1,3 +1,28 @@
-= INT([Planned Task End] - [Planned Task Start]) & " days " & 
-TEXT(HOUR([Planned Task End] - [Planned Task Start]),"0") & " hours " & 
-TEXT(MINUTE([Planned Task End] - [Planned Task Start]),"0") & " minutes"
+(
+  '$strHeaderFiveValue$' = 'All'
+  OR
+  (
+    '$strHeaderFiveValue$' LIKE '>% years' AND 
+    DATEDIFF(YEAR, CONVERT(DATETIME, [Latest hire date], 104), GETDATE()) > CAST(REPLACE(REPLACE('$strHeaderFiveValue$', '>',''), ' years','') AS INT)
+  )
+  OR
+  (
+    '$strHeaderFiveValue$' LIKE '<% years' AND 
+    DATEDIFF(YEAR, CONVERT(DATETIME, [Latest hire date], 104), GETDATE()) < CAST(REPLACE(REPLACE('$strHeaderFiveValue$', '<',''), ' years','') AS INT)
+  )
+  OR
+  (
+    '$strHeaderFiveValue$' LIKE '=% years' AND 
+    DATEDIFF(YEAR, CONVERT(DATETIME, [Latest hire date], 104), GETDATE()) = CAST(REPLACE(REPLACE('$strHeaderFiveValue$', '=',''), ' years','') AS INT)
+  )
+  OR
+  (
+    '$strHeaderFiveValue$' LIKE '>=% years' AND 
+    DATEDIFF(YEAR, CONVERT(DATETIME, [Latest hire date], 104), GETDATE()) >= CAST(REPLACE(REPLACE('$strHeaderFiveValue$', '>=',''), ' years','') AS INT)
+  )
+  OR
+  (
+    '$strHeaderFiveValue$' LIKE '<=% years' AND 
+    DATEDIFF(YEAR, CONVERT(DATETIME, [Latest hire date], 104), GETDATE()) <= CAST(REPLACE(REPLACE('$strHeaderFiveValue$', '<=',''), ' years','') AS INT)
+  )
+)
