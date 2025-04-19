@@ -1,22 +1,7 @@
 (
   '$strHeaderFiveValue$' = '<10 years'
   AND
-  DATEDIFF(YEAR, CONVERT(DATETIME, [Latest hire date], 104), GETDATE()) < 10
-)
-
-
-
-(
-  '$strHeaderFiveValue$' = '<10 years'
+  DATEDIFF(YEAR, TRY_CONVERT(DATE, [Latest hire date], 104), GETDATE()) < 10
   AND
-  DATEDIFF(YEAR, TRY_CONVERT(DATETIME, [Latest hire date], 104), GETDATE()) < 10
-)
-
-
-
-
-(
-  ('$strHeaderFiveValue$' LIKE '<10%')
-  AND
-  DATEDIFF(YEAR, TRY_CONVERT(DATETIME, [Latest hire date], 104), GETDATE()) < 10
+  TRY_CONVERT(DATE, [Latest hire date], 104) IS NOT NULL
 )
