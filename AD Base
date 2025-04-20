@@ -1,7 +1,8 @@
-(
-  '$strHeaderFiveValue$' = '<10 years'
-  AND
-  DATEDIFF(YEAR, TRY_CONVERT(DATE, [Latest hire date], 104), GETDATE()) < 10
-  AND
-  TRY_CONVERT(DATE, [Latest hire date], 104) IS NOT NULL
-)
+    (
+        ('$strHeaderFiveValue$' = 'All') OR 
+        (
+            CAST(SUBSTR([ReformattedDate], 7, 4) || SUBSTR([ReformattedDate], 4, 2) || SUBSTR([ReformattedDate], 1, 2) AS INTEGER)
+            $op$
+            CAST(SUBSTR('$cutoffDate$', 7, 4) || SUBSTR('$cutoffDate$', 4, 2) || SUBSTR('$cutoffDate$', 1, 2) AS INTEGER)
+        )
+    )
