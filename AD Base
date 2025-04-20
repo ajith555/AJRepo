@@ -2,14 +2,14 @@
   '$strHeaderFiveValue$' = 'All'
   OR (
     MID([Latest hire date], 7, 4) <> ''
-    AND INT('$strTodayYear$') - INT(MID([Latest hire date], 7, 4)) > 
-        INT(REPLACE(REPLACE('$strHeaderFiveValue$', '>',''), ' years',''))
+    AND CINT('$strTodayYear$') - CINT(MID([Latest hire date], 7, 4)) >
+        CINT(REPLACE(REPLACE('$strHeaderFiveValue$', '>',''), ' years',''))
     AND INSTR('$strHeaderFiveValue$', '>') > 0
   )
   OR (
     MID([Latest hire date], 7, 4) <> ''
-    AND INT('$strTodayYear$') - INT(MID([Latest hire date], 7, 4)) < 
-        INT(REPLACE(REPLACE('$strHeaderFiveValue$', '<',''), ' years',''))
+    AND CINT('$strTodayYear$') - CINT(MID([Latest hire date], 7, 4)) <
+        CINT(REPLACE(REPLACE('$strHeaderFiveValue$', '<',''), ' years',''))
     AND INSTR('$strHeaderFiveValue$', '<') > 0
   )
 )
