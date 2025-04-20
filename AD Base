@@ -5,19 +5,14 @@ WHERE
         -- Case 1: If $strHeaderFiveValue$ is "All", no comparison, always true
         '$strHeaderFiveValue$' = 'All' OR
 
-        -- Case 2: Compare if the difference in years is greater than or less than the specified number
+        -- Case 2: Extract the year from Latest hire date and compare it with the current year (using $strTodayYear$)
         (
-            CASE 
-                -- Extract the numeric value (e.g., 10 from "Greater than 10 years")
-                WHEN '$strHeaderFiveValue$' LIKE 'Greater than%' THEN 
-                    YEAR(CAST(SUBSTRING([Latest hire date], 7, 4) AS DATE)) <= CAST('$currentYear$' AS INT) - CAST(SUBSTRING('$strHeaderFiveValue$', 14, LENGTH('$strHeaderFiveValue$') - 13) AS INT)
-
-                -- Extract the numeric value (e.g., 5 from "Less than 5 years")
-                WHEN '$strHeaderFiveValue$' LIKE 'Less than%' THEN 
-                    YEAR(CAST(SUBSTRING([Latest hire date], 7, 4) AS DATE)) > CAST('$currentYear$' AS INT) - CAST(SUBSTRING('$strHeaderFiveValue$', 12, LENGTH('$strHeaderFiveValue$') - 11) AS INT)
-
-                -- If the value doesn't match the "Greater than" or "Less than" patterns, you can default to false or adjust as necessary.
-                ELSE FALSE
-            END
+            -- Check if $strHeaderFiveValue$ is "Greater than" condition
+            ('$strHeaderFiveValue$' LIKE 'Greater than%' AND 
+            CAST(SUBSTRING([Latest hire date], 7, 4) AS INT) <= CAST('$strTodayYear$' AS INT) - CAST(SUBSTRING('$strHeaderFiveValue$', 14, LENGTH('$strHeaderFiveValue$') - 13) AS INT)) 
+            
+            -- Check if $strHeaderFiveValue$ is "Less than" condition
+            OR ('$strHeaderFiveValue$' LIKE 'Less than%' AND 
+            CAST(SUBSTRING([Latest hire date], 7, 4) AS INT) > CAST('$strTodayYear$' AS INT) - CAST(SUBSTRING('$strHeaderFiveValue$', 12, LENGTH('$strHeaderFiveValue$') - 11) AS INT))
         )
     )
