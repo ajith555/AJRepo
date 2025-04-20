@@ -1,15 +1,16 @@
+UPDATE [CopySS$]
+SET [New BL duration] = '$someValue$'
+WHERE
 (
   '$strHeaderFiveValue$' = 'All'
   OR (
-    MID([Latest hire date], 7, 4) <> ''
+    INSTR('$strHeaderFiveValue$', '>') > 0
     AND CINT('$strTodayYear$') - CINT(MID([Latest hire date], 7, 4)) >
-        CINT(REPLACE(REPLACE('$strHeaderFiveValue$', '>',''), ' years',''))
-    AND INSTR('$strHeaderFiveValue$', '>') > 0
+        CINT(REPLACE(REPLACE('$strHeaderFiveValue$', '>', ''), ' years', ''))
   )
   OR (
-    MID([Latest hire date], 7, 4) <> ''
+    INSTR('$strHeaderFiveValue$', '<') > 0
     AND CINT('$strTodayYear$') - CINT(MID([Latest hire date], 7, 4)) <
-        CINT(REPLACE(REPLACE('$strHeaderFiveValue$', '<',''), ' years',''))
-    AND INSTR('$strHeaderFiveValue$', '<') > 0
+        CINT(REPLACE(REPLACE('$strHeaderFiveValue$', '<', ''), ' years', ''))
   )
 )
