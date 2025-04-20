@@ -1,16 +1,3 @@
-
 UPDATE [Copy$$]
-SET [New BL duration] = '$strHeaderSixValue$'
-WHERE (
-  '$strHeaderFiveValue$' = 'All'
-  OR (
-    INSTR('$strHeaderFiveValue$', '>') > 0
-    AND (VAL('$strTodayYear$') - VAL(MID([Latest hire date], 7, 4))) > 
-        VAL(REPLACE(REPLACE('$strHeaderFiveValue$', '>', ''), ' years', ''))
-  )
-  OR (
-    INSTR('$strHeaderFiveValue$', '<') > 0
-    AND (VAL('$strTodayYear$') - VAL(MID([Latest hire date], 7, 4))) < 
-        VAL(REPLACE(REPLACE('$strHeaderFiveValue$', '<', ''), ' years', ''))
-  )
-)
+SET [RoleRelevant] = '$strAfAfValue$'
+WHERE ',' + '$strAfAgValue$' + ',' LIKE '%,' + [NEW BL Relevancy Flag] + ',%'
