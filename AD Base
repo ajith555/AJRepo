@@ -1,6 +1,8 @@
 UPDATE [Output$]
 SET 
-    F32 = (SELECT F32 FROM [Copy$] WHERE [Copy$].F1 = [Output$].F1),
-    F33 = (SELECT F33 FROM [Copy$] WHERE [Copy$].F1 = [Output$].F1),
-    F34 = (SELECT F34 FROM [Copy$] WHERE [Copy$].F1 = [Output$].F1)
-WHERE F1 IN (SELECT F1 FROM [Copy$])
+  F32 = (SELECT [Copy$].F32 FROM [Copy$] WHERE [Copy$].F1 = [Output$].F1),
+  F33 = (SELECT [Copy$].F33 FROM [Copy$] WHERE [Copy$].F1 = [Output$].F1),
+  F34 = (SELECT [Copy$].F34 FROM [Copy$] WHERE [Copy$].F1 = [Output$].F1)
+WHERE EXISTS (
+  SELECT 1 FROM [Copy$] WHERE [Copy$].F1 = [Output$].F1
+)
