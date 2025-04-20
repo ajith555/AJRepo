@@ -1,8 +1,17 @@
+-- Extract number from $strHeaderFiveValue$
+UPDATE YourTable
+SET SomeColumn = 'SomeValue'
+WHERE 
     (
-        ('$strHeaderFiveValue$' = 'All') OR 
         (
-            CAST(SUBSTR([ReformattedDate], 7, 4) || SUBSTR([ReformattedDate], 4, 2) || SUBSTR([ReformattedDate], 1, 2) AS INTEGER)
-            $op$
-            CAST(SUBSTR('$cutoffDate$', 7, 4) || SUBSTR('$cutoffDate$', 4, 2) || SUBSTR('$cutoffDate$', 1, 2) AS INTEGER)
+            -- Check for 'greater than' condition (e.g., >10 years)
+            '$strHeaderFiveValue$' LIKE '>%'
+            AND YEAR(CURRENT_DATE) - CAST(SUBSTR([Date Column Name], 7, 4) AS INTEGER) > CAST(SUBSTR('$strHeaderFiveValue$', 2, LENGTH('$strHeaderFiveValue$') - 6) AS INTEGER)
+        )
+        OR
+        (
+            -- Check for 'less than' condition (e.g., <20 years)
+            '$strHeaderFiveValue$' LIKE '<%'
+            AND YEAR(CURRENT_DATE) - CAST(SUBSTR([Date Column Name], 7, 4) AS INTEGER) < CAST(SUBSTR('$strHeaderFiveValue$', 2, LENGTH('$strHeaderFiveValue$') - 6) AS INTEGER)
         )
     )
