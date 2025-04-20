@@ -1,8 +1,14 @@
-UPDATE [Output$]
-SET 
-  F32 = (SELECT TOP 1 C.F32 FROM [Copy$] C WHERE C.F1 = [Output$].F1),
-  F33 = (SELECT TOP 1 C.F33 FROM [Copy$] C WHERE C.F1 = [Output$].F1),
-  F34 = (SELECT TOP 1 C.F34 FROM [Copy$] C WHERE C.F1 = [Output$].F1)
-WHERE EXISTS (
-  SELECT 1 FROM [Copy$] C WHERE C.F1 = [Output$].F1
-)
+
+SELECT F1 AS MatchKey, F32 AS ColAF, F33 AS ColAG, F34 AS ColAH
+INTO [TempCopy$]
+FROM [Copy$]
+
+
+UPDATE [Output$] O
+SET O.F32 = (SELECT T.ColAF FROM [TempCopy$] T WHERE O.F1 = T.MatchKey),
+    O.F33 = (SELECT T.ColAG FROM [TempCopy$] T WHERE O.F1 = T.MatchKey),
+    O.F34 = (SELECT T.ColAH FROM [TempCopy$] T WHERE O.F1 = T.MatchKey)
+WHERE EXISTS (SELECT 1 FROM [TempCopy$] T WHERE O.F1 = T.MatchKey)
+
+
+DROP TABLE [TempCopy$]
