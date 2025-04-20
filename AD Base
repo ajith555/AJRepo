@@ -1,25 +1,15 @@
 (
-  ('$strHeaderFiveValue$' = 'All')
+  '$strHeaderFiveValue$' = 'All'
   OR (
-    TRY_CAST($strTodayYear$ AS INT) - 
-    TRY_CAST(SUBSTRING([Latest hire date], 7, 4) AS INT)
-    >
-    CASE
-      WHEN CHARINDEX('>', $strHeaderFiveValue$) > 0 THEN
-        TRY_CAST(REPLACE(REPLACE($strHeaderFiveValue$, '>', ''), 'years', '') AS INT)
-      ELSE NULL
-    END
-    AND CHARINDEX('>', $strHeaderFiveValue$) > 0
+    MID([Latest hire date], 7, 4) <> ''
+    AND INT('$strTodayYear$') - INT(MID([Latest hire date], 7, 4)) > 
+        INT(REPLACE(REPLACE('$strHeaderFiveValue$', '>',''), ' years',''))
+    AND INSTR('$strHeaderFiveValue$', '>') > 0
   )
   OR (
-    TRY_CAST($strTodayYear$ AS INT) - 
-    TRY_CAST(SUBSTRING([Latest hire date], 7, 4) AS INT)
-    <
-    CASE
-      WHEN CHARINDEX('<', $strHeaderFiveValue$) > 0 THEN
-        TRY_CAST(REPLACE(REPLACE($strHeaderFiveValue$, '<', ''), 'years', '') AS INT)
-      ELSE NULL
-    END
-    AND CHARINDEX('<', $strHeaderFiveValue$) > 0
+    MID([Latest hire date], 7, 4) <> ''
+    AND INT('$strTodayYear$') - INT(MID([Latest hire date], 7, 4)) < 
+        INT(REPLACE(REPLACE('$strHeaderFiveValue$', '<',''), ' years',''))
+    AND INSTR('$strHeaderFiveValue$', '<') > 0
   )
 )
