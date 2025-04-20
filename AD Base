@@ -1,14 +1,5 @@
-
-SELECT F1 AS MatchKey, F32 AS ColAF, F33 AS ColAG, F34 AS ColAH
-INTO [TempCopy$]
-FROM [Copy$]
-
-
-UPDATE [Output$] O
-SET O.F32 = (SELECT T.ColAF FROM [TempCopy$] T WHERE O.F1 = T.MatchKey),
-    O.F33 = (SELECT T.ColAG FROM [TempCopy$] T WHERE O.F1 = T.MatchKey),
-    O.F34 = (SELECT T.ColAH FROM [TempCopy$] T WHERE O.F1 = T.MatchKey)
-WHERE EXISTS (SELECT 1 FROM [TempCopy$] T WHERE O.F1 = T.MatchKey)
-
-
-DROP TABLE [TempCopy$]
+UPDATE Output$ 
+SET Output$.[AF] = (SELECT Copy$.[AF] FROM Copy$ WHERE Copy$.[A] = Output$.[A]),
+    Output$.[AG] = (SELECT Copy$.[AG] FROM Copy$ WHERE Copy$.[A] = Output$.[A]),
+    Output$.[AH] = (SELECT Copy$.[AH] FROM Copy$ WHERE Copy$.[A] = Output$.[A])
+WHERE EXISTS (SELECT 1 FROM Copy$ WHERE Copy$.[A] = Output$.[A])
