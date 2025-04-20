@@ -1,14 +1,16 @@
 UPDATE YourTable
 SET SomeColumn = 'SomeValue'
-WHERE
+WHERE 
     (
-        -- Check if the value is 'greater than' (e.g., >10 years)
-        (INSTR('$strHeaderFiveValue$', '>') > 0 
-        AND YEAR(CURRENT_DATE) - CAST(SUBSTRING([ReformattedDate], 7, 4) AS INT) > CAST(SUBSTRING('$strHeaderFiveValue$', 2, LENGTH('$strHeaderFiveValue$') - 6) AS INT))
-
+        -- Check if $strHeaderFiveValue$ has '>X years' condition
+        (
+            INSTR('$strHeaderFiveValue$', '>') > 0 AND
+            YEAR(GETDATE()) - CAST(SUBSTRING([Latest hire date], 7, 4) AS INT) > CAST(SUBSTRING('$strHeaderFiveValue$', 2, LENGTH('$strHeaderFiveValue$') - 6) AS INT)
+        )
         OR
-
-        -- Check if the value is 'less than' (e.g., <10 years)
-        (INSTR('$strHeaderFiveValue$', '<') > 0
-        AND YEAR(CURRENT_DATE) - CAST(SUBSTRING([ReformattedDate], 7, 4) AS INT) < CAST(SUBSTRING('$strHeaderFiveValue$', 2, LENGTH('$strHeaderFiveValue$') - 6) AS INT))
+        -- Check if $strHeaderFiveValue$ has '<X years' condition
+        (
+            INSTR('$strHeaderFiveValue$', '<') > 0 AND
+            YEAR(GETDATE()) - CAST(SUBSTRING([Latest hire date], 7, 4) AS INT) < CAST(SUBSTRING('$strHeaderFiveValue$', 2, LENGTH('$strHeaderFiveValue$') - 6) AS INT)
+        )
     )
