@@ -1,18 +1,25 @@
-UPDATE YourTable
-SET SomeColumn = 'SomeValue'
-WHERE
-    (
-        -- Case 1: If $strHeaderFiveValue$ is "All", no comparison, always true
-        '$strHeaderFiveValue$' = 'All' OR
-
-        -- Case 2: Extract the year from Latest hire date and compare it with the current year (using $strTodayYear$)
-        (
-            -- Check if $strHeaderFiveValue$ is "Greater than" condition
-            ('$strHeaderFiveValue$' LIKE 'Greater than%' AND 
-            CAST(SUBSTRING([Latest hire date], 7, 4) AS INT) <= CAST('$strTodayYear$' AS INT) - CAST(SUBSTRING('$strHeaderFiveValue$', 14, LENGTH('$strHeaderFiveValue$') - 13) AS INT)) 
-            
-            -- Check if $strHeaderFiveValue$ is "Less than" condition
-            OR ('$strHeaderFiveValue$' LIKE 'Less than%' AND 
-            CAST(SUBSTRING([Latest hire date], 7, 4) AS INT) > CAST('$strTodayYear$' AS INT) - CAST(SUBSTRING('$strHeaderFiveValue$', 12, LENGTH('$strHeaderFiveValue$') - 11) AS INT))
-        )
-    )
+(
+  ('$strHeaderFiveValue$' = 'All')
+  OR (
+    TRY_CAST($strTodayYear$ AS INT) - 
+    TRY_CAST(SUBSTRING([Latest hire date], 7, 4) AS INT)
+    >
+    CASE
+      WHEN CHARINDEX('>', $strHeaderFiveValue$) > 0 THEN
+        TRY_CAST(REPLACE(REPLACE($strHeaderFiveValue$, '>', ''), 'years', '') AS INT)
+      ELSE NULL
+    END
+    AND CHARINDEX('>', $strHeaderFiveValue$) > 0
+  )
+  OR (
+    TRY_CAST($strTodayYear$ AS INT) - 
+    TRY_CAST(SUBSTRING([Latest hire date], 7, 4) AS INT)
+    <
+    CASE
+      WHEN CHARINDEX('<', $strHeaderFiveValue$) > 0 THEN
+        TRY_CAST(REPLACE(REPLACE($strHeaderFiveValue$, '<', ''), 'years', '') AS INT)
+      ELSE NULL
+    END
+    AND CHARINDEX('<', $strHeaderFiveValue$) > 0
+  )
+)
