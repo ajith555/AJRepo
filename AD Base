@@ -2,15 +2,6 @@ UPDATE YourTable
 SET SomeColumn = 'SomeValue'
 WHERE 
     (
-        -- Check if $strHeaderFiveValue$ has '>X years' condition
-        (
-            INSTR('$strHeaderFiveValue$', '>') > 0 AND
-            YEAR(GETDATE()) - CAST(SUBSTRING([Latest hire date], 7, 4) AS INT) > CAST(SUBSTRING('$strHeaderFiveValue$', 2, LENGTH('$strHeaderFiveValue$') - 6) AS INT)
-        )
-        OR
-        -- Check if $strHeaderFiveValue$ has '<X years' condition
-        (
-            INSTR('$strHeaderFiveValue$', '<') > 0 AND
-            YEAR(GETDATE()) - CAST(SUBSTRING([Latest hire date], 7, 4) AS INT) < CAST(SUBSTRING('$strHeaderFiveValue$', 2, LENGTH('$strHeaderFiveValue$') - 6) AS INT)
-        )
+        -- Compare the year difference
+        YEAR(CAST(SUBSTRING([Latest hire date], 7, 4) AS DATE)) <= CAST('$currentYear$' AS INT) - CAST(SUBSTRING('$strHeaderFiveValue$', 2, LENGTH('$strHeaderFiveValue$') - 6) AS INT)
     )
