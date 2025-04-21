@@ -1,19 +1,4 @@
-Option Explicit
-
-Sub Sync()
-
-    Dim wb As Workbook
-
-    ' Activate any workbook that contains "20" in the filename
-    For Each wb In Workbooks
-        If InStr(wb.Name, "20") > 0 Then
-            wb.Activate
-            Exit For
-        End If
-    Next wb
-
-    Sheets("Copy").Select
-    Range("AF2:AH2").Select
-    ActiveSheet.Paste
-
+Sub AutoConfirmYesToAll()
+    ' This sends "Enter" which typically activates "Yes" or "Yes to All"
+    Application.SendKeys "~", True  ' "~" = Enter key
 End Sub
