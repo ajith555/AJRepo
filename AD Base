@@ -1,6 +1,8 @@
 UPDATE [Output$$] 
 SET 
-    [AF] = (SELECT [AF] FROM [Copy$$] WHERE [Copy$$].[A] = [Output$$].[A]),
-    [AG] = (SELECT [AG] FROM [Copy$$] WHERE [Copy$$].[A] = [Output$$].[A]),
-    [AH] = (SELECT [AH] FROM [Copy$$] WHERE [Copy$$].[A] = [Output$$].[A])
-WHERE [A] IN (SELECT [A] FROM [Copy$$])
+    [AF] = (SELECT [Copy$$].[AF] FROM [Copy$$] WHERE [Copy$$].[A] = [Output$$].[A] AND [Copy$$].[A] IS NOT NULL),
+    [AG] = (SELECT [Copy$$].[AG] FROM [Copy$$] WHERE [Copy$$].[A] = [Output$$].[A] AND [Copy$$].[A] IS NOT NULL),
+    [AH] = (SELECT [Copy$$].[AH] FROM [Copy$$] WHERE [Copy$$].[A] = [Output$$].[A] AND [Copy$$].[A] IS NOT NULL)
+WHERE 
+    [A] IS NOT NULL AND 
+    [A] IN (SELECT [A] FROM [Copy$$] WHERE [A] IS NOT NULL)
