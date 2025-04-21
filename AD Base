@@ -1,4 +1,3 @@
-Sub AutoConfirmYesToAll()
-    ' This sends "Enter" which typically activates "Yes" or "Yes to All"
-    Application.SendKeys "~", True  ' "~" = Enter key
-End Sub
+ Application.OnTime Now + TimeValue("00:00:02"), "AutoConfirmYesToAll"
+ Application.SendKeys "~", True  ' "~" = Enter key
+
