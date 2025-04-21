@@ -1,4 +1,4 @@
-   ' Handle pop-ups and click "Yes to All"
+' Handle any pop-up and click "Yes to All"
     AutoPressYesToAll
 
 End Sub
@@ -6,10 +6,9 @@ End Sub
 Sub AutoPressYesToAll()
     Dim i As Integer
     ' Loop to handle multiple pop-ups
-    For i = 1 To 5 ' Check 5 times, adjust if necessary
-        ' Send Alt+Y (Yes to All) key combination
+    For i = 1 To 3 ' Adjust this for more pop-ups if needed
+        ' Send Alt + Y (Yes to All) key combination
         Application.SendKeys "%Y", True
-        Application.SendKeys "~", True ' Or use just "~" for Enter
         ' Wait for 1 second between attempts
         Application.Wait Now + TimeValue("00:00:01")
     Next i
