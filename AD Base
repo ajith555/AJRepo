@@ -1,5 +1,6 @@
-UPDATE [Output$$]
-SET [AF] = (SELECT [AF] FROM [Copy$$] WHERE [Copy$$].[A] = [Output$$].[A]),
+UPDATE [Output$$] 
+SET 
+    [AF] = (SELECT [AF] FROM [Copy$$] WHERE [Copy$$].[A] = [Output$$].[A]),
     [AG] = (SELECT [AG] FROM [Copy$$] WHERE [Copy$$].[A] = [Output$$].[A]),
     [AH] = (SELECT [AH] FROM [Copy$$] WHERE [Copy$$].[A] = [Output$$].[A])
-WHERE EXISTS (SELECT 1 FROM [Copy$$] WHERE [Copy$$].[A] = [Output$$].[A])
+WHERE [A] IN (SELECT [A] FROM [Copy$$])
