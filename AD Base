@@ -1,1 +1,2 @@
+Dim wb As Workbook
 For Each wb In Workbooks: If InStr(wb.Name, "20") > 0 Then wb.Activate: Exit For: End If: Next
