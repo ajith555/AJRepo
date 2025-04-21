@@ -1,3 +1,36 @@
- Application.OnTime Now + TimeValue("00:00:02"), "AutoConfirmYesToAll"
- Application.SendKeys "~", True  ' "~" = Enter key
+Option Explicit
 
+Dim AutoYesRunning As Boolean
+
+Sub Sync()
+    Dim wb As Workbook
+
+    ' Start background key presser
+    AutoYesRunning = True
+    Application.OnTime Now + TimeValue("00:00:01"), "AutoPressYesToAll"
+
+    ' Your main code
+    For Each wb In Workbooks
+        If InStr(wb.Name, "20") > 0 Then
+            wb.Activate
+            Exit For
+        End If
+    Next wb
+
+    Sheets("Copy").Select
+    Range("AF2:AH2").Select
+    ActiveSheet.Paste
+
+    ' Stop auto key presser
+    AutoYesRunning = False
+End Sub
+
+Sub AutoPressYesToAll()
+    If AutoYesRunning Then
+        ' Send Alt+Y (shortcut for "Yes to All") or Enter depending on dialog
+        Application.SendKeys "%Y", True   ' Alt + Y
+        Application.SendKeys "~", True    ' Enter
+        ' Repeat check after 1 second
+        Application.OnTime Now + TimeValue("00:00:01"), "AutoPressYesToAll"
+    End If
+End Sub
