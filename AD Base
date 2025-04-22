@@ -1,17 +1,22 @@
-' Attempt to press Yes to All 3 times
-    Call AutoClickYesToAll
+Sub Sync()
 
-End Sub
+    Dim wb As Workbook
 
-Sub AutoClickYesToAll()
-    Dim i As Integer
-    For i = 1 To 3
-        ' Send Enter key (in some popups, Enter = Yes to All)
-        Application.SendKeys "~", True
-        ' Or use Alt+Y if that's the active shortcut
-        Application.SendKeys "%Y", True
+    ' Activate any workbook that contains "20" in the filename
+    For Each wb In Workbooks
+        If InStr(wb.Name, "20") > 0 Then
+            wb.Activate
+            Exit For
+        End If
+    Next wb
 
-        ' Wait a bit before next keypress
-        Application.Wait Now + TimeValue("00:00:01")
-    Next i
+    ' Copy values from AF2:AH2 of "Copy" to same range of active sheet
+    Dim copySheet As Worksheet
+    Dim targetSheet As Worksheet
+
+    Set copySheet = Sheets("Copy")
+    Set targetSheet = ActiveSheet
+
+    targetSheet.Range("AF2:AH2").Value = copySheet.Range("AF2:AH2").Value
+
 End Sub
