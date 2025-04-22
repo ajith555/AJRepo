@@ -1,6 +1,11 @@
+Option Explicit
 Sub Sync()
 
     Dim wb As Workbook
+    Dim copySheet As Worksheet
+    Dim outputSheet As Worksheet
+    Dim lastRowCopy As Long
+    Dim dataRange As Range
 
     ' Activate any workbook that contains "20" in the filename
     For Each wb In Workbooks
@@ -10,13 +15,19 @@ Sub Sync()
         End If
     Next wb
 
-    ' Copy values from AF2:AH2 of "Copy" to same range of active sheet
-    Dim copySheet As Worksheet
-    Dim targetSheet As Worksheet
-
     Set copySheet = Sheets("Copy")
-    Set targetSheet = ActiveSheet
+    Set outputSheet = Sheets("Output")
 
-    targetSheet.Range("AF2:AH2").Value = copySheet.Range("AF2:AH2").Value
+    ' Find last row of data in Copy sheet from AF2 downward
+    lastRowCopy = copySheet.Cells(copySheet.Rows.Count, "AF").End(xlUp).Row
+
+    ' Define the data range from AF2 to AH(last)
+    Set dataRange = copySheet.Range("AF2:AH" & lastRowCopy)
+
+    ' Write the data to Output sheet starting from AF16
+    outputSheet.Range("AF16").Resize(dataRange.Rows.Count, 3).Value = dataRange.Value
+
+    ' Optional: reactivate macro file if needed
+    Windows("Ajith Macro V1.xlsm").Activate
 
 End Sub
