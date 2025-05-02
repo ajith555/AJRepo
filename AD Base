@@ -1,1 +1,89 @@
-Application.DisplayAlerts = False: ThisWorkbook.Sheets("TempData").Delete: Application.DisplayAlerts = True
+Sub Update_Main_File_From_Coordinators_v3()
+
+    Dim mainFilePath As String
+    Dim coordinatorsFolder As String
+    Dim fso As Object, folder As Object, subfolder As Object, fileItem As Object
+    Dim mainWB As Workbook, srcWB As Workbook
+    Dim mainWS As Worksheet, srcWS As Worksheet
+    Dim mainLastRow As Long, srcLastRow As Long
+    Dim mainDict As Object
+    Dim i As Long, gpn As Variant
+    Dim srcAF As Variant, srcAG As Variant, srcAH As Variant
+    Dim mainRow As Long
+
+    ' === USER SETTINGS ===
+    coordinatorsFolder = "C:\YourPath\Files updated by Coordinators\" '<<< Change path
+    mainFilePath = "C:\YourPath\Final File\MainFile.xlsx"             '<<< Change path and filename
+
+    ' === Load Main File ===
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+
+    Set mainWB = Workbooks.Open(mainFilePath)
+    Set mainWS = mainWB.Sheets("Output") ' Sheet is named "Output"
+
+    ' === Create Dictionary of GPN Row Numbers in Main File ===
+    Set mainDict = CreateObject("Scripting.Dictionary")
+    mainLastRow = mainWS.Cells(mainWS.Rows.Count, "A").End(xlUp).Row
+
+    For i = 16 To mainLastRow
+        gpn = Trim(mainWS.Cells(i, "A").Value)
+        If Not mainDict.exists(gpn) And Len(gpn) > 0 Then
+            mainDict.Add gpn, i
+        End If
+    Next i
+
+    ' === Loop All Files Inside All Subfolders ===
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    Set folder = fso.GetFolder(coordinatorsFolder)
+
+    For Each subfolder In folder.SubFolders
+        For Each fileItem In subfolder.Files
+            If LCase(fso.GetExtensionName(fileItem.Name)) = "xlsx" Or _
+               LCase(fso.GetExtensionName(fileItem.Name)) = "xls" Or _
+               LCase(fso.GetExtensionName(fileItem.Name)) = "xlsm" Then
+
+                Set srcWB = Workbooks.Open(fileItem.Path, ReadOnly:=True)
+                On Error Resume Next
+                Set srcWS = srcWB.Sheets("Output")
+                On Error GoTo 0
+
+                If Not srcWS Is Nothing Then
+
+                    srcLastRow = srcWS.Cells(srcWS.Rows.Count, "A").End(xlUp).Row
+
+                    For i = 16 To srcLastRow
+                        gpn = Trim(srcWS.Cells(i, "A").Value)
+                        If Len(gpn) > 0 And mainDict.exists(gpn) Then
+                            srcAF = srcWS.Cells(i, "AF").Value
+                            srcAG = srcWS.Cells(i, "AG").Value
+                            srcAH = srcWS.Cells(i, "AH").Value
+
+                            mainRow = mainDict(gpn)
+
+                            ' Only copy non-empty values
+                            If Len(srcAF) > 0 Then mainWS.Cells(mainRow, "AF").Value = srcAF
+                            If Len(srcAG) > 0 Then mainWS.Cells(mainRow, "AG").Value = srcAG
+                            If Len(srcAH) > 0 Then mainWS.Cells(mainRow, "AH").Value = srcAH
+                        End If
+                    Next i
+
+                End If
+
+                srcWB.Close SaveChanges:=False
+                Set srcWS = Nothing
+
+            End If
+        Next fileItem
+    Next subfolder
+
+    ' === Save Main File ===
+    mainWB.Save
+    mainWB.Close
+
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+
+    MsgBox "Main file updated successfully!", vbInformation
+
+End Sub
