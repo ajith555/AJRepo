@@ -1,89 +1,67 @@
-Sub Update_Main_File_From_Coordinators_v3()
+✅ What Power Automate Is
+A Microsoft tool to automate repetitive tasks.
 
-    Dim mainFilePath As String
-    Dim coordinatorsFolder As String
-    Dim fso As Object, folder As Object, subfolder As Object, fileItem As Object
-    Dim mainWB As Workbook, srcWB As Workbook
-    Dim mainWS As Worksheet, srcWS As Worksheet
-    Dim mainLastRow As Long, srcLastRow As Long
-    Dim mainDict As Object
-    Dim i As Long, gpn As Variant
-    Dim srcAF As Variant, srcAG As Variant, srcAH As Variant
-    Dim mainRow As Long
+Works with cloud apps, desktop apps, and AI.
 
-    ' === USER SETTINGS ===
-    coordinatorsFolder = "C:\YourPath\Files updated by Coordinators\" '<<< Change path
-    mainFilePath = "C:\YourPath\Final File\MainFile.xlsx"             '<<< Change path and filename
+Previously called Microsoft Flow.
 
-    ' === Load Main File ===
-    Application.ScreenUpdating = False
-    Application.DisplayAlerts = False
+🚀 Key Features
+Cloud Flows – Automate across apps like Outlook, SharePoint, Excel, Teams.
 
-    Set mainWB = Workbooks.Open(mainFilePath)
-    Set mainWS = mainWB.Sheets("Output") ' Sheet is named "Output"
+Desktop Flows – Automate tasks on your PC using RPA (Robotic Process Automation).
 
-    ' === Create Dictionary of GPN Row Numbers in Main File ===
-    Set mainDict = CreateObject("Scripting.Dictionary")
-    mainLastRow = mainWS.Cells(mainWS.Rows.Count, "A").End(xlUp).Row
+AI Builder – Extract text, recognize forms, predict outcomes using AI.
 
-    For i = 16 To mainLastRow
-        gpn = Trim(mainWS.Cells(i, "A").Value)
-        If Not mainDict.exists(gpn) And Len(gpn) > 0 Then
-            mainDict.Add gpn, i
-        End If
-    Next i
+Triggers & Actions – “When this happens, do that” logic.
 
-    ' === Loop All Files Inside All Subfolders ===
-    Set fso = CreateObject("Scripting.FileSystemObject")
-    Set folder = fso.GetFolder(coordinatorsFolder)
+Prebuilt Templates – Fast setup with ready-to-use flows.
 
-    For Each subfolder In folder.SubFolders
-        For Each fileItem In subfolder.Files
-            If LCase(fso.GetExtensionName(fileItem.Name)) = "xlsx" Or _
-               LCase(fso.GetExtensionName(fileItem.Name)) = "xls" Or _
-               LCase(fso.GetExtensionName(fileItem.Name)) = "xlsm" Then
+Approvals – Build custom approval processes.
 
-                Set srcWB = Workbooks.Open(fileItem.Path, ReadOnly:=True)
-                On Error Resume Next
-                Set srcWS = srcWB.Sheets("Output")
-                On Error GoTo 0
+Connectors – 1,000+ app integrations (e.g., Salesforce, Twitter, Google Drive).
 
-                If Not srcWS Is Nothing Then
+Scheduled & Button Flows – Run flows on a timer or with a button click.
 
-                    srcLastRow = srcWS.Cells(srcWS.Rows.Count, "A").End(xlUp).Row
+Error Handling – Try-catch logic and run-after settings.
 
-                    For i = 16 To srcLastRow
-                        gpn = Trim(srcWS.Cells(i, "A").Value)
-                        If Len(gpn) > 0 And mainDict.exists(gpn) Then
-                            srcAF = srcWS.Cells(i, "AF").Value
-                            srcAG = srcWS.Cells(i, "AG").Value
-                            srcAH = srcWS.Cells(i, "AH").Value
+Looping & Conditions – Add control logic like if-else and for-each.
 
-                            mainRow = mainDict(gpn)
+🎯 Scope / Use Cases
+Automate emails, reports, data entry.
 
-                            ' Only copy non-empty values
-                            If Len(srcAF) > 0 Then mainWS.Cells(mainRow, "AF").Value = srcAF
-                            If Len(srcAG) > 0 Then mainWS.Cells(mainRow, "AG").Value = srcAG
-                            If Len(srcAH) > 0 Then mainWS.Cells(mainRow, "AH").Value = srcAH
-                        End If
-                    Next i
+Sync data between systems (Excel to SharePoint, Forms to Planner).
 
-                End If
+Approval processes (Leave requests, expense claims).
 
-                srcWB.Close SaveChanges:=False
-                Set srcWS = Nothing
+Automate file processing (rename, move, store).
 
-            End If
-        Next fileItem
-    Next subfolder
+Trigger workflows from Power Apps.
 
-    ' === Save Main File ===
-    mainWB.Save
-    mainWB.Close
+Integrate with AI and chatbots via Power Virtual Agents.
 
-    Application.ScreenUpdating = True
-    Application.DisplayAlerts = True
+✅ What It Can Do
+Replace manual workflows.
 
-    MsgBox "Main file updated successfully!", vbInformation
+Automate tasks with or without code.
 
-End Sub
+Reduce human error.
+
+Save time and cost.
+
+Improve consistency and compliance.
+
+Work across Microsoft 365, Azure, and third-party platforms.
+
+❌ What It Cannot Do
+Not good for complex app development (use Power Apps instead).
+
+Limited in handling huge real-time data processing.
+
+Some connectors/features need premium licenses.
+
+Doesn’t support all legacy systems without setup.
+
+Limited UI automation reliability compared to full RPA tools.
+
+No advanced analytics – Power BI is used for that.
+
