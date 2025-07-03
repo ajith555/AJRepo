@@ -1,67 +1,107 @@
-✅ What Power Automate Is
-A Microsoft tool to automate repetitive tasks.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Team Portal - Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+  <h1 class="text-2xl font-bold text-center">AI Team Tool (Demo)</h1>
 
-Works with cloud apps, desktop apps, and AI.
+  <div class="flex flex-col md:flex-row gap-4 mt-6">
+    <!-- Admin Panel -->
+    <div class="md:w-1/2 bg-white p-4 rounded shadow">
+      <h2 class="text-xl font-semibold mb-2">🔒 Admin Panel</h2>
+      <textarea id="adminData" class="w-full h-32 border p-2 mb-2" placeholder="Enter new info..."></textarea>
+      <input type="file" id="fileUpload" accept="image/*,audio/*" class="mb-2"/>
+      <button onclick="saveData()" class="bg-blue-500 text-white px-4 py-2 rounded">Save Data</button>
+      <div id="adminHistory" class="mt-4 text-sm text-gray-700 max-h-60 overflow-y-auto"></div>
+    </div>
 
-Previously called Microsoft Flow.
+    <!-- General Chat -->
+    <div class="md:w-1/2 bg-white p-4 rounded shadow">
+      <h2 class="text-xl font-semibold mb-2">💬 Ask AI</h2>
+      <div id="chatBox" class="h-60 overflow-y-scroll border p-2 mb-2 bg-gray-50 text-sm"></div>
+      <input id="userQuestion" class="w-full border p-2 mb-2" placeholder="Ask a question..."/>
+      <button onclick="askAI()" class="bg-green-500 text-white px-4 py-2 rounded">Send Question</button>
+    </div>
+  </div>
 
-🚀 Key Features
-Cloud Flows – Automate across apps like Outlook, SharePoint, Excel, Teams.
+  <script>
+    let adminDataStore = JSON.parse(localStorage.getItem("adminDataStore") || "[]");
 
-Desktop Flows – Automate tasks on your PC using RPA (Robotic Process Automation).
+    function saveData() {
+      const text = document.getElementById("adminData").value.trim();
+      const fileInput = document.getElementById("fileUpload");
 
-AI Builder – Extract text, recognize forms, predict outcomes using AI.
+      if (text) {
+        adminDataStore.push({ type: "text", content: text });
+      }
 
-Triggers & Actions – “When this happens, do that” logic.
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = function () {
+          adminDataStore.push({ type: file.type.startsWith("image") ? "image" : "audio", content: reader.result });
+          persistAndDisplay();
+        };
+        reader.readAsDataURL(file);
+      } else {
+        persistAndDisplay();
+      }
 
-Prebuilt Templates – Fast setup with ready-to-use flows.
+      document.getElementById("adminData").value = "";
+      fileInput.value = "";
+    }
 
-Approvals – Build custom approval processes.
+    function persistAndDisplay() {
+      localStorage.setItem("adminDataStore", JSON.stringify(adminDataStore));
+      updateAdminHistory();
+    }
 
-Connectors – 1,000+ app integrations (e.g., Salesforce, Twitter, Google Drive).
+    function updateAdminHistory() {
+      const div = document.getElementById("adminHistory");
+      div.innerHTML = adminDataStore.map((d, i) => {
+        if (d.type === "text") return `<div>${i + 1}. 📝 ${d.content}</div>`;
+        if (d.type === "image") return `<div>${i + 1}. 🖼️ <img src="${d.content}" width="100"/></div>`;
+        if (d.type === "audio") return `<div>${i + 1}. 🔊 <audio controls src="${d.content}" ></audio></div>`;
+      }).join("");
+    }
 
-Scheduled & Button Flows – Run flows on a timer or with a button click.
+    function askAI() {
+      const question = document.getElementById("userQuestion").value.trim();
+      if (!question) return;
 
-Error Handling – Try-catch logic and run-after settings.
+      const chatBox = document.getElementById("chatBox");
+      chatBox.innerHTML += `<div><strong>You:</strong> ${question}</div>`;
 
-Looping & Conditions – Add control logic like if-else and for-each.
+      const context = adminDataStore.filter(d => d.type === "text").map(d => d.content).join("\n");
+      const prompt = `Answer based on the following context:\n${context}\n\nQuestion: ${question}`;
 
-🎯 Scope / Use Cases
-Automate emails, reports, data entry.
+      fetch("https://api-inference.huggingface.co/models/google/flan-t5-base", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer hf_your_api_key_here", // Replace below
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ inputs: prompt })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const reply = data?.[0]?.generated_text || "AI could not generate a response.";
+        chatBox.innerHTML += `<div><strong>AI:</strong> ${reply}</div>`;
+        document.getElementById("userQuestion").value = "";
+        chatBox.scrollTop = chatBox.scrollHeight;
+      })
+      .catch(err => {
+        chatBox.innerHTML += `<div><strong>AI:</strong> Error fetching response.</div>`;
+        console.error(err);
+      });
+    }
 
-Sync data between systems (Excel to SharePoint, Forms to Planner).
-
-Approval processes (Leave requests, expense claims).
-
-Automate file processing (rename, move, store).
-
-Trigger workflows from Power Apps.
-
-Integrate with AI and chatbots via Power Virtual Agents.
-
-✅ What It Can Do
-Replace manual workflows.
-
-Automate tasks with or without code.
-
-Reduce human error.
-
-Save time and cost.
-
-Improve consistency and compliance.
-
-Work across Microsoft 365, Azure, and third-party platforms.
-
-❌ What It Cannot Do
-Not good for complex app development (use Power Apps instead).
-
-Limited in handling huge real-time data processing.
-
-Some connectors/features need premium licenses.
-
-Doesn’t support all legacy systems without setup.
-
-Limited UI automation reliability compared to full RPA tools.
-
-No advanced analytics – Power BI is used for that.
-
+    // Load history on start
+    updateAdminHistory();
+  </script>
+</body>
+</html>
