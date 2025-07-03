@@ -3,35 +3,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI Team Portal - Demo</title>
+  <title>AI Team Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 p-4">
-  <h1 class="text-2xl font-bold text-center">AI Team Tool (Demo)</h1>
+  <h1 class="text-3xl font-bold text-center mb-4">🤖 AI Team Info Tool</h1>
 
-  <div class="flex flex-col md:flex-row gap-4 mt-6">
+  <!-- Team Selector -->
+  <div class="text-center mb-4">
+    <label class="font-semibold mr-2">Select Team:</label>
+    <select id="teamSelector" class="p-2 border rounded" onchange="switchTeam()">
+      <option value="team_default">Default Team</option>
+      <option value="team_hr">HR Team</option>
+      <option value="team_tech">Tech Team</option>
+    </select>
+  </div>
+
+  <div class="flex flex-col md:flex-row gap-4">
     <!-- Admin Panel -->
     <div class="md:w-1/2 bg-white p-4 rounded shadow">
       <h2 class="text-xl font-semibold mb-2">🔒 Admin Panel</h2>
       <textarea id="adminData" class="w-full h-32 border p-2 mb-2" placeholder="Enter new info..."></textarea>
       <input type="file" id="fileUpload" accept="image/*,audio/*" class="mb-2"/>
-      <button onclick="saveData()" class="bg-blue-500 text-white px-4 py-2 rounded">Save Data</button>
+      <button onclick="saveData()" class="bg-blue-500 text-white px-4 py-2 rounded w-full">💾 Save Data</button>
       <div id="adminHistory" class="mt-4 text-sm text-gray-700 max-h-60 overflow-y-auto"></div>
     </div>
 
-    <!-- General Chat -->
+    <!-- AI Chat Panel -->
     <div class="md:w-1/2 bg-white p-4 rounded shadow">
-      <h2 class="text-xl font-semibold mb-2">💬 Ask AI</h2>
+      <h2 class="text-xl font-semibold mb-2">💬 Ask the AI</h2>
       <div id="chatBox" class="h-60 overflow-y-scroll border p-2 mb-2 bg-gray-50 text-sm"></div>
       <input id="userQuestion" class="w-full border p-2 mb-2" placeholder="Ask a question..."/>
-      <button onclick="askAI()" class="bg-green-500 text-white px-4 py-2 rounded">Send Question</button>
+      <button onclick="askAI()" class="bg-green-600 text-white px-4 py-2 rounded w-full">🤖 Get Answer</button>
     </div>
   </div>
 
   <script>
-    let adminDataStore = JSON.parse(localStorage.getItem("adminDataStore") || "[]");
+    let currentTeam = localStorage.getItem("currentTeam") || "team_default";
+    let adminDataStore = JSON.parse(localStorage.getItem(currentTeam) || "[]");
+
+    function switchTeam() {
+      currentTeam = document.getElementById("teamSelector").value;
+      localStorage.setItem("currentTeam", currentTeam);
+      adminDataStore = JSON.parse(localStorage.getItem(currentTeam) || "[]");
+      updateAdminHistory();
+    }
 
     function saveData() {
       const text = document.getElementById("adminData").value.trim();
@@ -45,7 +63,8 @@
         const file = fileInput.files[0];
         const reader = new FileReader();
         reader.onload = function () {
-          adminDataStore.push({ type: file.type.startsWith("image") ? "image" : "audio", content: reader.result });
+          const type = file.type.startsWith("image") ? "image" : "audio";
+          adminDataStore.push({ type, content: reader.result });
           persistAndDisplay();
         };
         reader.readAsDataURL(file);
@@ -58,7 +77,7 @@
     }
 
     function persistAndDisplay() {
-      localStorage.setItem("adminDataStore", JSON.stringify(adminDataStore));
+      localStorage.setItem(currentTeam, JSON.stringify(adminDataStore));
       updateAdminHistory();
     }
 
@@ -67,43 +86,51 @@
       div.innerHTML = adminDataStore.map((d, i) => {
         if (d.type === "text") return `<div>${i + 1}. 📝 ${d.content}</div>`;
         if (d.type === "image") return `<div>${i + 1}. 🖼️ <img src="${d.content}" width="100"/></div>`;
-        if (d.type === "audio") return `<div>${i + 1}. 🔊 <audio controls src="${d.content}" ></audio></div>`;
+        if (d.type === "audio") return `<div>${i + 1}. 🔊 <audio controls src="${d.content}"></audio></div>`;
       }).join("");
     }
 
-    function askAI() {
+    async function askAI() {
       const question = document.getElementById("userQuestion").value.trim();
       if (!question) return;
 
       const chatBox = document.getElementById("chatBox");
       chatBox.innerHTML += `<div><strong>You:</strong> ${question}</div>`;
 
-      const context = adminDataStore.filter(d => d.type === "text").map(d => d.content).join("\n");
-      const prompt = `Answer based on the following context:\n${context}\n\nQuestion: ${question}`;
+      const context = adminDataStore
+        .filter(d => d.type === "text")
+        .map(d => d.content)
+        .join("\n");
 
-      fetch("https://api-inference.huggingface.co/models/google/flan-t5-base", {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
-          Authorization: "Bearer hf_your_api_key_here", // Replace below
+          Authorization: "Bearer YOUR_API_KEY_HERE", // 👈 Replace this line
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ inputs: prompt })
-      })
-      .then(res => res.json())
-      .then(data => {
-        const reply = data?.[0]?.generated_text || "AI could not generate a response.";
+        body: JSON.stringify({
+          model: "openai/gpt-3.5-turbo",
+          messages: [
+            { role: "system", content: "You are a helpful assistant answering only from company-provided admin context." },
+            { role: "user", content: `Here is the latest internal company info:\n\n${context}` },
+            { role: "user", content: `Now answer this user question clearly and briefly:\n${question}` }
+          ]
+        })
+      });
+
+      try {
+        const data = await response.json();
+        const reply = data?.choices?.[0]?.message?.content || "AI could not generate a response.";
         chatBox.innerHTML += `<div><strong>AI:</strong> ${reply}</div>`;
         document.getElementById("userQuestion").value = "";
         chatBox.scrollTop = chatBox.scrollHeight;
-      })
-      .catch(err => {
+      } catch (err) {
         chatBox.innerHTML += `<div><strong>AI:</strong> Error fetching response.</div>`;
-        console.error(err);
-      });
+        console.error("AI Error:", err);
+      }
     }
 
-    // Load history on start
-    updateAdminHistory();
+    updateAdminHistory(); // load on start
   </script>
 </body>
 </html>
