@@ -1,12 +1,103 @@
-What should they continue doing?
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart AI Team Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+  <h1 class="text-3xl font-bold text-center mb-4">🤖 Smart AI Team Portal</h1>
 
-Keep up the strong collaboration during bot development, which makes project work smoother and more efficient.
-Continue sharing insights and technical knowledge, as this improves teamwork and learning within the team.
-What could they do to have more impact?
+  <div class="text-center mb-4">
+    <label class="font-semibold mr-2">Select Team:</label>
+    <select id="teamSelector" class="p-2 border rounded" onchange="switchTeam()">
+      <option value="team_default">Default</option>
+      <option value="team_support">Support</option>
+      <option value="team_marketing">Marketing</option>
+    </select>
+  </div>
 
-Proactively suggest improvements or new features in bot projects to enhance functionality and user experience.
-Increase involvement in troubleshooting sessions to speed up issue resolution and strengthen problem-solving.
-Any other feedback?
+  <div class="flex flex-col md:flex-row gap-4">
+    <div class="md:w-1/2 bg-white p-4 rounded shadow">
+      <h2 class="text-xl font-semibold mb-2">Admin Panel</h2>
+      <textarea id="adminData" class="w-full h-32 border p-2 mb-2" placeholder="Enter information..."></textarea>
+      <button onclick="saveData()" class="bg-blue-600 text-white px-4 py-2 rounded w-full">Save Info</button>
+      <div id="adminHistory" class="mt-4 text-sm text-gray-800 max-h-60 overflow-y-auto"></div>
+    </div>
 
-Adarsh’s collaborative spirit and teamwork are greatly appreciated—they make projects more enjoyable and productive.
-His dedication to supporting automation projects is valuable and has had a positive impact on our project success.
+    <div class="md:w-1/2 bg-white p-4 rounded shadow">
+      <h2 class="text-xl font-semibold mb-2">Ask AI</h2>
+      <div id="chatBox" class="h-60 overflow-y-scroll border p-2 mb-2 bg-gray-50 text-sm"></div>
+      <input id="userQuestion" class="w-full border p-2 mb-2" placeholder="Ask a question..."/>
+      <button onclick="askAI()" class="bg-green-600 text-white px-4 py-2 rounded w-full">Ask</button>
+    </div>
+  </div>
+
+  <script>
+    let currentTeam = localStorage.getItem("currentTeam") || "team_default";
+    let adminDataStore = JSON.parse(localStorage.getItem(currentTeam) || "[]");
+
+    function switchTeam() {
+      currentTeam = document.getElementById("teamSelector").value;
+      localStorage.setItem("currentTeam", currentTeam);
+      adminDataStore = JSON.parse(localStorage.getItem(currentTeam) || "[]");
+      updateAdminHistory();
+    }
+
+    function saveData() {
+      const input = document.getElementById("adminData").value.trim();
+      if (input) {
+        adminDataStore.push(input);
+        localStorage.setItem(currentTeam, JSON.stringify(adminDataStore));
+        document.getElementById("adminData").value = "";
+        updateAdminHistory();
+      }
+    }
+
+    function updateAdminHistory() {
+      const container = document.getElementById("adminHistory");
+      container.innerHTML = adminDataStore.map((d, i) => `<div>${i + 1}. ${d}</div>`).join("\n");
+    }
+
+    async function askAI() {
+      const chatBox = document.getElementById("chatBox");
+      const question = document.getElementById("userQuestion").value.trim();
+      if (!question) return;
+
+      chatBox.innerHTML += `<div><strong>You:</strong> ${question}</div>`;
+
+      const context = adminDataStore.join("\n");
+      const prompt = `Answer the following question using only this context:\n\n${context}\n\nQ: ${question}`;
+
+      try {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer sk-or-YOUR_KEY_HERE", // Replace with your actual key
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "meta-llama/llama-3-8b-instruct",
+            messages: [
+              { role: "system", content: "You are an internal assistant. Only use provided context." },
+              { role: "user", content: prompt }
+            ]
+          })
+        });
+
+        const data = await response.json();
+        const answer = data?.choices?.[0]?.message?.content || "AI did not respond.";
+        chatBox.innerHTML += `<div><strong>AI:</strong> ${answer}</div>`;
+        document.getElementById("userQuestion").value = "";
+        chatBox.scrollTop = chatBox.scrollHeight;
+      } catch (err) {
+        console.error(err);
+        chatBox.innerHTML += `<div><strong>AI:</strong> ❌ Error fetching answer.</div>`;
+      }
+    }
+
+    updateAdminHistory();
+  </script>
+</body>
+</html>
