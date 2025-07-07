@@ -1,136 +1,260 @@
-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
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI Team Portal</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart AI Team Portal</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body class="bg-gray-100 p-4">
-  <h1 class="text-3xl font-bold text-center mb-4">🤖 AI Team Info Tool</h1>
+  <h1 class="text-3xl font-bold text-center mb-4">🤖 Smart AI Team Portal</h1>
 
-  <!-- Team Selector -->
   <div class="text-center mb-4">
-    <label class="font-semibold mr-2">Select Team:</label>
-    <select id="teamSelector" class="p-2 border rounded" onchange="switchTeam()">
-      <option value="team_default">Default Team</option>
-      <option value="team_hr">HR Team</option>
-      <option value="team_tech">Tech Team</option>
-    </select>
+    <input id="newSystemName" class="border p-2 mr-2" placeholder="Enter new system name" />
+    <button onclick="createNewSystem()" class="bg-indigo-600 text-white px-4 py-2 rounded">➕ Create New System</button>
+  </div>
+
+  <div class="text-center mb-4">
+    <label class="font-semibold mr-2">Select System:</label>
+    <select id="teamSelector" class="p-2 border rounded" onchange="switchTeam()"></select>
+    <a id="openChatLink" href="#" target="_blank" class="ml-4 text-blue-600 underline">Open Ask AI Only</a>
   </div>
 
   <div class="flex flex-col md:flex-row gap-4">
-    <!-- Admin Panel -->
-    <div class="md:w-1/2 bg-white p-4 rounded shadow">
-      <h2 class="text-xl font-semibold mb-2">🔒 Admin Panel</h2>
-      <textarea id="adminData" class="w-full h-32 border p-2 mb-2" placeholder="Enter new info..."></textarea>
-      <input type="file" id="fileUpload" accept="image/*,audio/*" class="mb-2"/>
-      <button onclick="saveData()" class="bg-blue-500 text-white px-4 py-2 rounded w-full">💾 Save Data</button>
-      <div id="adminHistory" class="mt-4 text-sm text-gray-700 max-h-60 overflow-y-auto"></div>
+    <div class="md:w-1/2 bg-white p-4 rounded shadow" id="adminPanel">
+      <h2 class="text-xl font-semibold mb-2">Admin Panel</h2>
+      <textarea id="adminData" class="w-full h-32 border p-2 mb-2" placeholder="Enter information..."></textarea>
+      <button onclick="saveData()" class="bg-blue-600 text-white px-4 py-2 rounded w-full">💾 Save Info</button>
+      <input type="file" id="fileInput" accept=".pdf,.docx,.xlsx,.txt,image/*" class="w-full my-2" />
+      <button onclick="uploadFile()" class="bg-purple-600 text-white px-4 py-2 rounded w-full">📎 Upload File</button>
+      <div id="adminHistory" class="mt-4 text-sm text-gray-800 max-h-60 overflow-y-auto"></div>
     </div>
 
-    <!-- AI Chat Panel -->
     <div class="md:w-1/2 bg-white p-4 rounded shadow">
-      <h2 class="text-xl font-semibold mb-2">💬 Ask the AI</h2>
+      <h2 class="text-xl font-semibold mb-2">Ask AI</h2>
+      <div class="mb-2">
+        <label class="font-semibold mr-2">Select System:</label>
+        <select id="askTeamSelector" class="p-2 border rounded" onchange="switchAskTeam()"></select>
+      </div>
       <div id="chatBox" class="h-60 overflow-y-scroll border p-2 mb-2 bg-gray-50 text-sm"></div>
-      <input id="userQuestion" class="w-full border p-2 mb-2" placeholder="Ask a question..."/>
-      <button onclick="askAI()" class="bg-green-600 text-white px-4 py-2 rounded w-full">🤖 Get Answer</button>
+      <input id="userQuestion" class="w-full border p-2 mb-2" placeholder="Ask a question..." />
+      <button onclick="askAI()" class="bg-green-600 text-white px-4 py-2 rounded w-full">Ask</button>
     </div>
   </div>
 
   <script>
-    let currentTeam = localStorage.getItem("currentTeam") || "team_default";
+    const urlParams = new URLSearchParams(window.location.search);
+    const teamFromUrl = urlParams.get("team");
+    const askOnly = urlParams.get("ask") === "true";
+
+    let currentTeam = teamFromUrl || localStorage.getItem("currentTeam") || "team_default";
+    localStorage.setItem("currentTeam", currentTeam);
     let adminDataStore = JSON.parse(localStorage.getItem(currentTeam) || "[]");
+
+    if (askOnly) {
+      document.getElementById("adminPanel").style.display = "none";
+      document.querySelector("h1").textContent += ` — Ask AI (${currentTeam})`;
+    }
+
+    function updateSystemSelectors() {
+      const keys = Object.keys(localStorage).filter(k => k.startsWith("team_"));
+      const teamSel = document.getElementById("teamSelector");
+      const askSel = document.getElementById("askTeamSelector");
+      teamSel.innerHTML = "";
+      askSel.innerHTML = "";
+      keys.forEach(k => {
+        const name = k.replace("team_", "");
+        const opt1 = new Option(name, k);
+        const opt2 = new Option(name, k);
+        teamSel.appendChild(opt1);
+        askSel.appendChild(opt2);
+      });
+      teamSel.value = currentTeam;
+      askSel.value = currentTeam;
+    }
 
     function switchTeam() {
       currentTeam = document.getElementById("teamSelector").value;
       localStorage.setItem("currentTeam", currentTeam);
       adminDataStore = JSON.parse(localStorage.getItem(currentTeam) || "[]");
       updateAdminHistory();
+      updateAskOnlyLink();
+    }
+
+    function switchAskTeam() {
+      currentTeam = document.getElementById("askTeamSelector").value;
+      localStorage.setItem("currentTeam", currentTeam);
+      adminDataStore = JSON.parse(localStorage.getItem(currentTeam) || "[]");
+    }
+
+    function updateAskOnlyLink() {
+      const url = `${window.location.origin}${window.location.pathname}?team=${currentTeam}&ask=true`;
+      document.getElementById("openChatLink").href = url;
+    }
+
+    function createNewSystem() {
+      const name = document.getElementById("newSystemName").value.trim();
+      if (!name) return alert("Enter a system name");
+      const key = `team_${name.replace(/\s+/g, '_').toLowerCase()}`;
+      if (!localStorage.getItem(key)) {
+        localStorage.setItem(key, JSON.stringify([]));
+        updateSystemSelectors();
+      }
+      document.getElementById("newSystemName").value = "";
     }
 
     function saveData() {
-      const text = document.getElementById("adminData").value.trim();
-      const fileInput = document.getElementById("fileUpload");
-
-      if (text) {
-        adminDataStore.push({ type: "text", content: text });
+      const input = document.getElementById("adminData").value.trim();
+      if (input) {
+        adminDataStore.push(input);
+        localStorage.setItem(currentTeam, JSON.stringify(adminDataStore));
+        document.getElementById("adminData").value = "";
+        updateAdminHistory();
       }
-
-      if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-        reader.onload = function () {
-          const type = file.type.startsWith("image") ? "image" : "audio";
-          adminDataStore.push({ type, content: reader.result });
-          persistAndDisplay();
-        };
-        reader.readAsDataURL(file);
-      } else {
-        persistAndDisplay();
-      }
-
-      document.getElementById("adminData").value = "";
-      fileInput.value = "";
-    }
-
-    function persistAndDisplay() {
-      localStorage.setItem(currentTeam, JSON.stringify(adminDataStore));
-      updateAdminHistory();
     }
 
     function updateAdminHistory() {
-      const div = document.getElementById("adminHistory");
-      div.innerHTML = adminDataStore.map((d, i) => {
-        if (d.type === "text") return `<div>${i + 1}. 📝 ${d.content}</div>`;
-        if (d.type === "image") return `<div>${i + 1}. 🖼️ <img src="${d.content}" width="100"/></div>`;
-        if (d.type === "audio") return `<div>${i + 1}. 🔊 <audio controls src="${d.content}"></audio></div>`;
-      }).join("");
+      const container = document.getElementById("adminHistory");
+      container.innerHTML = adminDataStore.map((d, i) => `<div>${i + 1}. ${d}</div>`).join("\n");
     }
 
-    async function askAI() {
-      const question = document.getElementById("userQuestion").value.trim();
-      if (!question) return;
+    async function uploadFile() {
+      const file = document.getElementById("fileInput").files[0];
+      if (!file) return alert("Please select a file");
 
-      const chatBox = document.getElementById("chatBox");
-      chatBox.innerHTML += `<div><strong>You:</strong> ${question}</div>`;
+      const type = file.type;
+      const name = file.name.toLowerCase();
 
-      const context = adminDataStore
-        .filter(d => d.type === "text")
-        .map(d => d.content)
-        .join("\n");
+      if (type === "application/pdf") {
+        const reader = new FileReader();
+        reader.onload = async function () {
+          const typedarray = new Uint8Array(reader.result);
+          const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+          let text = "";
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            const strings = content.items.map(item => item.str).join(" ");
+            text += strings + "\n";
+          }
+          processExtractedText(text, "PDF");
+        };
+        reader.readAsArrayBuffer(file);
+      } else if (name.endsWith(".docx")) {
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          mammoth.extractRawText({ arrayBuffer: event.target.result })
+            .then(result => processExtractedText(result.value, "Word Document"))
+            .catch(err => alert("Failed to read .docx: " + err.message));
+        };
+        reader.readAsArrayBuffer(file);
+      } else if (type.startsWith("image/")) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("language", "eng");
+        formData.append("isOverlayRequired", "false");
 
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: "Bearer YOUR_API_KEY_HERE", // 👈 Replace this line
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "openai/gpt-3.5-turbo",
-          messages: [
-            { role: "system", content: "You are a helpful assistant answering only from company-provided admin context." },
-            { role: "user", content: `Here is the latest internal company info:\n\n${context}` },
-            { role: "user", content: `Now answer this user question clearly and briefly:\n${question}` }
-          ]
-        })
-      });
-
-      try {
-        const data = await response.json();
-        const reply = data?.choices?.[0]?.message?.content || "AI could not generate a response.";
-        chatBox.innerHTML += `<div><strong>AI:</strong> ${reply}</div>`;
-        document.getElementById("userQuestion").value = "";
-        chatBox.scrollTop = chatBox.scrollHeight;
-      } catch (err) {
-        chatBox.innerHTML += `<div><strong>AI:</strong> Error fetching response.</div>`;
-        console.error("AI Error:", err);
+        try {
+          const res = await fetch("https://api.ocr.space/parse/image", {
+            method: "POST",
+            headers: { apikey: "helloworld" },
+            body: formData
+          });
+          const data = await res.json();
+          const parsed = data?.ParsedResults?.[0]?.ParsedText?.trim();
+          processExtractedText(parsed, "Image");
+        } catch (e) {
+          alert("OCR failed");
+        }
+      } else if (name.endsWith(".txt")) {
+        const reader = new FileReader();
+        reader.onload = e => processExtractedText(e.target.result, "Text File");
+        reader.readAsText(file);
+      } else if (name.endsWith(".xlsx")) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const workbook = XLSX.read(e.target.result, { type: "binary" });
+          let fullText = "";
+          workbook.SheetNames.forEach(name => {
+            const sheet = XLSX.utils.sheet_to_csv(workbook.Sheets[name]);
+            fullText += `Sheet: ${name}\n${sheet}\n`;
+          });
+          processExtractedText(fullText, "Excel File");
+        };
+        reader.readAsBinaryString(file);
+      } else {
+        alert("Unsupported file type: " + file.name);
       }
     }
 
-    updateAdminHistory(); // load on start
+    function processExtractedText(text, source) {
+      if (text && text.trim()) {
+        adminDataStore.push(`[${source}]\n${text}`);
+        localStorage.setItem(currentTeam, JSON.stringify(adminDataStore));
+        updateAdminHistory();
+        alert(`${source} content added successfully.`);
+      } else {
+        alert(`No readable content found in ${source}.`);
+      }
+    }
+
+    async function askAI() {
+      const chatBox = document.getElementById("chatBox");
+      const question = document.getElementById("userQuestion").value.trim();
+      if (!question) return;
+      chatBox.innerHTML += `<div><strong>You:</strong> ${question}</div>`;
+
+      let context = adminDataStore.join("\n");
+      const words = context.split(/\s+/);
+      if (words.length > 3000) {
+        context = words.slice(-3000).join(" ");
+      }
+
+      const prompt = `You are a helpful assistant. Use ONLY the following context to answer:\n\n${context}\n\nQuestion: ${question}\nAnswer:`;
+
+      try {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: "",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "mistralai/mistral-7b-instruct",
+            messages: [
+              { role: "system", content: "You are an AI assistant that answers only using the provided context." },
+              { role: "user", content: prompt }
+            ]
+          })
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errText}`);
+        }
+
+        const data = await response.json();
+        const answer = data?.choices?.[0]?.message?.content?.trim();
+
+        if (!answer) {
+          throw new Error("AI did not return an answer. Possible token overflow or input too large.");
+        }
+
+        chatBox.innerHTML += `<div><strong>AI:</strong> ${answer}</div>`;
+        document.getElementById("userQuestion").value = "";
+        chatBox.scrollTop = chatBox.scrollHeight;
+      } catch (err) {
+        console.error("AI error:", err);
+        chatBox.innerHTML += `<div><strong>AI:</strong> ❌ ${err.message}</div>`;
+      }
+    }
+
+    updateSystemSelectors();
+    updateAdminHistory();
+    updateAskOnlyLink();
   </script>
 </body>
 </html>
