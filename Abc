@@ -1,0 +1,34 @@
+UPDATE [Copy$$]
+SET [NEW BL duration] = '$strHeaderSixValue$'
+WHERE
+  ([Mover / hire] IS NOT NULL AND [Mover / hire] <> ' ')
+  AND ([NEW BL relevancy flag] IS NOT NULL AND [NEW BL relevancy flag] <> ' ')
+  AND (
+    ('$strHeaderOneValue$' = 'All') OR ('$strHeaderOneValue$' LIKE '%' + [Mover / hire] + '%')
+  )
+  AND (
+    ('$strHeaderTwoValue$' = 'All') OR ([Rank description] IS NOT NULL AND '$strHeaderTwoValue$' LIKE '%' + [Rank description] + '%')
+  )
+  AND (
+    ('$strHeaderThreeValue$' = 'All') OR ('$strHeaderThreeValue$' LIKE '%' + [Employee class description] + '%')
+  )
+  AND (
+    ('$strHeaderFourValue$' = 'All')
+    OR (
+      ('$strHeaderFourValue$' LIKE 'All except%') AND ([current work location country] NOT IN ($strExcludedCountries$))
+    )
+    OR (
+      ('$strHeaderFourValue$' NOT LIKE 'All except%') AND ([current work location country] IN ($strExcludedCountries$))
+    )
+  )
+  AND (
+    ('$strHeaderFiveValue$' = 'All')
+    OR (
+      ('$strHeaderFiveValue$' LIKE '%<%') AND ([Latest hire date] IS NOT NULL) AND
+      (YEAR('$strTodayYear$') - YEAR([Latest hire date]) < CAST(REPLACE(REPLACE('$strHeaderFiveValue$', '<', ''), ' years', '') AS INT))
+    )
+    OR (
+      ('$strHeaderFiveValue$' LIKE '%>%') AND ([Latest hire date] IS NOT NULL) AND
+      (YEAR('$strTodayYear$') - YEAR([Latest hire date]) > CAST(REPLACE(REPLACE('$strHeaderFiveValue$', '>', ''), ' years', '') AS INT))
+    )
+  )
