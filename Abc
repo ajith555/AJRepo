@@ -1,17 +1,11 @@
 UPDATE [Copy$$]
 SET [NEW BL duration] = '$strHeaderSixValue$'
-WHERE
+WHERE 
     ([Mover / hire] IS NOT NULL AND [Mover / hire] <> ' ')
     AND ([NEW BL relevancy flag] IS NOT NULL AND [NEW BL relevancy flag] <> ' ')
-    AND (
-        ('$strHeaderOneValue$' = 'All') OR ('$strHeaderOneValue$' LIKE '%' + [Mover / hire] + '%')
-    )
-    AND (
-        ('$strHeaderTwoValue$' = 'All') OR ([Rank description] IS NOT NULL AND '$strHeaderTwoValue$' LIKE '%' + [Rank description] + '%')
-    )
-    AND (
-        ('$strHeaderThreeValue$' = 'All') OR ('$strHeaderThreeValue$' LIKE '%' + [Employee class description] + '%')
-    )
+    AND ('$strHeaderOneValue$' = 'All' OR '$strHeaderOneValue$' LIKE '%' + [Mover / hire] + '%')
+    AND ('$strHeaderTwoValue$' = 'All' OR ([Rank description] IS NOT NULL AND '$strHeaderTwoValue$' LIKE '%' + [Rank description] + '%'))
+    AND ('$strHeaderThreeValue$' = 'All' OR '$strHeaderThreeValue$' LIKE '%' + [Employee class description] + '%')
     AND (
         ('$strHeaderFourValue$' = 'All')
         OR (
@@ -24,16 +18,15 @@ WHERE
     AND (
         ('$strHeaderFiveValue$' = 'All')
         OR (
-            ([Latest hire date] IS NOT NULL) 
-            AND (
+            [Latest hire date] IS NOT NULL AND (
                 (
-                    ('$comparison$' = '<') 
-                    AND ($strTodayYear$ - YEAR([Latest hire date]) < $years$)
+                  '$comparisonType$' = 'LT'
+                  AND $strTodayYear$ - CAST(STRFTIME('%Y', [Latest hire date]) AS INTEGER) < $comparisonYears$
                 )
                 OR
                 (
-                    ('$comparison$' = '>') 
-                    AND ($strTodayYear$ - YEAR([Latest hire date]) > $years$)
+                  '$comparisonType$' = 'GT'
+                  AND $strTodayYear$ - CAST(STRFTIME('%Y', [Latest hire date]) AS INTEGER) > $comparisonYears$
                 )
             )
         )
