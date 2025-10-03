@@ -42,4 +42,85 @@ Public Sub UpdateCopySheet(strArgumentAH As String)
         ' Loop over rows in Copy sheet
         For j = 2 To lastRowCopy
             ' Skip if AH already filled
-            If wsCopy.Cells(j, "AH").Value <> "" Then GoTo NextRow
+            If wsCopy.Cells(j, "AH").Value <> "" Then GoTo NextRowCopy
+            
+            ' Read values from Copy
+            tVal = Trim(wsCopy.Cells(j, "T").Value)
+            anVal = Trim(wsCopy.Cells(j, "AN").Value)
+            amVal = Trim(wsCopy.Cells(j, "AM").Value)
+            alVal = Trim(wsCopy.Cells(j, "AL").Value)
+            aqVal = wsCopy.Cells(j, "AQ").Value
+            
+            matched = True
+            
+            ' --- Rule A ---
+            If Not (ruleA = "All" Or InStr(1, ruleA, tVal, vbTextCompare) > 0) Then matched = False
+            
+            ' --- Rule B ---
+            If matched And Not (ruleB = "All" Or InStr(1, ruleB, anVal, vbTextCompare) > 0) Then matched = False
+            
+            ' --- Rule C ---
+            If matched And Not (ruleC = "All" Or InStr(1, ruleC, amVal, vbTextCompare) > 0) Then matched = False
+            
+            ' --- Rule D ---
+            If matched Then
+                If LCase(ruleD) = "all" Then
+                    ' OK
+                ElseIf InStr(1, LCase(ruleD), "all except", vbTextCompare) > 0 Then
+                    exceptions = Split(Replace(LCase(ruleD), "all except", ""), ",")
+                    foundExc = False
+                    For k = LBound(exceptions) To UBound(exceptions)
+                        If Trim(exceptions(k)) <> "" And InStr(1, LCase(alVal), Trim(exceptions(k)), vbTextCompare) > 0 Then
+                            foundExc = True
+                            Exit For
+                        End If
+                    Next k
+                    If foundExc Then matched = False
+                Else
+                    If InStr(1, ruleD, alVal, vbTextCompare) = 0 Then matched = False
+                End If
+            End If
+            
+            ' --- Rule E (Year Logic) ---
+            If matched And IsDate(aqVal) Then
+                joinYear = Year(aqVal)
+                If LCase(ruleE) <> "all" Then
+                    If InStr(1, ruleE, ">") > 0 Then
+                        ' >N years → join year <= todayYear - N
+                        If joinYear > (todayYear - CLng(Replace(ruleE, ">", ""))) Then matched = False
+                    ElseIf InStr(1, ruleE, "<") > 0 Then
+                        ' <N years → join year > todayYear - N
+                        If joinYear <= (todayYear - CLng(Replace(ruleE, "<", ""))) Then matched = False
+                    End If
+                End If
+            End If
+            
+            ' ✅ Only update if AG is not empty
+            If matched Then
+                If Trim(wsCopy.Cells(j, "AG").Value) <> "" Then
+                    wsCopy.Cells(j, "AH").Value = ruleF
+                End If
+            End If
+            
+NextRowCopy:
+        Next j
+    Next i
+    
+    wbCopy.Close SaveChanges:=True
+    
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    
+    MsgBox "Update complete.", vbInformation
+End Sub
+
+'=======================
+' Wrapper Macro (Run this one)
+'=======================
+Public Sub RunUpdate()
+    Dim filePath As String
+    ' 🔹 Change below to your Copy file path
+    filePath = "C:\Users\Ajith\Documents\YourCopyFile.xlsx"
+    
+    Call UpdateCopySheet(filePath)
+End Sub
