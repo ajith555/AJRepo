@@ -14,6 +14,7 @@ Public Sub UpdateCopySheet(strArgumentAH As String)
     Dim todayYear As Long
     Dim matched As Boolean
     Dim exceptions As Variant, foundExc As Boolean
+    Dim yearNum As Long
     
     Application.ScreenUpdating = False
     Application.EnableEvents = False
@@ -41,7 +42,7 @@ Public Sub UpdateCopySheet(strArgumentAH As String)
         
         ' Loop over rows in Copy sheet
         For j = 2 To lastRowCopy
-            ' Skip if AH already filled
+            ' Skip if AH already filled (first-match lock)
             If wsCopy.Cells(j, "AH").Value <> "" Then GoTo NextRowCopy
             
             ' Read values from Copy
@@ -84,13 +85,17 @@ Public Sub UpdateCopySheet(strArgumentAH As String)
             ' --- Rule E (Year Logic) ---
             If matched And IsDate(aqVal) Then
                 joinYear = Year(aqVal)
-                If LCase(ruleE) <> "all" Then
-                    If InStr(1, ruleE, ">") > 0 Then
-                        ' >N years → join year <= todayYear - N
-                        If joinYear > (todayYear - CLng(Replace(ruleE, ">", ""))) Then matched = False
-                    ElseIf InStr(1, ruleE, "<") > 0 Then
-                        ' <N years → join year > todayYear - N
-                        If joinYear <= (todayYear - CLng(Replace(ruleE, "<", ""))) Then matched = False
+                
+                If LCase(Trim(ruleE)) <> "all" Then
+                    ' Extract numeric part of ruleE
+                    yearNum = CLng(Replace(Replace(ruleE, "years", ""), " ", ""))
+                    
+                    If InStr(ruleE, ">") > 0 Then
+                        ' >N years → joinYear <= todayYear - N
+                        If joinYear > (todayYear - yearNum) Then matched = False
+                    ElseIf InStr(ruleE, "<") > 0 Then
+                        ' <N years → joinYear > todayYear - N
+                        If joinYear <= (todayYear - yearNum) Then matched = False
                     End If
                 End If
             End If
@@ -111,16 +116,5 @@ NextRowCopy:
     Application.EnableEvents = True
     Application.ScreenUpdating = True
     
-    MsgBox "Update complete.", vbInformation
-End Sub
 
-'=======================
-' Wrapper Macro (Run this one)
-'=======================
-Public Sub RunUpdate()
-    Dim filePath As String
-    ' 🔹 Change below to your Copy file path
-    filePath = "C:\Users\Ajith\Documents\YourCopyFile.xlsx"
-    
-    Call UpdateCopySheet(filePath)
 End Sub
