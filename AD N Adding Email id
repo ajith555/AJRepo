@@ -31,7 +31,7 @@ Public Sub UpdateCopySheet(strArgumentAH As String)
     
     todayYear = Year(Date)
     
-    ' Loop over rules in AH sheet
+    ' Loop over rules in AH sheet (top-down)
     For i = 2 To lastRowRules
         ruleA = Trim(wsRules.Cells(i, "A").Value)
         ruleB = Trim(wsRules.Cells(i, "B").Value)
@@ -40,12 +40,12 @@ Public Sub UpdateCopySheet(strArgumentAH As String)
         ruleE = Trim(wsRules.Cells(i, "E").Value)
         ruleF = Trim(wsRules.Cells(i, "F").Value)
         
-        ' Loop over rows in Copy sheet
+        ' Loop over all rows in Copy sheet
         For j = 2 To lastRowCopy
             ' Skip if AH already filled (first-match lock)
-            If wsCopy.Cells(j, "AH").Value <> "" Then GoTo NextRowCopy
+            If wsCopy.Cells(j, "AH").Value <> "" Then GoTo NextCopyRow
             
-            ' Read values from Copy
+            ' Read values from Copy sheet
             tVal = Trim(wsCopy.Cells(j, "T").Value)
             anVal = Trim(wsCopy.Cells(j, "AN").Value)
             amVal = Trim(wsCopy.Cells(j, "AM").Value)
@@ -107,7 +107,7 @@ Public Sub UpdateCopySheet(strArgumentAH As String)
                 End If
             End If
             
-NextRowCopy:
+NextCopyRow:
         Next j
     Next i
     
@@ -115,6 +115,4 @@ NextRowCopy:
     
     Application.EnableEvents = True
     Application.ScreenUpdating = True
-    
-
 End Sub
