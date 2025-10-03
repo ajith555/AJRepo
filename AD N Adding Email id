@@ -1,61 +1,111 @@
-# Define paths
-$sourceFilePath = "C:\Source Files\U99.xlsx"
-$rulesFilePath = "C:\rules.xlsx"
-$coordinatorsPath = "C:\Coordinators\"
+Option Explicit
 
-# Load the Excel COM object
-$excel = New-Object -ComObject Excel.Application
-$excel.Visible = $false
-$excel.DisplayAlerts = $false
-
-# Open the rules.xlsx file
-$workbook = $excel.Workbooks.Open($rulesFilePath)
-$sheet = $workbook.Sheets.Item(1)
-
-# Get the current month and year
-$currentMonth = (Get-Date).ToString("MMMM")
-$currentYear = (Get-Date).Year
-
-# Get the last row with data in the B column
-$lastRow = $sheet.Cells($sheet.Rows.Count, "B").End(-4162).Row
-
-# Loop through the rows starting from the 3rd row
-for ($row = 3; $row -le $lastRow; $row++) {
-    # Get the folder and file name from column B
-    $folderName = $sheet.Cells.Item($row, 2).Text
-    $fileName = $sheet.Cells.Item($row, 2).Text
-
-    # Construct the folder path
-    $folderPath = Join-Path $coordinatorsPath $folderName
-
-    # Check if the folder exists, if not, create it
-    if (-not (Test-Path -Path $folderPath)) {
-        New-Item -ItemType Directory -Path $folderPath | Out-Null
-    }
-
-    # Construct the destination file name
-    $destinationFileName = "${fileName}_${currentMonth}_${currentYear}.xlsx"
-    $destinationFilePath = Join-Path $folderPath $destinationFileName
-
-    # Copy the source file to the destination folder, overwriting if it already exists
-    Copy-Item -Path $sourceFilePath -Destination $destinationFilePath -Force
-}
-
-# Save and close the rules workbook
-$workbook.Save()
-$workbook.Close()
-
-# Quit Excel application
-$excel.Quit()
-
-# Release COM objects to avoid file locking
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($sheet) | Out-Null
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($workbook) | Out-Null
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
-
-# Remove variables
-Remove-Variable sheet
-Remove-Variable workbook
-Remove-Variable excel
-
-Write-Host "Files copied, folders created, and Excel closed successfully."
+Public Sub UpdateCopySheet(strArgumentAH As String)
+    Dim wbMacro As Workbook, wbCopy As Workbook
+    Dim wsRules As Worksheet, wsCopy As Worksheet
+    Dim lastRowRules As Long, lastRowCopy As Long
+    Dim i As Long, j As Long
+    Dim tVal As String, anVal As String, amVal As String, alVal As String
+    Dim aqVal As Variant, joinYear As Long, yearsDiff As Long
+    Dim ruleA As String, ruleB As String, ruleC As String, ruleD As String, ruleE As String, ruleF As String
+    Dim todayYear As Long
+    Dim matched As Boolean
+    
+    Application.ScreenUpdating = False
+    Application.EnableEvents = False
+    
+    Set wbMacro = ThisWorkbook
+    Set wsRules = wbMacro.Sheets("AH")
+    
+    ' Open the target file
+    Set wbCopy = Workbooks.Open(strArgumentAH)
+    Set wsCopy = wbCopy.Sheets("Copy")
+    
+    lastRowRules = wsRules.Cells(wsRules.Rows.Count, "A").End(xlUp).Row
+    lastRowCopy = wsCopy.Cells(wsCopy.Rows.Count, "A").End(xlUp).Row
+    
+    todayYear = Year(Date)
+    
+    ' Loop over rules
+    For i = 2 To lastRowRules
+        ruleA = Trim(wsRules.Cells(i, "A").Value)
+        ruleB = Trim(wsRules.Cells(i, "B").Value)
+        ruleC = Trim(wsRules.Cells(i, "C").Value)
+        ruleD = Trim(wsRules.Cells(i, "D").Value)
+        ruleE = Trim(wsRules.Cells(i, "E").Value)
+        ruleF = Trim(wsRules.Cells(i, "F").Value)
+        
+        ' Loop over Copy rows
+        For j = 2 To lastRowCopy
+            ' Skip if already updated (first match rule)
+            If wsCopy.Cells(j, "AH").Value <> "" Then GoTo NextRowCopy
+            
+            ' Read values from Copy
+            tVal = Trim(wsCopy.Cells(j, "T").Value)
+            anVal = Trim(wsCopy.Cells(j, "AN").Value)
+            amVal = Trim(wsCopy.Cells(j, "AM").Value)
+            alVal = Trim(wsCopy.Cells(j, "AL").Value)
+            aqVal = wsCopy.Cells(j, "AQ").Value
+            
+            matched = True
+            
+            ' Rule A check (T vs A)
+            If Not (ruleA = "All" Or InStr(1, ruleA, tVal, vbTextCompare) > 0) Then matched = False
+            
+            ' Rule B check (AN vs B)
+            If matched And Not (ruleB = "All" Or InStr(1, ruleB, anVal, vbTextCompare) > 0) Then matched = False
+            
+            ' Rule C check (AM vs C)
+            If matched And Not (ruleC = "All" Or InStr(1, ruleC, amVal, vbTextCompare) > 0) Then matched = False
+            
+            ' Rule D check (AL vs D)
+            If matched Then
+                If LCase(ruleD) = "all" Then
+                    ' OK
+                ElseIf InStr(1, LCase(ruleD), "all except", vbTextCompare) > 0 Then
+                    Dim exceptions As Variant, k As Long, foundExc As Boolean
+                    exceptions = Split(Replace(LCase(ruleD), "all except", ""), ",")
+                    foundExc = False
+                    For k = LBound(exceptions) To UBound(exceptions)
+                        If Trim(exceptions(k)) <> "" And InStr(1, LCase(alVal), Trim(exceptions(k)), vbTextCompare) > 0 Then
+                            foundExc = True
+                            Exit For
+                        End If
+                    Next k
+                    If foundExc Then matched = False
+                Else
+                    If InStr(1, ruleD, alVal, vbTextCompare) = 0 Then matched = False
+                End If
+            End If
+            
+            ' Rule E check (AQ vs E)
+            If matched And IsDate(aqVal) Then
+                joinYear = Year(aqVal)
+                yearsDiff = todayYear - joinYear
+                If ruleE = "All" Then
+                    ' Always OK
+                ElseIf InStr(1, ruleE, ">") > 0 Then
+                    If yearsDiff <= CLng(Replace(ruleE, ">", "")) Then matched = False
+                ElseIf InStr(1, ruleE, "<") > 0 Then
+                    If yearsDiff >= CLng(Replace(ruleE, "<", "")) Then matched = False
+                End If
+            End If
+            
+            ' ✅ New condition: Only update if AG is NOT empty
+            If matched Then
+                If Trim(wsCopy.Cells(j, "AG").Value) <> "" Then
+                    wsCopy.Cells(j, "AH").Value = ruleF
+                End If
+            End If
+            
+NextRowCopy:
+        Next j
+    Next i
+    
+    wbCopy.Close SaveChanges:=True
+    
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    
+    MsgBox "Update complete.", vbInformation
+End Sub
