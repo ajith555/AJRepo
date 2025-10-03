@@ -1,118 +1,312 @@
 Option Explicit
 
-'=======================
-' Main Macro
-'=======================
-Public Sub UpdateCopySheet(strArgumentAH As String)
+' -----------------------------
+' Main entry point (call this)
+' -----------------------------
+Public Sub UpdateCopySheetAH(Optional ByVal strArgumentAH As String = "")
+    On Error GoTo ErrHandler
+
     Dim wbMacro As Workbook, wbCopy As Workbook
     Dim wsRules As Worksheet, wsCopy As Worksheet
-    Dim lastRowRules As Long, lastRowCopy As Long
-    Dim i As Long, j As Long, k As Long
-    Dim tVal As String, anVal As String, amVal As String, alVal As String
-    Dim aqVal As Variant, joinYear As Long
+    Dim lastRuleRow As Long, lastCopyRow As Long
+    Dim ruleRow As Long, copyRow As Long, k As Long
     Dim ruleA As String, ruleB As String, ruleC As String, ruleD As String, ruleE As String, ruleF As String
-    Dim todayYear As Long
-    Dim matched As Boolean
-    Dim exceptions As Variant, foundExc As Boolean
-    Dim yearNum As Long
-    
+    Dim tVal As String, anVal As String, amVal As String, alVal As String, aqVal As String
+    Dim matched As Boolean, foundExc As Boolean
+    Dim exceptions As Variant
+    Dim todayYear As Long, joinYear As Long, yearNum As Long
+    Dim fPath As String
+
     Application.ScreenUpdating = False
     Application.EnableEvents = False
-    
+
     Set wbMacro = ThisWorkbook
-    Set wsRules = wbMacro.Sheets("AH")
-    
-    ' Open the target file
-    Set wbCopy = Workbooks.Open(strArgumentAH)
-    Set wsCopy = wbCopy.Sheets("Copy")
-    
-    lastRowRules = wsRules.Cells(wsRules.Rows.Count, "A").End(xlUp).Row
-    lastRowCopy = wsCopy.Cells(wsCopy.Rows.Count, "A").End(xlUp).Row
-    
+    Set wsRules = Nothing
+    On Error Resume Next
+    Set wsRules = wbMacro.Worksheets("AH")
+    On Error GoTo ErrHandler
+    If wsRules Is Nothing Then Err.Raise vbObjectError + 1000, , "'AH' sheet not found in Ajith Macro workbook."
+
+    ' If path not provided, ask user to pick file
+    fPath = Trim(strArgumentAH)
+    If fPath = "" Then
+        With Application.FileDialog(msoFileDialogFilePicker)
+            .AllowMultiSelect = False
+            .Title = "Select target workbook (must contain sheet 'Copy')"
+            .Filters.Clear
+            .Filters.Add "Excel Files", "*.xls; *.xlsx; *.xlsm"
+            If .Show = -1 Then
+                fPath = .SelectedItems(1)
+            Else
+                GoTo CleanExit ' user cancelled
+            End If
+        End With
+    End If
+
+    If Dir(fPath) = "" Then Err.Raise vbObjectError + 1001, , "Target file not found: " & fPath
+
+    ' Open target workbook
+    Set wbCopy = Workbooks.Open(Filename:=fPath, ReadOnly:=False)
+    Set wsCopy = Nothing
+    On Error Resume Next
+    Set wsCopy = wbCopy.Worksheets("Copy")
+    On Error GoTo ErrHandler
+    If wsCopy Is Nothing Then
+        wbCopy.Close SaveChanges:=False
+        Err.Raise vbObjectError + 1002, , "'Copy' sheet not found in target workbook."
+    End If
+
+    lastRuleRow = wsRules.Cells(wsRules.Rows.Count, "A").End(xlUp).Row
+    lastCopyRow = wsCopy.Cells(wsCopy.Rows.Count, "A").End(xlUp).Row
+
     todayYear = Year(Date)
-    
-    ' Loop over rules in AH sheet (top-down)
-    For i = 2 To lastRowRules
-        ruleA = Trim(wsRules.Cells(i, "A").Value)
-        ruleB = Trim(wsRules.Cells(i, "B").Value)
-        ruleC = Trim(wsRules.Cells(i, "C").Value)
-        ruleD = Trim(wsRules.Cells(i, "D").Value)
-        ruleE = Trim(wsRules.Cells(i, "E").Value)
-        ruleF = Trim(wsRules.Cells(i, "F").Value)
-        
-        ' Loop over all rows in Copy sheet
-        For j = 2 To lastRowCopy
-            ' Skip if AH already filled (first-match lock)
-            If wsCopy.Cells(j, "AH").Value <> "" Then GoTo NextCopyRow
-            
-            ' Read values from Copy sheet
-            tVal = Trim(wsCopy.Cells(j, "T").Value)
-            anVal = Trim(wsCopy.Cells(j, "AN").Value)
-            amVal = Trim(wsCopy.Cells(j, "AM").Value)
-            alVal = Trim(wsCopy.Cells(j, "AL").Value)
-            aqVal = wsCopy.Cells(j, "AQ").Value
-            
+
+    ' Loop rules top-down (first rule has priority)
+    For ruleRow = 2 To lastRuleRow
+        ruleA = Trim(CStr(wsRules.Cells(ruleRow, "A").Value))
+        ruleB = Trim(CStr(wsRules.Cells(ruleRow, "B").Value))
+        ruleC = Trim(CStr(wsRules.Cells(ruleRow, "C").Value))
+        ruleD = Trim(CStr(wsRules.Cells(ruleRow, "D").Value))
+        ruleE = Trim(CStr(wsRules.Cells(ruleRow, "E").Value))
+        ruleF = CStr(wsRules.Cells(ruleRow, "F").Value) ' value to write
+
+        ' Normalize blanks that should be treated like "All"
+        If ruleA = "" Then ruleA = "All"
+        If ruleB = "" Then ruleB = "All"
+        If ruleC = "" Then ruleC = "All"
+        If ruleD = "" Then ruleD = "All"
+        If ruleE = "" Then ruleE = "All"
+
+        ' Pre-lower for faster checks when appropriate (but we'll use vbTextCompare for InStr)
+        Dim lRuleE As String
+        lRuleE = LCase(ruleE)
+
+        ' Extract numeric part if needed (avoid errors)
+        yearNum = 0
+        If InStr(lRuleE, "years") > 0 Or InStr(lRuleE, "year") > 0 Then
+            Dim tmpNum As String
+            tmpNum = Replace(Replace(Replace(lRuleE, "years", ""), "year", ""), " ", "")
+            tmpNum = Replace(tmpNum, ">", "")
+            tmpNum = Replace(tmpNum, "<", "")
+            If IsNumeric(tmpNum) Then yearNum = CLng(tmpNum)
+        Else
+            ' Try to extract number even if user wrote like "> 15" or "<15"
+            tmpNum = Replace(Replace(lRuleE, ">", ""), "<", "")
+            tmpNum = Replace(tmpNum, " ", "")
+            If IsNumeric(tmpNum) Then yearNum = CLng(tmpNum)
+        End If
+
+        ' Loop through all Copy rows
+        For copyRow = 2 To lastCopyRow
+            ' Skip if AH already has value (first-match lock)
+            If Trim(CStr(wsCopy.Cells(copyRow, "AH").Value)) <> "" Then GoTo ContinueCopyLoop
+
+            ' Important: if AG is empty, we won't update, so skip early (saves processing)
+            If Trim(CStr(wsCopy.Cells(copyRow, "AG").Value)) = "" Then GoTo ContinueCopyLoop
+
+            ' Read values from Copy row
+            tVal = Trim(CStr(wsCopy.Cells(copyRow, "T").Value))
+            anVal = Trim(CStr(wsCopy.Cells(copyRow, "AN").Value))
+            amVal = Trim(CStr(wsCopy.Cells(copyRow, "AM").Value))
+            alVal = Trim(CStr(wsCopy.Cells(copyRow, "AL").Value))
+            aqVal = Trim(CStr(wsCopy.Cells(copyRow, "AQ").Value))
+
             matched = True
-            
-            ' --- Rule A ---
-            If Not (ruleA = "All" Or InStr(1, ruleA, tVal, vbTextCompare) > 0) Then matched = False
-            
-            ' --- Rule B ---
-            If matched And Not (ruleB = "All" Or InStr(1, ruleB, anVal, vbTextCompare) > 0) Then matched = False
-            
-            ' --- Rule C ---
-            If matched And Not (ruleC = "All" Or InStr(1, ruleC, amVal, vbTextCompare) > 0) Then matched = False
-            
-            ' --- Rule D ---
-            If matched Then
-                If LCase(ruleD) = "all" Then
-                    ' OK
-                ElseIf InStr(1, LCase(ruleD), "all except", vbTextCompare) > 0 Then
-                    exceptions = Split(Replace(LCase(ruleD), "all except", ""), ",")
-                    foundExc = False
-                    For k = LBound(exceptions) To UBound(exceptions)
-                        If Trim(exceptions(k)) <> "" And InStr(1, LCase(alVal), Trim(exceptions(k)), vbTextCompare) > 0 Then
-                            foundExc = True
-                            Exit For
-                        End If
-                    Next k
-                    If foundExc Then matched = False
-                Else
-                    If InStr(1, ruleD, alVal, vbTextCompare) = 0 Then matched = False
+
+            ' --- A check: ruleA contains tVal (case-insensitive) OR ruleA = "All"
+            If LCase(ruleA) <> "all" Then
+                If tVal = "" Then
+                    matched = False
+                ElseIf InStr(1, ruleA, tVal, vbTextCompare) = 0 Then
+                    matched = False
                 End If
             End If
-            
-            ' --- Rule E (Year Logic) ---
-            If matched And IsDate(aqVal) Then
-                joinYear = Year(aqVal)
-                
-                If LCase(Trim(ruleE)) <> "all" Then
-                    ' Extract numeric part of ruleE
-                    yearNum = CLng(Replace(Replace(ruleE, "years", ""), " ", ""))
-                    
-                    If InStr(ruleE, ">") > 0 Then
-                        ' >N years → joinYear <= todayYear - N
-                        If joinYear > (todayYear - yearNum) Then matched = False
-                    ElseIf InStr(ruleE, "<") > 0 Then
-                        ' <N years → joinYear > todayYear - N
-                        If joinYear <= (todayYear - yearNum) Then matched = False
+
+            ' --- B check
+            If matched Then
+                If LCase(ruleB) <> "all" Then
+                    If anVal = "" Then
+                        matched = False
+                    ElseIf InStr(1, ruleB, anVal, vbTextCompare) = 0 Then
+                        matched = False
                     End If
                 End If
             End If
-            
-            ' ✅ Only update if AG is not empty
+
+            ' --- C check
             If matched Then
-                If Trim(wsCopy.Cells(j, "AG").Value) <> "" Then
-                    wsCopy.Cells(j, "AH").Value = ruleF
+                If LCase(ruleC) <> "all" Then
+                    If amVal = "" Then
+                        matched = False
+                    ElseIf InStr(1, ruleC, amVal, vbTextCompare) = 0 Then
+                        matched = False
+                    End If
                 End If
             End If
-            
-NextCopyRow:
-        Next j
-    Next i
-    
+
+            ' --- D check (country)
+            If matched Then
+                If LCase(ruleD) = "all" Then
+                    ' always OK
+                ElseIf InStr(1, LCase(ruleD), "all except", vbTextCompare) > 0 Then
+                    ' parse exclusion list
+                    exceptions = Split(Replace(LCase(ruleD), "all except", ""), ",")
+                    foundExc = False
+                    If alVal = "" Then
+                        ' can't evaluate country -> treat as not matched
+                        foundExc = True
+                        matched = False
+                    Else
+                        For k = LBound(exceptions) To UBound(exceptions)
+                            If Trim(exceptions(k)) <> "" Then
+                                If Trim(LCase(alVal)) = Trim(LCase(exceptions(k))) Then
+                                    foundExc = True
+                                    Exit For
+                                End If
+                            End If
+                        Next k
+                        If foundExc Then matched = False
+                    End If
+                Else
+                    ' direct contains check (requires alVal not blank)
+                    If alVal = "" Then
+                        matched = False
+                    ElseIf InStr(1, ruleD, alVal, vbTextCompare) = 0 Then
+                        matched = False
+                    End If
+                End If
+            End If
+
+            ' --- E check (year logic)
+            If matched Then
+                If LCase(ruleE) = "all" Then
+                    ' OK
+                Else
+                    ' parse join year robustly from aqVal
+                    Dim parsedYear As Long
+                    If Not TryParseJoinYear(aqVal, parsedYear) Then
+                        matched = False
+                    Else
+                        joinYear = parsedYear
+                        ' If numeric part missing or invalid, treat as not matched
+                        If yearNum <= 0 Then
+                            matched = False
+                        Else
+                            If InStr(lRuleE, ">") > 0 Then
+                                ' >N years  -> true if joinYear <= todayYear - N
+                                If Not (joinYear <= (todayYear - yearNum)) Then matched = False
+                            ElseIf InStr(lRuleE, "<") > 0 Then
+                                ' <N years -> true if joinYear > todayYear - N
+                                If Not (joinYear > (todayYear - yearNum)) Then matched = False
+                            Else
+                                ' If no operator, treat as exact N years? (we'll treat as not matched)
+                                matched = False
+                            End If
+                        End If
+                    End If
+                End If
+            End If
+
+            ' If matched after all checks, update AH with ruleF (first-match lock since AH was blank)
+            If matched Then
+                wsCopy.Cells(copyRow, "AH").Value = ruleF
+            End If
+
+ContinueCopyLoop:
+        Next copyRow
+    Next ruleRow
+
+    ' Save & close target
     wbCopy.Close SaveChanges:=True
-    
+
+CleanExit:
     Application.EnableEvents = True
     Application.ScreenUpdating = True
+    Exit Sub
+
+ErrHandler:
+    ' try to close target workbook without saving if open (avoid leaving it open)
+    On Error Resume Next
+    If Not wbCopy Is Nothing Then
+        If wbCopy.ReadOnly = False Then wbCopy.Close SaveChanges:=False
+    End If
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    ' raise error to user (no MsgBox as requested; raise so Automation Anywhere can capture)
+    Err.Raise Err.Number, Err.Source, Err.Description
+End Sub
+
+' -----------------------------
+' Helper: parse join year from AQ string
+' Supports Excel dates and strings like DD.MM.YYYY, DD-MM-YYYY, DD/MM/YYYY
+' Returns True if parsed and outputs year in outYear
+' -----------------------------
+Private Function TryParseJoinYear(ByVal s As String, ByRef outYear As Long) As Boolean
+    Dim s2 As String
+    Dim parts As Variant
+    Dim d As Long, m As Long, y As Long
+    Dim dt As Date
+
+    TryParseJoinYear = False
+    outYear = 0
+    s2 = Trim(s)
+    If s2 = "" Then Exit Function
+
+    On Error Resume Next
+    If IsDate(s2) Then
+        dt = CDate(s2)
+        If Err.Number = 0 Then
+            outYear = Year(dt)
+            TryParseJoinYear = True
+            Exit Function
+        Else
+            Err.Clear
+        End If
+    End If
+    On Error GoTo 0
+
+    ' Normalize separators
+    s2 = Replace(s2, "-", ".")
+    s2 = Replace(s2, "/", ".")
+    parts = Split(s2, ".")
+    If UBound(parts) = 2 Then
+        d = Val(parts(0))
+        m = Val(parts(1))
+        y = Val(parts(2))
+        If y < 100 Then
+            ' two-digit year heuristic
+            If y >= 0 And y <= 30 Then
+                y = 2000 + y
+            Else
+                y = 1900 + y
+            End If
+        End If
+        On Error Resume Next
+        dt = DateSerial(y, m, d)
+        If Err.Number = 0 Then
+            outYear = Year(dt)
+            TryParseJoinYear = True
+            Exit Function
+        End If
+        Err.Clear
+        On Error GoTo 0
+    End If
+End Function
+
+
+' -----------------------------
+' Simple wrapper: pick file via dialog then run
+' -----------------------------
+Public Sub RunUpdate_PickFile()
+    Dim fd As FileDialog
+    Dim f As String
+    Set fd = Application.FileDialog(msoFileDialogFilePicker)
+    fd.AllowMultiSelect = False
+    fd.Title = "Select target workbook (must contain sheet 'Copy')"
+    fd.Filters.Clear
+    fd.Filters.Add "Excel Files", "*.xls; *.xlsx; *.xlsm"
+    If fd.Show = -1 Then
+        f = fd.SelectedItems(1)
+        Call UpdateCopySheetAH(f)
+    End If
 End Sub
