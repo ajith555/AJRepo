@@ -9,7 +9,7 @@ Public Sub UpdateCopySheet(strArgumentAH As String)
     Dim lastRowRules As Long, lastRowCopy As Long
     Dim i As Long, j As Long, k As Long
     Dim tVal As String, anVal As String, amVal As String, alVal As String
-    Dim aqVal As Variant, joinYear As Long, yearsDiff As Long
+    Dim aqVal As Variant, joinYear As Long
     Dim ruleA As String, ruleB As String, ruleC As String, ruleD As String, ruleE As String, ruleF As String
     Dim todayYear As Long
     Dim matched As Boolean
@@ -30,7 +30,7 @@ Public Sub UpdateCopySheet(strArgumentAH As String)
     
     todayYear = Year(Date)
     
-    ' Loop over rules in Ajith Macro (AH sheet)
+    ' Loop over rules in AH sheet
     For i = 2 To lastRowRules
         ruleA = Trim(wsRules.Cells(i, "A").Value)
         ruleB = Trim(wsRules.Cells(i, "B").Value)
@@ -41,86 +41,5 @@ Public Sub UpdateCopySheet(strArgumentAH As String)
         
         ' Loop over rows in Copy sheet
         For j = 2 To lastRowCopy
-            ' Skip if already updated (first match rule)
-            If wsCopy.Cells(j, "AH").Value <> "" Then GoTo NextRowCopy
-            
-            ' Read values from Copy
-            tVal = Trim(wsCopy.Cells(j, "T").Value)
-            anVal = Trim(wsCopy.Cells(j, "AN").Value)
-            amVal = Trim(wsCopy.Cells(j, "AM").Value)
-            alVal = Trim(wsCopy.Cells(j, "AL").Value)
-            aqVal = wsCopy.Cells(j, "AQ").Value
-            
-            matched = True
-            
-            ' Rule A check (T vs A)
-            If Not (ruleA = "All" Or InStr(1, ruleA, tVal, vbTextCompare) > 0) Then matched = False
-            
-            ' Rule B check (AN vs B)
-            If matched And Not (ruleB = "All" Or InStr(1, ruleB, anVal, vbTextCompare) > 0) Then matched = False
-            
-            ' Rule C check (AM vs C)
-            If matched And Not (ruleC = "All" Or InStr(1, ruleC, amVal, vbTextCompare) > 0) Then matched = False
-            
-            ' Rule D check (AL vs D)
-            If matched Then
-                If LCase(ruleD) = "all" Then
-                    ' OK
-                ElseIf InStr(1, LCase(ruleD), "all except", vbTextCompare) > 0 Then
-                    exceptions = Split(Replace(LCase(ruleD), "all except", ""), ",")
-                    foundExc = False
-                    For k = LBound(exceptions) To UBound(exceptions)
-                        If Trim(exceptions(k)) <> "" And InStr(1, LCase(alVal), Trim(exceptions(k)), vbTextCompare) > 0 Then
-                            foundExc = True
-                            Exit For
-                        End If
-                    Next k
-                    If foundExc Then matched = False
-                Else
-                    If InStr(1, ruleD, alVal, vbTextCompare) = 0 Then matched = False
-                End If
-            End If
-            
-            ' Rule E check (AQ vs E)
-            If matched And IsDate(aqVal) Then
-                joinYear = Year(aqVal)
-                yearsDiff = todayYear - joinYear
-                If ruleE = "All" Then
-                    ' Always OK
-                ElseIf InStr(1, ruleE, ">") > 0 Then
-                    If yearsDiff <= CLng(Replace(ruleE, ">", "")) Then matched = False
-                ElseIf InStr(1, ruleE, "<") > 0 Then
-                    If yearsDiff >= CLng(Replace(ruleE, "<", "")) Then matched = False
-                End If
-            End If
-            
-            ' ✅ Only update if AG is NOT empty
-            If matched Then
-                If Trim(wsCopy.Cells(j, "AG").Value) <> "" Then
-                    wsCopy.Cells(j, "AH").Value = ruleF
-                End If
-            End If
-            
-NextRowCopy:
-        Next j
-    Next i
-    
-    wbCopy.Close SaveChanges:=True
-    
-    Application.EnableEvents = True
-    Application.ScreenUpdating = True
-    
-    MsgBox "Update complete.", vbInformation
-End Sub
-
-
-'=======================
-' Wrapper Macro (Run this one)
-'=======================
-Public Sub RunUpdate()
-    Dim filePath As String
-    ' 🔹 Change below path to your Copy file path
-    filePath = "C:\Users\Ajith\Documents\YourCopyFile.xlsx"
-    
-    Call UpdateCopySheet(filePath)
-End Sub
+            ' Skip if AH already filled
+            If wsCopy.Cells(j, "AH").Value <> "" Then GoTo NextRow
