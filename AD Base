@@ -1,260 +1,117 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Smart AI Team Portal</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-</head>
-<body class="bg-gray-100 p-4">
-  <h1 class="text-3xl font-bold text-center mb-4">🤖 Smart AI Team Portal</h1>
+Option Explicit
 
-  <div class="text-center mb-4">
-    <input id="newSystemName" class="border p-2 mr-2" placeholder="Enter new system name" />
-    <button onclick="createNewSystem()" class="bg-indigo-600 text-white px-4 py-2 rounded">➕ Create New System</button>
-  </div>
-
-  <div class="text-center mb-4">
-    <label class="font-semibold mr-2">Select System:</label>
-    <select id="teamSelector" class="p-2 border rounded" onchange="switchTeam()"></select>
-    <a id="openChatLink" href="#" target="_blank" class="ml-4 text-blue-600 underline">Open Ask AI Only</a>
-  </div>
-
-  <div class="flex flex-col md:flex-row gap-4">
-    <div class="md:w-1/2 bg-white p-4 rounded shadow" id="adminPanel">
-      <h2 class="text-xl font-semibold mb-2">Admin Panel</h2>
-      <textarea id="adminData" class="w-full h-32 border p-2 mb-2" placeholder="Enter information..."></textarea>
-      <button onclick="saveData()" class="bg-blue-600 text-white px-4 py-2 rounded w-full">💾 Save Info</button>
-      <input type="file" id="fileInput" accept=".pdf,.docx,.xlsx,.txt,image/*" class="w-full my-2" />
-      <button onclick="uploadFile()" class="bg-purple-600 text-white px-4 py-2 rounded w-full">📎 Upload File</button>
-      <div id="adminHistory" class="mt-4 text-sm text-gray-800 max-h-60 overflow-y-auto"></div>
-    </div>
-
-    <div class="md:w-1/2 bg-white p-4 rounded shadow">
-      <h2 class="text-xl font-semibold mb-2">Ask AI</h2>
-      <div class="mb-2">
-        <label class="font-semibold mr-2">Select System:</label>
-        <select id="askTeamSelector" class="p-2 border rounded" onchange="switchAskTeam()"></select>
-      </div>
-      <div id="chatBox" class="h-60 overflow-y-scroll border p-2 mb-2 bg-gray-50 text-sm"></div>
-      <input id="userQuestion" class="w-full border p-2 mb-2" placeholder="Ask a question..." />
-      <button onclick="askAI()" class="bg-green-600 text-white px-4 py-2 rounded w-full">Ask</button>
-    </div>
-  </div>
-
-  <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const teamFromUrl = urlParams.get("team");
-    const askOnly = urlParams.get("ask") === "true";
-
-    let currentTeam = teamFromUrl || localStorage.getItem("currentTeam") || "team_default";
-    localStorage.setItem("currentTeam", currentTeam);
-    let adminDataStore = JSON.parse(localStorage.getItem(currentTeam) || "[]");
-
-    if (askOnly) {
-      document.getElementById("adminPanel").style.display = "none";
-      document.querySelector("h1").textContent += ` — Ask AI (${currentTeam})`;
-    }
-
-    function updateSystemSelectors() {
-      const keys = Object.keys(localStorage).filter(k => k.startsWith("team_"));
-      const teamSel = document.getElementById("teamSelector");
-      const askSel = document.getElementById("askTeamSelector");
-      teamSel.innerHTML = "";
-      askSel.innerHTML = "";
-      keys.forEach(k => {
-        const name = k.replace("team_", "");
-        const opt1 = new Option(name, k);
-        const opt2 = new Option(name, k);
-        teamSel.appendChild(opt1);
-        askSel.appendChild(opt2);
-      });
-      teamSel.value = currentTeam;
-      askSel.value = currentTeam;
-    }
-
-    function switchTeam() {
-      currentTeam = document.getElementById("teamSelector").value;
-      localStorage.setItem("currentTeam", currentTeam);
-      adminDataStore = JSON.parse(localStorage.getItem(currentTeam) || "[]");
-      updateAdminHistory();
-      updateAskOnlyLink();
-    }
-
-    function switchAskTeam() {
-      currentTeam = document.getElementById("askTeamSelector").value;
-      localStorage.setItem("currentTeam", currentTeam);
-      adminDataStore = JSON.parse(localStorage.getItem(currentTeam) || "[]");
-    }
-
-    function updateAskOnlyLink() {
-      const url = `${window.location.origin}${window.location.pathname}?team=${currentTeam}&ask=true`;
-      document.getElementById("openChatLink").href = url;
-    }
-
-    function createNewSystem() {
-      const name = document.getElementById("newSystemName").value.trim();
-      if (!name) return alert("Enter a system name");
-      const key = `team_${name.replace(/\s+/g, '_').toLowerCase()}`;
-      if (!localStorage.getItem(key)) {
-        localStorage.setItem(key, JSON.stringify([]));
-        updateSystemSelectors();
-      }
-      document.getElementById("newSystemName").value = "";
-    }
-
-    function saveData() {
-      const input = document.getElementById("adminData").value.trim();
-      if (input) {
-        adminDataStore.push(input);
-        localStorage.setItem(currentTeam, JSON.stringify(adminDataStore));
-        document.getElementById("adminData").value = "";
-        updateAdminHistory();
-      }
-    }
-
-    function updateAdminHistory() {
-      const container = document.getElementById("adminHistory");
-      container.innerHTML = adminDataStore.map((d, i) => `<div>${i + 1}. ${d}</div>`).join("\n");
-    }
-
-    async function uploadFile() {
-      const file = document.getElementById("fileInput").files[0];
-      if (!file) return alert("Please select a file");
-
-      const type = file.type;
-      const name = file.name.toLowerCase();
-
-      if (type === "application/pdf") {
-        const reader = new FileReader();
-        reader.onload = async function () {
-          const typedarray = new Uint8Array(reader.result);
-          const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
-          let text = "";
-          for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const content = await page.getTextContent();
-            const strings = content.items.map(item => item.str).join(" ");
-            text += strings + "\n";
-          }
-          processExtractedText(text, "PDF");
-        };
-        reader.readAsArrayBuffer(file);
-      } else if (name.endsWith(".docx")) {
-        const reader = new FileReader();
-        reader.onload = function (event) {
-          mammoth.extractRawText({ arrayBuffer: event.target.result })
-            .then(result => processExtractedText(result.value, "Word Document"))
-            .catch(err => alert("Failed to read .docx: " + err.message));
-        };
-        reader.readAsArrayBuffer(file);
-      } else if (type.startsWith("image/")) {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("language", "eng");
-        formData.append("isOverlayRequired", "false");
-
-        try {
-          const res = await fetch("https://api.ocr.space/parse/image", {
-            method: "POST",
-            headers: { apikey: "helloworld" },
-            body: formData
-          });
-          const data = await res.json();
-          const parsed = data?.ParsedResults?.[0]?.ParsedText?.trim();
-          processExtractedText(parsed, "Image");
-        } catch (e) {
-          alert("OCR failed");
-        }
-      } else if (name.endsWith(".txt")) {
-        const reader = new FileReader();
-        reader.onload = e => processExtractedText(e.target.result, "Text File");
-        reader.readAsText(file);
-      } else if (name.endsWith(".xlsx")) {
-        const reader = new FileReader();
-        reader.onload = e => {
-          const workbook = XLSX.read(e.target.result, { type: "binary" });
-          let fullText = "";
-          workbook.SheetNames.forEach(name => {
-            const sheet = XLSX.utils.sheet_to_csv(workbook.Sheets[name]);
-            fullText += `Sheet: ${name}\n${sheet}\n`;
-          });
-          processExtractedText(fullText, "Excel File");
-        };
-        reader.readAsBinaryString(file);
-      } else {
-        alert("Unsupported file type: " + file.name);
-      }
-    }
-
-    function processExtractedText(text, source) {
-      if (text && text.trim()) {
-        adminDataStore.push(`[${source}]\n${text}`);
-        localStorage.setItem(currentTeam, JSON.stringify(adminDataStore));
-        updateAdminHistory();
-        alert(`${source} content added successfully.`);
-      } else {
-        alert(`No readable content found in ${source}.`);
-      }
-    }
-
-    async function askAI() {
-      const chatBox = document.getElementById("chatBox");
-      const question = document.getElementById("userQuestion").value.trim();
-      if (!question) return;
-      chatBox.innerHTML += `<div><strong>You:</strong> ${question}</div>`;
-
-      let context = adminDataStore.join("\n");
-      const words = context.split(/\s+/);
-      if (words.length > 3000) {
-        context = words.slice(-3000).join(" ");
-      }
-
-      const prompt = `You are a helpful assistant. Use ONLY the following context to answer:\n\n${context}\n\nQuestion: ${question}\nAnswer:`;
-
-      try {
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: "",
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: "mistralai/mistral-7b-instruct",
-            messages: [
-              { role: "system", content: "You are an AI assistant that answers only using the provided context." },
-              { role: "user", content: prompt }
-            ]
-          })
-        });
-
-        if (!response.ok) {
-          const errText = await response.text();
-          throw new Error(`HTTP ${response.status}: ${errText}`);
-        }
-
-        const data = await response.json();
-        const answer = data?.choices?.[0]?.message?.content?.trim();
-
-        if (!answer) {
-          throw new Error("AI did not return an answer. Possible token overflow or input too large.");
-        }
-
-        chatBox.innerHTML += `<div><strong>AI:</strong> ${answer}</div>`;
-        document.getElementById("userQuestion").value = "";
-        chatBox.scrollTop = chatBox.scrollHeight;
-      } catch (err) {
-        console.error("AI error:", err);
-        chatBox.innerHTML += `<div><strong>AI:</strong> ❌ ${err.message}</div>`;
-      }
-    }
-
-    updateSystemSelectors();
-    updateAdminHistory();
-    updateAskOnlyLink();
-  </script>
-</body>
-</html>
+Public Sub UpdateCopySheetAH(ByVal strArgumentAH As String)
+    Dim wbMacro As Workbook
+    Dim wsRules As Worksheet
+    Dim wbCopy As Workbook
+    Dim wsCopy As Worksheet
+    
+    Dim lastRuleRow As Long, lastCopyRow As Long
+    Dim i As Long, j As Long
+    
+    Dim valA As String, valB As String, valC As String, valD As String, valE As String, valF As String
+    Dim copyT As String, copyAN As String, copyAM As String, copyAL As String, copyAQ As String
+    Dim joinDate As Date, yearsDiff As Long
+    Dim matchOk As Boolean
+    
+    ' Reference to macro workbook (this workbook)
+    Set wbMacro = ThisWorkbook
+    Set wsRules = wbMacro.Sheets("AH")
+    
+    ' Open target workbook
+    Set wbCopy = Workbooks.Open(strArgumentAH)
+    Set wsCopy = wbCopy.Sheets("Copy")
+    
+    ' Find last rows
+    lastRuleRow = wsRules.Cells(wsRules.Rows.Count, "A").End(xlUp).Row
+    lastCopyRow = wsCopy.Cells(wsCopy.Rows.Count, "A").End(xlUp).Row
+    
+    ' Loop through each rule row in Ajith Macro "AH" sheet
+    For j = 2 To lastRuleRow
+        valA = Trim(CStr(wsRules.Cells(j, "A").Value))
+        valB = Trim(CStr(wsRules.Cells(j, "B").Value))
+        valC = Trim(CStr(wsRules.Cells(j, "C").Value))
+        valD = Trim(CStr(wsRules.Cells(j, "D").Value))
+        valE = Trim(CStr(wsRules.Cells(j, "E").Value))
+        valF = CStr(wsRules.Cells(j, "F").Value)
+        
+        ' Loop through each data row in Copy sheet
+        For i = 2 To lastCopyRow
+            ' Only check if AH column is empty (first match wins)
+            If Trim(CStr(wsCopy.Cells(i, "AH").Value)) = "" Then
+                copyT = Trim(CStr(wsCopy.Cells(i, "T").Value))
+                copyAN = Trim(CStr(wsCopy.Cells(i, "AN").Value))
+                copyAM = Trim(CStr(wsCopy.Cells(i, "AM").Value))
+                copyAL = Trim(CStr(wsCopy.Cells(i, "AL").Value))
+                copyAQ = Trim(CStr(wsCopy.Cells(i, "AQ").Value))
+                
+                matchOk = True
+                
+                ' --- Column A check ---
+                If UCase(valA) <> "ALL" Then
+                    If InStr(1, valA, copyT, vbTextCompare) = 0 Then matchOk = False
+                End If
+                
+                ' --- Column B check ---
+                If matchOk Then
+                    If UCase(valB) <> "ALL" Then
+                        If InStr(1, valB, copyAN, vbTextCompare) = 0 Then matchOk = False
+                    End If
+                End If
+                
+                ' --- Column C check ---
+                If matchOk Then
+                    If UCase(valC) <> "ALL" Then
+                        If InStr(1, valC, copyAM, vbTextCompare) = 0 Then matchOk = False
+                    End If
+                End If
+                
+                ' --- Column D check (country) ---
+                If matchOk Then
+                    If UCase(valD) <> "ALL" Then
+                        If Left(UCase(valD), 10) = "ALL EXCEPT" Then
+                            Dim exclList As Variant, k As Long
+                            exclList = Split(Mid(valD, 12), ",")
+                            For k = LBound(exclList) To UBound(exclList)
+                                If Trim(UCase(copyAL)) = Trim(UCase(exclList(k))) Then
+                                    matchOk = False
+                                    Exit For
+                                End If
+                            Next k
+                        Else
+                            If InStr(1, valD, copyAL, vbTextCompare) = 0 Then matchOk = False
+                        End If
+                    End If
+                End If
+                
+                ' --- Column E check (years) ---
+                If matchOk Then
+                    If UCase(valE) <> "ALL" Then
+                        If IsDate(copyAQ) Then
+                            joinDate = CDate(copyAQ)
+                            yearsDiff = Year(Date) - Year(joinDate)
+                            
+                            If Left(valE, 1) = ">" Then
+                                If yearsDiff <= CLng(Replace(Replace(valE, ">", ""), "years", "")) Then matchOk = False
+                            ElseIf Left(valE, 1) = "<" Then
+                                If yearsDiff >= CLng(Replace(Replace(valE, "<", ""), "years", "")) Then matchOk = False
+                            End If
+                        Else
+                            matchOk = False
+                        End If
+                    End If
+                End If
+                
+                ' --- If all true, update AH column ---
+                If matchOk Then
+                    wsCopy.Cells(i, "AH").Value = valF
+                End If
+            End If
+        Next i
+    Next j
+    
+    ' Save & close target workbook
+    wbCopy.Close SaveChanges:=True
+    
+    MsgBox "Update completed successfully!", vbInformation
+End Sub
