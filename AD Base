@@ -2,3 +2,6 @@ Date_SQL = "CONVERT(DATE,'" + DateTimeFormat([Today's Date], "%Y-%m-%d") + "', 1
 
 
 WHERE your_date_column >= " + [Date_SQL]
+
+
+REGEX_Replace([Query], "'1900-01-01'", [Date_SQL])
