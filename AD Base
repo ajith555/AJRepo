@@ -1,1 +1,1 @@
-Date_SQL = "'" + DateTimeFormat([Today's Date], "%Y-%m-%d") + "'"
+NewQuery = REGEX_Replace([Query], "'1900-01-01'", [Date_SQL])
