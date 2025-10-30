@@ -1,7 +1,1 @@
-Date_SQL = "CONVERT(DATE,'" + DateTimeFormat([Today's Date], "%Y-%m-%d") + "', 120)"
-
-
-WHERE your_date_column >= " + [Date_SQL]
-
-
-REGEX_Replace([Query], "'1900-01-01'", [Date_SQL])
+has been an understanding and approachable manager who ensures her team feels supported at all times. She regularly checks in to see if everything is going well and takes genuine interest in both people and projects. Her guidance and timely help during challenging situations make a big difference in maintaining smooth progress. Beyond work, she shows great empathy and understanding toward personal matters as well. Overall, she creates a positive and comfortable environment that encourages both productivity and trust
